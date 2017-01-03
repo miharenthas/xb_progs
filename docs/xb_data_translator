@@ -1,0 +1,21 @@
+xb_data_translator: [FILES] [OPTIONS]
+
+Reads a list of root TTrees from the land02 unpacker or the tracker and saves/pipes it into a custom (much more humane) format, to be used in other programs.
+
+COMPILATION:
+$ make xb_data_translator
+NOTE: this programs requires ROOT libraries, so make sure you have ROOT configured and reachable before compiling/running it.
+
+OPTIONS:
+-i <file_name> : the ROOT file that will serve as an input. This file can be either the output file containing of pwa_ntuple the SYNC level of the crystal ball or the same file, passed through the tracker.
+This option forces the program to read from only one file, despite any other input.
+NOTE: ROOT files generated in any other way than the one mentioned above will cause undocumented behavior -very likely, a crash. 
+
+-o <file_name> : a place to save the output. For clarity, it should end by .xb, but that is not a requirement if you think you can remember what kind of file it is. It will be a bzip2 compressed file (generally, significantly smaller than the original ROOT file).
+This option can be omitted, in which case the program will print (uncompressed) data to the standard output.
+
+-v : verbose mode, when specified the program will print some statements relative to its status. *DO NOT* use it when printing to the stdout: it will corrupt the extracted data and will cause all sorts of woes in the programs down the pipe.
+
+-c : check the written file: performs a check on the written file. Of course, it only works when -o <file_name> is specified.
+
+-t: understand the tracker output: the program will understand and handle *only* the tracker output. No further data will be extracted.

@@ -1,0 +1,30 @@
+*** HOW TO USE THIS TOOLBOX ***
+
+Welcome in XB_PROGS, yet another toolbox to treat the data from the Crystal Ball.
+The phylosophy here is to use ROOT as less as possible in order to achieve speed and lightness.
+Also, in principle, each program does ONE task, and can be piped into the next one -and,
+of course, can receive from "stdin".
+
+1) the first program you should run (as yet) is "$LAND02_HOME/paw_ntuple <some_run> --paw-ntuple=SYNC:XB<and_something_else_if_you_need_it> --allow-errors", to get the unpacked data at the sync level.
+
+2) xb_data_translator takes one of those files as an input and either produces a .xb file as an output or writes to the standard output.
+In case you want to save the file, make sure you have "bzip2" installed, because it is used for compression.
+
+3) COMING_SOON: if you need to doppler correct your data, you should run the as-yet-non-existent program xb_doppler
+
+3) xb_run_cluster performs the clustering and addback onto the Crystal Ball. It can either read a .xb file or from a pipe originating into xb_doppler or xb_data_translator.
+This program takes in options: notably "-n <neighbour_order>". See the bespoke document file in this folder.
+This program will either output to a .cluster.xb file or to the standard output.
+
+4) xb_make_spc does a spectrum on clustered data coming from xb_run_cluster, from file or from pipe.
+This program produces a spectrum and draws it. It takes options, most notably "-I", which allows for interactive-ish drawing. See bespoke documentation.
+
+5) COMING_SOON: once you get the spectrum, you can fit it using the as-yet-non-existent program xb_fit_spc.
+
+EXAMPLE:
+Say you want to look at a spectrum of a source run. You can type:
+
+$ ./xb_data_translator -i <your_root_file> | ./xb_run_cluster -n 2 | ./xb_make_spc -I
+
+And then adjust the spectrum until you like it, and then save it.
+

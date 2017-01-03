@@ -1,0 +1,551 @@
+//This file contains the implementations of the cut primitives
+
+#include "xb_cut_typedefs.h"
+
+namespace XB{
+	//----------------------------------------------------------------------------------
+	//1-dimensional primitive (just a segment)
+	//constructors:
+	//default:
+	_xb_1D_cut_primitive::_xb_1D_cut_primitive(){} //do nothing
+	
+	//with extremes:
+	_xb_1D_cut_primitive::_xb_1D_cut_primitive( double a, double b ){
+		_extremes[0] = a;
+		_extremes[1] = b;
+	}
+	
+	//copy:
+	_xb_1D_cut_primitive::_xb_1D_cut_primitive( _xb_1D_cut_primitive &given ){
+		memcpy( _extremes, given._extremes, 2*sizeof(double) );
+	}
+	
+	//methods:
+	//pertinence test:
+	bool _xb_1D_cut_primitive::contains( double pt ){
+		return pt >= _extremes[0] && pt <= _extremes[1];
+	}
+	
+	//manipulation:
+	//first extreme:
+	double &_xb_1D_cut_primitive::a(){
+		return _extremes[0];
+	}
+	
+	//second extreme:
+	double &_xb_1D_cut_primitive::b(){
+		return _extremes[1];
+	}
+	
+	//----------------------------------------------------------------------------------
+	//2-dimesntional primitives (there are a few, and here's fun)
+	//----------------------------------------------------------------------------------
+	//base class:
+	//constructors:
+	//default
+	_xb_2D_cut_primitive::_xb_2D_cut_primitive():
+		_identity( CUT_NOTHING )
+	{
+		_descriptors = (double*)malloc( 2*sizeof(double) );
+	}
+	
+	//with identity
+	_xb_2D_cut_primitive::_xb_2D_cut_primitive( cut_2D_primitive identity ):
+		_identity( identity )
+	{
+		_descriptors = (double*)malloc( 2*sizeof(double) );
+	}
+	
+	//destructor
+	_xb_2D_cut_primitive::~_xb_2D_cut_primitive(){
+		free( _descriptors );
+	}
+	
+	//non-abstract methods:
+	//access to the first centroid coordinate
+	double &_xb_2D_cut_primitive::C_1(){
+		return _descriptors[0];
+	}
+	
+	//access the second centroid coordinate
+	double &_xb_2D_cut_primitive::C_1(){
+		return _descriptors[1];
+	}
+	
+	//get the identity
+	cut_primitive_2D _xb_2D_cut_primitive::type(){
+		return _identity;
+	}
+	
+	//---------------------------------------
+	//circle class:
+	//constructors:
+	//default:
+	_xb_cut_circle::_xb_cut_circle():
+		_xb_2D_cut_primitive( CUT_CIRCLE )
+	{
+		//(re)allocate the descriptor buffer.
+		_descriptors = (double*)realloc( _descriptors, 3*sizeof(double) );
+		memset( _descriptors, 0, 3*sizeof(double) ); //zero them all.
+	}
+	
+	//just radius:
+	_xb_cut_circle::_xb_cut_circle( double radius ):
+		_xb_2D_cut_primitive( CUT_CIRCLE )
+	{
+		_xb_cut_circle();
+		_descriptors[2] = radius;
+	}
+	
+	//radius and centre:
+	_xb_cut_circle::_xb_cut_circle( double *centre, double radius ):
+		_xb_2D_cut_primitive( CUT_CIRCLE )
+	{
+		_xb_cut_circle();
+		memcpy( _descriptors, centre, 2*sizeof(double) );
+		_descriptors[2] = radius;
+	}
+	
+	//copy:
+	_xb_cut_circle::_xb_cut_circle( _xb_cut_circle &given ):
+		_xb_2D_cut_primitive( CUT_CIRCLE )
+	{
+		_xb_cut_circle();
+		memcpy( _descriptors, given._descriptors, 3*sizeof(double) );
+	}
+	
+	//destructor (do nothing)
+	~_xb_cut_circle::_xb_cut_circle(){}
+	
+	//methods:
+	//access radius
+	double &_xb_cut_circle::radius(){
+		return _descriptors[2];
+	}
+	
+	//check if a point is in the circle
+	bool _xb_cut_circle::contains( double *pt ){
+		double distance[2];
+		
+		//bear in mind that:
+		//_descriptors[0,1] == this->C_1,2()
+		//_descriptors[2] == this->radius()
+		distance[0] = pt[0] - _descriptors[0];
+		distance[1] = pt[1] - _descriptors[1];
+		
+		//build a vector view
+		gsl_vector_view dist_vec = gsl_vector_view_array( distance, 2 );
+		
+		//return whether the norm of the distance is less or equal the radius
+		return gsl_blas_dnrm2( &dist_vec.vector ) <= _desscriptors[2];
+	}
+	
+	//transform:
+	void _xb_cut_circle::transform( gsl_matrix *trf ){
+		//check the size
+		if( trf->size1 != trf->size2 != 3 )
+			throw error( "Matrix is wrongly sized!", "XB::cut_circle::transform" );
+		
+		//allocate the vector
+		centre_vec = gsl_vector_calloc( 3 );
+		
+		//write inside it the centre coordinates
+		memcpy( centre_vec->data, _descriptors, 2*sizeof(double) );
+		centre_vec->data[2] = 1; //and the trailing one
+		
+		//blas multiply them
+		gsl_blas_dgemv( CblasNoTrans, 1, trf, centre_vec, 0, centre_vec );
+		
+		//write the new centre coordinates
+		memcpy( _descriptors, centre_vec->data, 2*sizeof(double) );
+		
+		//free the gsl vector
+		gsl_vector_free( centre_vec );
+	}
+	
+	//----------------------------------------------------------------------------------
+	//class ellipse:
+	//constructors:
+	//default:
+	_xb_cut_ellipse::_xb_cut_ellipse():
+		_xb_2D_cut_primitive( CUT_ELLIPSE )
+	{
+		_descriptors = (double*)realloc( _descriptors, 5*sizeof(double) );
+		memset( _descriptors, 0, 5*sizeof(double) );
+	}
+	
+	//with semiaxes
+	_xb_cut_ellipse::_xb_cut_ellipse( double *semiaxes ):
+		_xb_2D_cut_primitive( CUT_ELLIPSE )
+	{
+		_xb_cut_ellipse();
+		//copy the semiaxes data
+		memcpy( _descriptors+2, semiaxes, 2*sizeof(double) );
+	}
+	
+	//with centroid and semiaxes
+	_xb_cut_ellipse::_xb_cut_ellipse( double *semiaxes, double rotation ):
+		_xb_2D_cut_primitive( CUT_ELLIPSE )
+	{
+		//construct until semiaxes
+		_xb_cut_ellipse( semiaxes );
+		
+		//copy the rotation
+		_descriptors[4] = rotation;		
+	}
+	
+	//with centroid, semiaxes and rotation
+	_xb_cut_ellipse::_xb_cut_ellipse( double *centroid, double *semiaxes, double rotation ):
+		_xb_2D_cut_primitive( CUT_ELLIPSE )
+	{
+		//construct unitl the rotation
+		_xb_cut_ellipse( semiaxes, rotation );
+		
+		//copy the centroid
+		memcpy( _descriptors, centroid, 2*sizeof(double) );
+	}
+	
+	//destructor
+	_xb_cut_ellipse::~_xb_cut_ellipse(){}; //do nothing
+	
+	//manip methods
+	double &_xb_cut_ellipse::a(){ return _descriptors[2]; } //vertical semiaxis
+	double &_xb_cut_ellipse::b(){ return _descriptors[3]; } //horizontal semiaxis
+	double &_xb_cut_ellipse::rotation(){ return _descriptors[4]; } //rotation
+	
+	//pertinence test
+	void _xb_cut_ellipse::contains( double *pt ){
+		//based on the ellipse equation
+		double c = cos( _descriptors[4] );
+		double s = sin( _descriptors[4] );
+		double d[] = { pt[0] - _descriptors[0], pt[1] - _descriptors[1] }
+		double &a = _descriptors[2];
+		double &b = _descriptors[3];
+		
+		return pow( c*d[0] + s*d[1], 2 )/a + pow( c*d[0] - s*d[1], 2 )/b <= 1;
+	}
+	
+	//----------------------------------------------------------------------------------
+	//class polygon:
+	//constructors:
+	//default:
+	_xb_cut_polygon::_xb_cut_polygon():
+		_xb_2D_cut_primitive( CUT_POLYGON )
+	{
+		//descriptors[0] ==> C_1
+		//descriptors[1] ==> C_2
+		//descriptosr[2] ==> n_of_sides
+		_descriptors = (double*)realloc( _descriptors, 3*sizeof(double) );
+		memset( _descriptors, 0, 3*sizeof(double) );
+	}
+	
+	//vertices and number of sides:
+	_xb_cut_polygon::_xb_cut_polygon( double *vertices, unsigned int n_of_sides ):
+		_xb_2D_cut_primitive( CUT_POLYGON )
+	{
+		_xb_cut_polygon();
+		_vertices = (double*)malloc( 2*n_of_sides*sizeof(double) );
+		memcpy( _vertices, vertices );
+		
+		_descriptors[2] = n_of_sides;
+		
+		do_centroid();
+	}
+	
+	//centroid, vertices and number of sides:
+	_xb_cut_polygon::_xb_cut_polygon( double *centroid, double *vertices, unsigned int n_of_sides ):
+		_xb_2D_cut_primitive( CUT_POLYGON )
+  {
+		_xb_cut_polygon();
+		_vertices = (double*)malloc( 2*n_of_sides*sizeof(double) );
+		memcpy( _vertices, vertices );
+		
+		_descriptors[2] = n_of_sides;		
+		
+		memcpy( _descriptors, centroid, 2*sizeof(double) );
+	}
+	
+	//destructor
+	_xb_cut_polygon::~_xb_cut_polygon(){ free( _vertices ); }
+	
+	//manip methods
+	double &_xb_cut_polygon::n_of_sides(){ return _descriptors[2]; }
+	double *_xb_cut_polygon::vertices(){ return _vertices; }
+	double &_xb_cut_polygon::vertex( unsigned int n ){ return _vertices[n % _descriptors[2]]; }
+	
+	//transformation method
+	//modifies the object!
+	void _xb_cut_polygon::transform( gsl_matrix *trf ){
+		if( trf->size1 != trf->size2 != 3 )
+			throw error( "Matrix is wrongly sized!", "XB::cut_polygon::transform" );
+			
+		//do a gsl vector for matrix multiplication
+		gsl_vector *cv = gsl_vector_calloc( 3 )
+		cv->data[2] = 1;
+		
+		//do the multiplication for all the vertices
+		for( int i=0; i < _descriptors[2]; ++i ){
+			memcpy( cv->data, _vertices + 2*i, 2*sizeof(double) );
+			gsl_blas_dgemv( CblasNoTrans, 1, trf, cv, 0, cv ); //blas matrix mulitplication
+			memcpy( _vertices + 2*i, cv->data, 2*sizeof(double) );
+		}
+	}
+
+	//pertinency check
+	bool _xb_cut_polygon::contains( double *pt ){
+		//ray casting...
+		//to come, probably with CGAL or some other library
+	  return false;
+	}
+	
+	//do centroid (basically, calc the CoM  of the thing
+	//NOTE: it's protected, just utlis
+	void _xb_cut_polygon::do_centroid(){
+		double CoM[] = {0, 0};
+		
+		for( int i=0; i < _descriptors[2]; ++i ){
+			CoM[0] += _vertices[2*i];
+			CoM[1] += _vertices[2*i+1];
+		}
+		
+		CoM[0] /= _descriptors[2];
+		CoM[1] /= _descriptors[2];
+		
+		_descriptors[0] = CoM[0];
+		_descriptors[1] = CoM[1];
+	}
+	
+	//----------------------------------------------------------------------------------
+	//class regular polygon
+	//constructors:
+	//default:
+	_xb_cut_regular_polygon():
+		_xb_2D_cut_primitive( CUT_REGULAR_POLYGON )
+	{
+		//descriptors[0] ==> C_1
+		//descriptors[1] ==> C_2
+		//descriptosr[2] ==> n_of_sides
+		//descriptors[3] ==> radius -- the radius of the
+		//                             circumscribed circle
+		//descriptors[4] ==> rotation
+		_descriptors = (double*)realloc( _descriptors, 5*sizeof(double) );
+		memset( _descriptors, 0, 5*sizeof(double) );
+	}
+	
+	//parametric: radius and number of sides
+	_xb_cut_regular_polygon( double radius, double n_fo_sides ):
+		_xb_2D_cut_primitive( CUT_REGULAR_POLYGON )
+	{
+		_xb_cut_regular_polygon();
+		_vertices = (double*)calloc( 2*n_of_sides*sizeof(double) );
+		
+		//store radius and number of sides
+		_descriptors[0] = _descriptors[1] = 0; //set the centriod to (0,0)
+		_descriptors[2] = n_of_sides;
+		_descriptors[3] = radius;
+		
+		//calculate the vertices:
+		//NOTE: this calculation *always* puts the first vertex
+		//      at (0,radius) and proceeds clockwise
+		const double ANGLE_STEP = _XB_TAU/_descriptors[2];
+		for( int v=0; v < _descriptors[2]; ++v ){
+			_vertices[2*v] = radius*sin( ANGLE_STEP*v );
+			_vertices[2*v+1] = radius*cos( ANGLE_STEP*v );
+		}
+	}
+	
+	//parametric: radius, n of sides and centroid
+	_xb_cut_regular_polygon( double *centroid, double radius,
+	                         double n_of_sides ):
+		_xb_2D_cut_primitive( CUTREGULAR_POLYGONS )
+	{
+		_xb_cut_regular_polygon( radius, n_of_sides ); //construct up to radius and sides.
+		
+		_descriptor[0] = centroid[0];
+		_descriptor[1] = centroid[1];
+
+		//translate the vertices
+		for( int v=0; v < _descriptors[2]; ++v ){
+			_vertices[2*v] += _descriptors[0];
+			_vertices[2*v+1] += _descriptors[1];
+		}
+	}
+	
+	//parametric: with rotation
+	//NOTE: the rotation gets applied in the constructor,
+	//      it is *not* undestood as something that is already
+	//      an attribute of the cut! (This may change)
+	_xb_cut_regular_polygon( double *centroid, double radius,
+	                         double n_of_sides, double rotation ):
+		_xb_2D_cut_primitive( CUT_REGULAR_POLYGON )
+	{
+		_xb_cut_regular_polygon( radius, n_of_sides ); //construct with radius and
+		                                               //number of sides (no centroid)
+		                                               
+		//make the transformation
+		gsl_matrix* trf = gsl_matrix_alloc( 3, 3 );
+		gsl_matrix_set_identity( trf );
+		
+		//rotation
+		gsl_matrix_set( trf, 0, 0, cos( rotation ) );
+		gsl_matrix_set( trf, 1, 1, cos( rotation ) );
+		gsl_matrix_set( trf, 0, 1, -1*sin( rotation ) );
+		gsl_matrix_set( trf, 1, 0, sin( rotation ) );
+		
+		//affine translation (for centroid)
+		gls_matrix_set( trf, 0, 2, centroid[0] );
+		gsl_matrix_set( trf, 1, 2, centroid[1] );
+		
+		//apply the transformation using own's method
+		transform( trf );
+		
+		//save centroid and rotation
+		_descriptors[0] = centroid[0];
+		_descriptors[1] = centroid[1];
+		_descriptors[4] = rotation;
+	}
+
+	//copy
+	_xb_cut_polygon( double _xb_cut_polygon &given )
+		_xb_2D_cut_primitive( CUT_REGULAR_POLYGON )
+	{
+		_xb_cut_regular_polygon();
+		memcpy( _descriptors, given._descriptors, 5*sizeof(double) );
+		
+		if( _vertices == NULL ) _vertices = (double*)malloc( given._descriptors[2]*sizeof(double) );
+		else _vertices = (double*)realloc( 2*given._descriptors[2]*sizeof(double) );
+		memcpy( _vertices, given._vertices, 5*sizeof(double) );
+	}
+	
+	//destructor
+	_xb_cut_regular_polygon::~_xb_cut_regular_polygon(){} //do nothing
+	
+	//manip methods
+	double &_xb_cut_regular_polygon::radius(){ return _descriptors[3]; }
+	double &_xb_cut_regular_polygon::n_of_sides(){ return _descriptors[2]; }
+	double &_xb_cut_regular_polygon::rotation(){ return _descriptors[4]; }
+	
+	//pip test
+	bool &_xb_cut_regular_polygon::contains( double *pt ){
+		//first: if it's further away than the radius from the
+		//centriodi, it's out (no holes here)
+		double d = { _descriptors[0] - pt[0], _descriptors[1] - pt[1] };
+		double dfc = sqrt( pow( d[0], 2 ) + pow( d[1], 2 ) );
+		if( dfc > _descriptors[3] ) return false;
+		
+		//if we came here, it's worth to check if it's in the
+		//inscribed circumference -- in which case, it's in
+		if( dfc <= _descriptors[3]*_XB_PI/_descriptors[2] ) return true;
+		
+		//if we didn't get it yet, desperation: ray casting.
+		return (_xb_cut_polygon*)this->contains( pt );
+	}
+	
+	//----------------------------------------------------------------------------------
+	//class square (inherits from regular polygon):
+	//constructors:
+	//default:
+	//NOTE: the correct identity is already set by the default constructor
+	//      in the parent class (no CUT_SQUARE type!)
+	_xb_cut_square(){
+		//descriptors[0] ==> C_1
+		//descriptors[1] ==> C_2
+		//descriptosr[2] ==> n_of_sides
+		//descriptors[3] ==> radius -- the radius of the
+		//                             circumscribed circle
+		//descriptors[4] ==> rotation
+		//descriptors[5] ==> side
+		_descriptors = (double*)realloc( _descriptors, 6*sizeof(double) );
+		memset( _descriptors, 0, 6*sizeof(double) );
+		
+		_vertices = (double*)calloc( 8*sizeof(double) );
+  }
+	
+	//parametric: side
+	_xb_cut_square( double side ){
+		_xb_cut_square(); //default construct first
+		
+		_descriptors[5] = side;
+		
+		side /= 2;
+		_vertices[0] = side; //bottom right
+		_vertices[1] = -side;
+		_vertices[2] = side; //top right
+		_vertices[3] = side;
+		_vertices[4] = -side; //top left
+		_vertices[5] = side;
+		_vertices[6] = -side; //bottom left
+		_vertices[7] = -side;
+	}
+	
+	//parametric: centroid and side
+	_xb_cut_square( double *centroid, double side ){
+		_xb_cut_square( side ); //construct to the side
+		
+		//save the centroid and apply the translation
+		_descriptors[0] = centroid[0];
+		_descriptors[1] = centroid[1];
+		
+		for( int i=0; i < 4; ++i ){
+			_vertices[2*i] += _descriptors[0];
+			_vertices[2*i+1] += _descriptors[1];
+		}
+	}
+	
+	_xb_cut_square( double *centroid, double rotation, double side ){
+		_xb_cut_square( side ); //construct (also buffer allocation)
+		                        //NOTE: because of this, we cannot recycle
+		                        //      the regular polygon ctor...
+		
+		//set up the transformation
+		gsl_matrix *trf = gsl_matrix_alloc( 3, 3 );
+		gsl_matrix_set_identity( trf );
+		
+		gsl_matrix_set( trf, 0, 0, cos( rotation ) );
+		gsl_matrix_set( trf, 0, 1, -sin( rotation ) );
+		gsl_matrix_set( trf, 1, 0, sin( rotation ) );
+		gsl_matrix_set( trf, 1, 1, cos( rotation ) );
+		gsl_matrix_set( trf, 0, 2, centriod[0] );
+		gsl_matrix_set( trf, 1, 2, centroid[1] );
+		
+		//apply it
+		transform( trf );
+		
+		//save the missing bits
+		_descriptors[0] = centroid[0];
+		_descriptors[1] = centroid[1];
+		_descriptors[4] = rotation;
+	}
+	
+	//copy:
+	_xb_cut_square( _xb_cut_square &given ):
+		_xb_2D_cut_primitive( CUT_REGULAR_POLYGON )
+	{
+		_xb_cut_square(); //buffer allocation
+		
+		memcpy( _descriptors, given._descriptors, 6*sizeof(double) );
+		memcpy( _vertices, given._vertices, 8*sizeof(double) );
+	}
+	
+	~_xb_cut_square(){} //nothing more to do than the parent class
+	
+	//manip methods
+	double &_xb_cut_square::side(){ return _descriptors[5]; }
+	
+	//pip test
+	bool _xb_cut_square::contains( double *pt ){
+		double pt_prime[] = { pt[0], pt[1] }; //a transformed point
+		
+		if( _descriptors[3] ){ //if there's a rotation, mix up the coordinates
+			pt_prime[0] = cos( _descriptors[3] ) - sin( _descriptors[3] );
+			pt_prime[1] = sin( _descriptors[3] ) + cos( _descriptors[3] );
+		}
+		
+		//test for pt_prime in square (consider bottom left corner and top right)
+		if( pt_prime[0] >= _vertices[6] && pt_prime[1] >= _vertices[7]
+		    && pt_prime[0] <= vertices[2]n && pt_prime[1] <= _vertices[3] ) return true;
+		
+		return false;
+	}
+	
+} //namespace

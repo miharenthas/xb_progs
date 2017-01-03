@@ -1,0 +1,237 @@
+//this files contains the definitions of the types for the cut programs
+#ifndef XB_CUT_TYPEFEFS__H
+#define XB_CUT_TYPEDEFS__H
+
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_cblas.h>
+
+#include "xb_error.h"
+
+#define _XB_PI = 3.141592653589793
+#define _XB_TAU = 6.283185307179586
+
+#define PUSH_TRANSFORM( new_t, stack_m ) gsl_blas_dgemm( CblasNoTrans, CblasNoTrans,\
+                                         1, new_t, stack_m, 0, stack_m )
+
+namespace XB{
+	//----------------------------------------------------------------------------
+	//some useful types:
+	//cut types (1D cuts are trivial)
+	typedef enum _xb_1D_cut_primitive_type{
+		CUT_SEGMENT = 0
+	} cut_primitive_1D;
+	
+	//2D cuts
+	typedef enum _xb_2D_cut_primitive_type{
+		CUT_NOTHING = 0
+		CUT_SUQARE,
+		CUT_CIRCLE,
+		CUT_ELLIPSE,
+		CUT_BSPLINE,
+		CUT_REGULAR_POLYGON,
+		CUT_POLYGON
+	} cut_primitive_2D;
+	
+	/*
+	//3D cuts -- probably not implemented
+	typedef enum _xb_3D_cut_primitive_type{
+		CUT_CUBE = 0,
+		CUT_PRISM,
+		CUT_BSPLNE_PRISM,
+		CUT_SPHERE,
+		CUT_ELLIPSOID,
+		CUT_TESSELLATED
+	} cut_primitive_3D;
+	*/
+	
+	/*
+	//ND cuts -- probably unnecessary
+	typedef enum _xb_ND_cut_primitive_type{
+		CUT_HYPERCUBE = 0,
+		CUT_HYPERPRISM,
+		CUT_HYPERSPHERE,
+		CUT_HYPERELLIPSOID,
+		CUT_HYPERTESSELLATED
+	} cut_primitive_ND;
+	*/
+	
+	//----------------------------------------------------------------------------
+	//the type family (and yes, this time I'm usign a full blown class tree)
+	
+	//1D primitive stands on its own
+	typedef class _xb_1D_cut_primitve{
+		public:
+			//ctors, dtor
+			_xb_1D_cut_primitive();
+			_xb_1D_cut_primitive( double a, double b );
+			_xb_1D_cut_primitive( _xb_1D_cut_primitive &given );
+			~_xb_1D_cut_primitive();
+			
+			//test whether a point is in
+			 bool contains( double pt );
+			
+			//extremes manipulation
+			 double &a();
+			 double &b();
+		private:
+			double _extremes[2];
+	} cut_segment;
+	
+	//2D primitives base class
+	//it's more of a conceptual thing so far
+	class _xb_2D_cut_primitive{
+		public:
+			//default constructor and destructor
+			_xb_2D_cut_primitive();
+			_xb_2D_cut_primitive( cut_2D_primitive identity );
+			~_xb_2D_cut_primitive();
+			
+			//identity check
+			cut_primitive_2D type();
+			
+			//virtual method that makes this class incomplete
+			virtual bool contains( double *pt ) =0;
+			
+			//centroid manipulation methods
+			double &C_1();
+			double &C_2();
+			
+			//transform method:
+			//it is supposed to take a 3*3 matrix as input
+			//and apply a complete transofrmation to the
+			//relevant descriptors
+			virtual void transform( gsl_matrix *trf ) =0;
+		protected:		
+			double *_descriptors; //an array of descriptors
+			                      //according to the kind
+			cut_primitive_2D _identity; //the identity of this cut
+	};
+	
+	//2D primitives classes:
+	//circle
+	typedef class _xb_cut_circle : public _xb_2D_cut_primitive {
+		public:
+			_xb_cut_circle();
+			_xb_cut_circle( double radius );
+			_xb_cut_circle( double *centre, double radius );
+			_xb_cut_circle( _xb_cut_circle &given );
+			~xb_cut_circle();
+			
+			//test whether a point is in
+			virtual bool contains( double *pt );
+			
+			//manipulation members
+			double &radius();
+			
+			//transform method
+			void transform( gsl_matrix *trf );
+	} cut_circle;
+	
+	//ellipse
+	typedef class _xb_cut_ellipse : public _xb_cut_circle {
+		public:
+			_xb_cut_ellipse();
+			_xb_cut_ellipse( double *semiaxes );
+			_xb_cut_ellipse( double *semiaxes, double rotation );
+			_xb_cut_ellipse( double *centroid, double *semiaxes, double rotation );
+			_xb_cut_ellipse( double _xb_cut_ellipse &given );
+			
+			~_xb_cut_ellipse(){};
+			
+			//test whether a point is in
+			bool contains( double *pt );
+			
+			//manipulation members
+			double &a();
+			double &b();
+			double &rotation();
+			
+			//transform method
+			void transform( gsl_matrix *trf );
+	} cut_ellipse;
+	
+	//polygon
+	typedef class _xb_cut_polygon : public _xb_2D_cut_primitive {
+		public:
+			_xb_cut_polygon();
+			_xb_cut_polygon( double *vertices, unsigned int n_of_sides );
+			_xb_cut_polygon( double *centroid, double *vertices, double n_of_sides );
+			_xb_cut_polygon( double _xb_cut_polygon &given );
+			
+			~_xb_cut_polygon();
+			
+			//test whether a point is in
+			virtual  bool contains( double *pt );
+			
+			//manipulation members
+			double &n_of_sides();
+			
+			//get the vertices
+			double *vertices();
+			double &vertex( unsigned int n );
+			
+			//transform method
+			void transform( gsl_matrix *trf );
+		protected:
+		  void do_centroid();
+			double *_vertices;
+	} cut_polygon;
+	
+	//regular polygon, which is a polygon
+	typedef class _xb_cut_regular_polygon : public _xb_cut_polygon {
+		public:
+			_xb_cut_regular_polygon();
+			_xb_cut_regular_polygon( double radius, double n_fo_sides );
+			_xb_cut_regular_polygon( double *centroid, double radius,
+			                         double n_of_sides );
+			_xb_cut_regular_polygon( double *centroid, double radius,
+			                         double n_of_sides, double rotation );
+			_xb_cut_regular_polygon( double _xb_cut_polygon &given );
+			
+			~_xb_cut_regular_polygon();
+			
+			//test whether a point is in
+			virtual bool contains( double *pt );
+			
+			//manipulation members
+			double &radius();
+			virtual double &n_of_sides();
+			double &rotation();
+	}
+	
+	//square, which is a regular polygon
+	typedef class _xb_cut_square : public _xb_cut_regular_polygon {
+		public:
+			//ctors, dtor
+			_xb_cut_square();
+			_xb_cut_square( double side );
+			_xb_cut_square( double *centroid, double side );
+			_xb_cut_square( double *centroid, double rotation, double side );
+			_xb_cut_square( _xb_cut_square &given );
+			
+			~_xb_cut_square();
+	
+			//test whether a point is in
+			bool contains( double *pt );
+		
+			//manipulation members
+			double &side();
+	} cut_square;
+	
+	//rectangle, which is a polygon
+	//...
+	
+	//bspline, which is a polygon
+	//...
+	
+	//----------------------------------------------------------------------------
+	//N-dimensional cuts (including 3D cuts)
+	//coming soon
+	//...		
+}
+
