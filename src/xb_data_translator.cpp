@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "xb_io.h"
 #include "xb_reader.h"
@@ -17,6 +18,7 @@ struct translator_settings{
 	bool out_flag;
 	bool check_flag;
 	bool track_flag;
+	bool sim_flag;
 	bool verbose;
 	char in_f_name[64][256];
 	char out_f_name[256];
@@ -61,9 +63,20 @@ int main( int argc, char** argv ){
 		} else if( argv[i][0] == '-' ) break;
 	}
 	
+	//long options
+	struct option opts[] = {
+		{ "output-file", required_argument, NULL, 'o' },
+		{ "check-output", no_argument, NULL, 'c' },
+		{ "verbose", no_argument, NULL, 'v' },
+		{ "tracking-data", no_argument, NULL, 't' },
+		{ "simulation-data", no_argument, NULL, 's' },
+		{ "help", no_argument, NULL, 'h' },
+		{ 0, 0, 0, 999 }
+	};
+
 	//further input parsing
-	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:cvt" )) != -1 ){
+	char iota = 0; int opt_idx = 0;
+	while( (iota = getopt_long( argc, argv, "i:o:cvt", opts, &opt_idx )) != -1 ){
 		switch( iota ){
 			case 'i':
 				if( strlen( optarg ) > 256 ){
@@ -91,9 +104,15 @@ int main( int argc, char** argv ){
 			case 't':
 				settings.track_flag = true;
 				break;
+			case 's':
+				settings.sim_flag = true;
+				break;
+			case 'h':
+				system( "cat doc/xb_data_translator" );
+				exit( 0 );
 			default :
-				printf( "%c is not a valid command.\n", iota );
-				Printf( "Valid opions are:\n-i <file_name>\n-o <file_name>\n-v\n-c\n-t" );
+				fprintf( stderr,
+				         "%c is not a valid command. Type --help for more.\n", iota );
 				return 0;
 		}
 	}
@@ -108,7 +127,7 @@ int main( int argc, char** argv ){
 	}
 	
 	//create the program's objects
-	xb_data_translator<XB::data> data_engine( settings );
+	xb_data_translator<XB::data> data_engine( settings ); //works also for simulations
 	xb_data_translator<XB::track_info> track_engine( settings );
 	
 	//load the data
@@ -182,7 +201,8 @@ void xb_data_translator<xb_data_type>::data_loader(){
 		//if not, check the error type: continue if a file is not found and freak out
 		//in all other cases
 		try{
-			XB::reader( xb_book_buf, settings.in_f_name[i] );
+			if( settings.sim_flag ) XB::sim_reader( xb_book_buf, settings.in_f_name[i] );
+			else XB::reader( xb_book_buf, settings.in_f_name[i] );
 			xb_book.insert( xb_book.end(), xb_book_buf.begin(), xb_book_buf.end() ); //cat it at the end
 		}catch( XB::error e ){
 			if( !strcmp( e.what, "File error!XB::reader" ) ){

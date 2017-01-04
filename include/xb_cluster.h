@@ -28,9 +28,9 @@ namespace XB{
 		unsigned int centroid_id; //index of the crystal where the centroid is
 		float c_altitude; //angles describing the
 		float c_azimuth; //centroid (altitude and azimuth)
+		float sum_e; //the sum of the energies in the cluster
 		std::vector<float> crys_e; //distances (in radians) of each crystal from the centroid.
 		std::vector<unsigned int> crys; //array of crystal indexes participating
-		float sum_e; //the sum of the energies in the cluster
 	} cluster;
 	
 	//this structure holds all the clusters

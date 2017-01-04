@@ -285,4 +285,9 @@ void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
 void XB::sim_reader( std::vector<XB::data*> &xb_book, std::string f_name ){
 	XB::sim_reader( xb_book, f_name.c_str() );
 }
+
+//------------------------------------------------------------------------------------
+//dummy track readers
+void XB::sim_reader( std::vector<XB::track_info*> &xb_book, std::string f_name ){ return; }
+void XB::sim_reader( std::vector<XB::track_info*> &xb_book, char *f_name ){ return; }
 		
