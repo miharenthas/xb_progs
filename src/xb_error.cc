@@ -9,4 +9,8 @@ namespace XB{
 		strcpy( what, message );
 		strcat( what, from );
 	}
-}
+
+	error::_xb_error( const _xb_error &given ){
+		strcpy( what, given.what );
+	}
+}	

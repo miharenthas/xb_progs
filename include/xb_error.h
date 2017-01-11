@@ -9,6 +9,7 @@ namespace XB{
 	typedef class _xb_error{
 		public:
 			_xb_error( const char* message, const char* from );
+			_xb_error( const _xb_error &given );
 			char *what;
 	} error;
 }

@@ -251,14 +251,14 @@ void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
 	int n_events = data_tree->GetEntries(), n_tracks = 0;
 	if( !n_events ) throw XB::error( "Empty tree!", "XB::sim_reader" ); //check for non
 	                                                                    //emptiness
-	
+
 	//associate the target branch to a pointer
 	TClonesArray buf( "R3BXBallCrystalHitSim", 1024 ), *p_buf; //the clones array buffer
 	                                                           //and a pointer
 	p_buf = &buf;
 	int rc = data_tree->SetBranchAddress( "XBCrystalHitSim", &p_buf );
 	if( rc ) throw XB::error( "Branch not found!", "XB::sim_reader" );
-	
+
 	//a place to handle the data
 	R3BXBallCrystalHitSim *p_data;
 	

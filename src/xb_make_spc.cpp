@@ -68,6 +68,7 @@ class xb_make_spc{
 		//methods
 		void populate_histogram(); //populate the histogram
 		void draw_histogram(); //draw the histogram (with gnuplot)
+		//TODO: void save_histogram(); //save the histogram to file.
 		
 		void reset( p_opts &settings ); //update the settings
 	private:

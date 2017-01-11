@@ -76,7 +76,7 @@ int main( int argc, char** argv ){
 
 	//further input parsing
 	char iota = 0; int opt_idx = 0;
-	while( (iota = getopt_long( argc, argv, "i:o:cvt", opts, &opt_idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:cvts", opts, &opt_idx )) != -1 ){
 		switch( iota ){
 			case 'i':
 				if( strlen( optarg ) > 256 ){
@@ -175,6 +175,7 @@ xb_data_translator<xb_data_type>::xb_data_translator( struct translator_settings
 	settings.check_flag = given_s.check_flag;
 	settings.track_flag = given_s.track_flag;
 	settings.verbose = given_s.verbose;
+	settings.sim_flag = given_s.sim_flag;
 	
 	strcpy( settings.out_f_name, given_s.out_f_name );
 	
@@ -195,7 +196,7 @@ void xb_data_translator<xb_data_type>::data_loader(){
 	vector<xb_data_type*> xb_book_buf;
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( settings.verbose ) cout << "Reading from " << settings.in_f_name[i] << "..." << endl;
-		
+
 		//do the reading:
 		//first try to open the file, if it makes it store it at the end of xb_bok
 		//if not, check the error type: continue if a file is not found and freak out

@@ -67,7 +67,7 @@ void XB::write( char* f_name, std::vector<XB::data*> &xb_book ){
 
 //std::string interface
 void XB::write( std::string f_name, std::vector<XB::data*> &xb_book ){
-	return XB::write( f_name.c_str(), xb_book );
+	XB::write( f_name.c_str(), xb_book );
 }
 
 //--------------------------------------------------------------------------------
