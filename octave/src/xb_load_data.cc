@@ -158,5 +158,4 @@ DEFUN_DLD( xb_load_data, args, nargout, "XB::load data interface for Octave" ){
 	
 	//happy thoughts
 	return octave_value_list( octave_value( o_data_m ) );
-	return octave_value_list();
 }		

@@ -90,19 +90,19 @@ libxb_root : $(OBJ_W_ROOT)
 #----------------------------------------------------------------------
 #programs
 xb_data_translator : libxb_core libxb_root
-	$(CXX) -L$(LIB) -lxb_core -lxb_root -Wl,-rpath=$(LIB) $(SRC)/xb_data_translator.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o xb_data_translator
+	$(CXX) -lxb_core -lxb_root $(SRC)/xb_data_translator.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o xb_data_translator
 
 xb_run_cluster : libxb_core libxb_viz
-	$(CXX) -L$(LIB) -lxb_core -lxb_viz -Wl,-rpath=$(LIB) $(SRC)/xb_run_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_run_cluster
+	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_run_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_run_cluster
 
 xb_make_spc : libxb_core libxb_viz
-	$(CXX) -L$(LIB) -lxb_core -lxb_viz -Wl,-rpath=$(LIB) $(SRC)/xb_make_spc.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_make_spc
+	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_make_spc.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_make_spc
 
 xb_doppc : libxb_core
-	$(CXX) -L$(LIB) -lxb_core -Wl,-rpath=$(LIB) $(SRC)/xb_doppc.cpp $(CXXFLAGS) -o xb_doppc
+	$(CXX) -lxb_core $(SRC)/xb_doppc.cpp $(CXXFLAGS) -o xb_doppc
 
 xb_do_cut : libxb_core libxb_viz
-	$(CXX) -L$(LIB) -lxb_core -lxb_viz -Wl,-rpath=$(LIB) $(SRC)/xb_do_cut.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_do_cut
+	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_do_cut.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_do_cut
 
 #----------------------------------------------------------------------
 #test programs
@@ -146,6 +146,22 @@ all: $(OBJECTS) $(LIBRARIES) $(PROGRAMS)
 
 .PHONY: test
 test: $(OBJECTS) $(TESTS)
+
+.PHONY: install
+install :
+	./install.sh
+
+.PHONY: uninstall
+uninstall :
+	rm -f /usr/local/lib/libxb_core.so
+	rm -f /usr/local/lib/libxb_viz.so
+	rm -f /usr/local/lib/libxb_root.so
+	rm -f /usr/lib/libxb_core.so
+	rm -f /usr/lib/libxb_viz.so
+	rm -f /usr/lib/libxb_root.so
+	rm -f /usr/lib64/libxb_core.so
+	rm -f /usr/lib64/libxb_viz.so
+	rm -f /usr/lib64/libxb_root.so
 
 .PHONY: clean
 clean:

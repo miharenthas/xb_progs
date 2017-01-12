@@ -59,6 +59,7 @@ DEFUN_DLD( xb_write_data, args, , "XB::write data interface for Octave" ){
 		//do the copying
 		buf->sum_e = o_map.getfield( "sum_e" ).float_value();
 		if( !buf->sum_e ) buf->empty_sum_e = true;
+		buf->in_beta = o_map.getfield( "in_beta" ).float_value();
 		
 		if( o_map.isfield( "i" ) ){
 			if( !o_map.getfield( "i" ).is_zero_by_zero() ){
