@@ -15,6 +15,7 @@
 #include <octave/oct-map.h> //data will be reconstructed as a structure (octave_map)
 #include <octave/Array.h> //octave arrays arrays
 #include <octave/Cell.h> //octave cell arrays
+#include <octave/file-stat.h> //file_stat
 
 //includes from the toolkit
 #include "xb_io.h" //XB::load
@@ -40,12 +41,14 @@ DEFUN_DLD( xb_load_data, args, nargout, "XB::load data interface for Octave" ){
 	for( int f=0; f < nargin; ++f ){
 		if( args(f).is_string() ){ //if the argument is a string
 		                           //attempt to load the file
-			try{
+			octave::sys::file_stat fs( args(f).string_value() );
+			if( fs.exists() ){
 				strcpy( in_fname, args(f).string_value().c_str() );
 				XB::load( in_fname, data_buf );
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
-			} catch( XB::error e ) {
-				error( e.what );
+			} else {
+				octave_stdout << "xb_data_load: warning: file \""
+				              << args(f).string_value() << "\" doesn't exist.\n";
 				continue;
 			}
 		} else {
@@ -117,21 +120,21 @@ DEFUN_DLD( xb_load_data, args, nargout, "XB::load data interface for Octave" ){
 		} else o_field_t(i) = Array<float>( o_dim_null );
 		
 		if( !data[i]->empty_pt ){
-			memcpy( f_buf.fortran_vec(), data[i]->t,
+			memcpy( f_buf.fortran_vec(), data[i]->pt,
 			        current_numel*sizeof(float) );
-			o_field_t(i) = f_buf;
+			o_field_pt(i) = f_buf;
 		} else o_field_t(i) = Array<float>( o_dim_null );
 		
 		if( !data[i]->empty_e ){
-			memcpy( f_buf.fortran_vec(), data[i]->t,
+			memcpy( f_buf.fortran_vec(), data[i]->e,
 			        current_numel*sizeof(float) );
-			o_field_t(i) = f_buf;
+			o_field_e(i) = f_buf;
 		} else o_field_t(i) = Array<float>( o_dim_null );
 		
 		if( !data[i]->empty_he ){
-			memcpy( f_buf.fortran_vec(), data[i]->t,
+			memcpy( f_buf.fortran_vec(), data[i]->he,
 			        current_numel*sizeof(float) );
-			o_field_t(i) = f_buf;
+			o_field_he(i) = f_buf;
 		} else o_field_t(i) = Array<float>( o_dim_null );
 		
 		//finally, deallocate and nullify the copied element

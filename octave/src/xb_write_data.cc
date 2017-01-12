@@ -9,7 +9,7 @@
 
 //includes from octave
 #include <octave/oct.h> //all the gobbins for OCT files
-#include <octave/octave_map.h> //data will be reconstructed as a structure (octave_map)
+#include <octave/oct-map.h> //data will be reconstructed as a structure (octave_map)
 #include <octave/Array.h> //octave arrays arrays
 #include <octave/Cell.h> //octave cell arrays
 
@@ -26,32 +26,29 @@ DEFUN_DLD( xb_write_data, args, , "XB::write data interface for Octave" ){
 	//check that there are two arguments and
 	//that the first one is a string
 	if( args.length() != 2 || !args(0).is_string() ){
-		error( "xb_data_wite: error: need a filename and an array of structures.\n";
+		error( "xb_data_wite: need a filename and an array of structures.\n" );
 		return octave_value_list();
 	}
 	
 	//retrieve the array of structures
 	//and check that we have got it.
-	octave_map o_data_m = arg(1).map_value();
-	if( !o_data_m.is_defined() ){
-		error( "xb_data_write: error: invalid argument\n" );
+	octave_map o_data_m = args(1).map_value();
+	/*if( !o_data_m.is_zero_by_zero() ){
+		error( "xb_data_write: invalid argument\n" );
 		return octave_value_list();
-	}
+	}*/
 	
 	std::vector<XB::data*> data;
 	
 	//if we got here, we should be able to proceed.
 	//declare the necessary bits and pieces
-	Array<unsigned int> i_buf;
-	Array<float> f_buf;
-	int current_numel = 0, current_evnt = 0;
+	unsigned int current_numel = 0, current_evnt = 0;
 	XB::data *buf;
 	octave_scalar_map o_map;
 	
 	//loop-copy the data
 	for( int i=0; i < o_data_m.length(); ++i ){
-		if( o_data_m(i).is_map() ) o_map = o_data_m(i);
-		else continue;
+		o_map = o_data_m(i);
 		
 		current_numel = o_map.getfield( "n" ).uint_value();
 		current_evnt = o_map.getfield( "evnt" ).uint_value();
@@ -60,7 +57,7 @@ DEFUN_DLD( xb_write_data, args, , "XB::write data interface for Octave" ){
 		buf = new XB::data( current_numel, current_evnt );
 		
 		//do the copying
-		buf->sum_e = o_map.getfield( "sum_he" ).float_value();
+		buf->sum_e = o_map.getfield( "sum_e" ).float_value();
 		if( !buf->sum_e ) buf->empty_sum_e = true;
 		
 		if( o_map.isfield( "i" ) ){
@@ -119,11 +116,9 @@ DEFUN_DLD( xb_write_data, args, , "XB::write data interface for Octave" ){
 	o_data_m.clear();
 	
 	//write on file
-	try{
-		XB::write( args(0).string_value(), data );
-	} catch( XB::error r ){
-		error( e.what );
-	}
+	char out_fname[256];
+	strcpy( out_fname, args(0).string_value().c_str() );
+	XB::write( out_fname, data );
 	
 	//more cleanup
 	for( int i=0; i < data.size(); ++i ) delete data[i];

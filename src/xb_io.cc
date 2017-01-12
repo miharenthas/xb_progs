@@ -121,6 +121,14 @@ void XB::load( FILE* f_in, std::vector<XB::data*> &xb_book ){
 void XB::load( char* f_name, std::vector<XB::data*> &xb_book ){
 	//build the command for the pipe
 	char command[310];
+	
+	//check if the file exists.
+	//NOTE: this bit of code works with glibc on GNU/Linux
+	//      no guarantee is provided for other operating systems.
+	strcpy( command, "test -f " );
+	strcat( command, f_name );
+	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
+	
 	strcpy( command, "bunzip2 -c " );
 	strcat( command, f_name );
 	
@@ -248,6 +256,14 @@ void XB::load( FILE* f_in, std::vector<XB::track_info*> &xb_book ){
 void XB::load( char* f_name, std::vector<XB::track_info*> &xb_book ){
 	//build the command for the pipe
 	char command[310];
+	
+	//check if the file exists.
+	//NOTE: this bit of code works with glibc on GNU/Linux
+	//      no guarantee is provided for other operating systems.
+	strcpy( command, "test -f " );
+	strcat( command, f_name );
+	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
+
 	strcpy( command, "bunzip2 -c " );
 	strcat( command, f_name );
 	
@@ -385,6 +401,14 @@ void XB::load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ ){
 void XB::load( char* f_name, std::vector<XB::clusterZ> &event_klZ ){
 	//build the command for the pipe
 	char command[310];
+	
+	//check if the file exists.
+	//NOTE: this bit of code works with glibc on GNU/Linux
+	//      no guarantee is provided for other operating systems.
+	strcpy( command, "test -f " );
+	strcat( command, f_name );
+	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
+	
 	strcpy( command, "bunzip2 -c " );
 	strcat( command, f_name );
 	
