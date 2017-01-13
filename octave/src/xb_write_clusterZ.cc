@@ -4,6 +4,32 @@
 //      would be at all usable with MATLAB in a MEX file.
 //      It will *not* be tested and it is *not* ment as such.
 
+//octave documentation string
+#define O_DOC_STRING "-*- texinfo -*-\n\
+@deftypefn{Function File} xb_write_clusterZ( @var{filename}, @var{clusterZ} )\n\
+Writes a file named @var{filename} readable with the programs of the xb_progs toolkit.\n\
+\n\
+The file is created and overwritten if existing: no warning messages are displayed.\n\
+\n\
+The format of @var{clusterZ} should be the same-ish used in the xb_progs toolkit:\n\
+@example\n\
+@group\n\
+structure array data:\n\
+     multiplicity\n\
+     structure array clusters:\n\
+         n\n\
+         centroid_id\n\
+         c_altitude\n\
+         c_azimuth\n\
+         sum_e\n\
+         array crys_e\n\
+         array crys\n\
+@end group\n\
+@end example\n\
+\n\
+For more information about the content of the fields, use the documentation of the toolkit.\n\
+@end deftypefn"
+
 //stl includes
 #include <vector>
 
@@ -21,7 +47,7 @@
 //a function to convert from scalar maps to versors
 std::vector<XB::cluster> struct2cluster( const octave_map &given );
 
-DEFUN_DLD( xb_write_clusterZ, args, , "XB::write data interface for Octave" ){
+DEFUN_DLD( xb_write_clusterZ, args, , O_DOC_STRING ){
 	if( sizeof(octave_uint32) != sizeof(unsigned int) ){
 		error( "Quirky types." );
 	}

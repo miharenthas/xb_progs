@@ -1,0 +1,21 @@
+This directory contains the interface to read and write with GNU Octave the data
+formats used in the toolkit.
+
+It (obviously) requires GNU Octave and the toolkit, installed and reachable.
+In effect, only the library libxb_core.so is used here, so ROOT isn't a strong
+requirement.
+
+To compile:
+    $ cd [wherever]/xb_progs/octave/
+    $ make all -j$( nproc )
+
+To install in GNU Octave, in the xb_progs/octave dir:
+    $ octave --no-gui (or use the GUI prompt to type what follows)
+    > addpath( [pwd, "/oct/"] );
+    > savepath;
+
+Basic usage documentation is provided via Octave's "help <fn>" command.
+For more extensive information about the content of the data structures, please
+refer to the documentatino of the toolkit, found in xb_progs/doc/.
+
+Author: L. Zanetti - IKP - TU Darmstadt. lzanetti@ikp.tu-darmstadt.de

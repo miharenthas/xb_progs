@@ -4,6 +4,36 @@
 //      would be at all usable with MATLAB in a MEX file.
 //      It will *not* be tested and it is *not* ment as such.
 
+//octave documentation string
+#define O_DOC_STRING "-*- texinfo -*-\n\
+@deftypefn{Function File} xb_write_clusterZ( @var{filename}, @var{track} )\n\
+Writes a file named @var{filename} readable with the programs of the xb_progs toolkit.\n\
+\n\
+The file is created and overwritten if existing: no warning messages are displayed.\n\
+\n\
+The format of @var{track} is the same-ish used in the xb_progs toolkit:\n\
+@example\n\
+@group\n\
+@result{} structure array data:\n\
+     n\n\
+     evnt\n\
+     in_beta\n\
+     beta_0\n\
+     in_Z\n\
+     in_A_on_Z\n\
+     fragment_A         (array)\n\
+     fragment_Z         (array)\n\
+     fragment_beta      (array)\n\
+     structure incoming (array):\n\
+          i, j, k\n\
+     structure outgoing (array):\n\
+          i, j, k\n\
+@end group\n\
+@end example\n\
+\n\
+For more information about the content of the fields, use the documentation of the toolkit.\n\
+@end deftypefn"
+
 //stl includes
 #include <vector>
 
@@ -21,7 +51,7 @@
 //a function to convert from scalar maps to versors
 XB::versor struct2versor( const octave_scalar_map &given );
 
-DEFUN_DLD( xb_write_track_info, args, , "XB::write data interface for Octave" ){
+DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 	if( sizeof(octave_uint32) != sizeof(unsigned int) ){
 		error( "Quirky types." );
 	}

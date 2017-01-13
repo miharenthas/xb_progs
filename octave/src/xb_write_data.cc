@@ -4,6 +4,30 @@
 //      would be at all usable with MATLAB in a MEX file.
 //      It will *not* be tested and it is *not* ment as such.
 
+//octave documentation string
+#define O_DOC_STRING "-*- texinfo -*-\n\
+@deftypefn{Function File} xb_write_data( @var{filename}, @var{data} )\n\
+Writes a file named @var{filename} readable with the programs of the xb_progs toolkit.\n\
+\n\
+The file is created and overwritten if existing: no warning messages are displayed.\n\
+\n\
+@example\n\
+@group\n\
+@result{} structure array data:\n\
+     n\n\
+     evnt\n\
+     i  (array)\n\
+     t  (array)\n\
+     e  (array)\n\
+     he (array)\n\
+     sum_e\n\
+     in_beta\n\
+@end group\n\
+@end example\n\
+\n\
+For more information about the content of the fields, use the documentation of the toolkit.\n\
+@end deftypefn"
+
 //stl includes
 #include <vector>
 
@@ -18,7 +42,7 @@
 #include "xb_data.h" //XB::data
 #include "xb_error.h" //XB::error
 
-DEFUN_DLD( xb_write_data, args, , "XB::write data interface for Octave" ){
+DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 	if( sizeof(octave_uint32) != sizeof(unsigned int) ){
 		error( "Quirky types." );
 	}
