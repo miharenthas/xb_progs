@@ -85,7 +85,7 @@ int main( int argc, char **argv ){
 	{
 	if( verbose && !omp_get_thread_num() ){
 		printf( "Running with %d threads...\n", omp_get_num_threads() );
-		printf( "Processing event: %010d", neigh_order ); //dummy quantity
+		printf( "Processing event: 0000000000" );
 	}
 	#pragma omp for schedule( dynamic )
 	for( int i=0; i < xb_book.size(); ++i ){

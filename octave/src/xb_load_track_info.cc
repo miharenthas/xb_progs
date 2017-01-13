@@ -47,7 +47,11 @@ DEFUN_DLD( xb_load_track_info, args, nargout, "XB::load data interface for Octav
 			octave::sys::file_stat fs( args(f).string_value() );
 			if( fs.exists() ){
 				strcpy( in_fname, args(f).string_value().c_str() );
-				XB::load( in_fname, data_buf );
+				try{
+					XB::load( in_fname, data_buf );
+				} catch( XB::error e ){
+					error( e.what );
+				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
 			} else {
 				octave_stdout << "xb_load_track_info: warning: file \""
@@ -106,7 +110,6 @@ DEFUN_DLD( xb_load_track_info, args, nargout, "XB::load data interface for Octav
 		//then, copy the arrays
 		//sizing
 		dim_vector o_dim( current_numel, 1 );
-		i_buf.resize( o_dim );	
 		f_buf.resize( o_dim );
 		ov_buf.resize( o_dim );
 		

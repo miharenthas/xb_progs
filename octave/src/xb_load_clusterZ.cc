@@ -25,6 +25,8 @@
 //a helper function that does a XB::versor to struct converison.
 octave_map cluster2struct( XB::clusterZ &given );
 
+//------------------------------------------------------------------------------------
+//the interface
 DEFUN_DLD( xb_load_clusterZ, args, nargout, "XB::load data interface for Octave" ){
 	//argument checks: they must be one or more strings
 	int nargin = args.length();
@@ -47,7 +49,11 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, "XB::load data interface for Octave"
 			octave::sys::file_stat fs( args(f).string_value() );
 			if( fs.exists() ){
 				strcpy( in_fname, args(f).string_value().c_str() );
-				XB::load( in_fname, data_buf );
+				try{
+					XB::load( in_fname, data_buf );
+				} catch( XB::error e ){
+					error( e.what );
+				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
 			} else {
 				octave_stdout << "xb_load_clusterZ: warning: file \""
@@ -75,15 +81,9 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, "XB::load data interface for Octave"
 	Cell o_field_multiplicity( o_dim_v );
 	Cell o_field_clusters( o_dim_v );
 	
-	unsigned int current_numel = 0;
 	for( int i=0; i < data.size(); ++i ){
 		//copy the number of clusters at event i
-		current_numel = data[i].multiplicity;
-		o_field_multiplicity(i) = current_numel;
-		
-		//prepare the buffer
-		dim_vector o_dim( current_numel, 1 );
-		c_buf.resize( o_dim );
+		o_field_multiplicity(i) = data[i].multiplicity;
 		
 		//load the clusters
 		o_field_clusters(i) = cluster2struct( data[i] );
@@ -98,26 +98,27 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, "XB::load data interface for Octave"
 	return octave_value_list( octave_value( o_data_m ) );
 }
 
+//------------------------------------------------------------------------------------
 //implementation of the helper function
 octave_map cluster2struct( XB::clusterZ &given ){
 	//dimensions
 	dim_vector o_dim_v( given.multiplicity, 1 );
 	
 	//instantiate the fields
-	o_field_n( o_dim_v );
-	o_field_centroid_id( o_dim_v );
-	o_field_c_altitude( o_dim_v );
-	o_field_c_azimuth( o_dim_v );
-	o_field_sum_e( o_dim_v );
-	o_field_crys_e( o_dim_v );
-	o_field_crys( o_dim_v );
+	Cell o_field_n( o_dim_v );
+	Cell o_field_centroid_id( o_dim_v );
+	Cell o_field_c_altitude( o_dim_v );
+	Cell o_field_c_azimuth( o_dim_v );
+	Cell o_field_sum_e( o_dim_v );
+	Cell o_field_crys_e( o_dim_v );
+	Cell o_field_crys( o_dim_v );
 	
 	//and some buffers
 	Array<float> f_buf;
 	Array<octave_uint32> u_buf;
 	
 	//and an alias
-	std::vector<cluster> &klZ = given.clusters;
+	std::vector<XB::cluster> &klZ = given.clusters;
 	
 	unsigned int current_numel = 0;
 	for( int i=0; i < klZ.size(); ++i ){

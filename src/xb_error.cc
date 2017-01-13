@@ -11,6 +11,7 @@ namespace XB{
 	}
 
 	error::_xb_error( const _xb_error &given ){
+		what = new char[strlen( given.what )+1];
 		strcpy( what, given.what );
 	}
 }	

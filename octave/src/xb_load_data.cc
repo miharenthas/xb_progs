@@ -44,7 +44,11 @@ DEFUN_DLD( xb_load_data, args, nargout, "XB::load data interface for Octave" ){
 			octave::sys::file_stat fs( args(f).string_value() );
 			if( fs.exists() ){
 				strcpy( in_fname, args(f).string_value().c_str() );
-				XB::load( in_fname, data_buf );
+				try{
+					XB::load( in_fname, data_buf );
+				} catch( XB::error e ){
+					error( e.what );
+				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
 			} else {
 				octave_stdout << "xb_data_load: warning: file \""

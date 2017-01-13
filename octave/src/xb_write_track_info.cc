@@ -117,7 +117,11 @@ DEFUN_DLD( xb_write_track_info, args, , "XB::write data interface for Octave" ){
 	//write on file
 	char out_fname[256];
 	strcpy( out_fname, args(0).string_value().c_str() );
-	XB::write( out_fname, data );
+	try{
+		XB::write( out_fname, data );
+	} catch( XB::error e ){
+		error( e.what );
+	}
 	
 	//more cleanup
 	for( int i=0; i < data.size(); ++i ) delete data[i];

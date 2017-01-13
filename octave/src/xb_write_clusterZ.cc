@@ -21,7 +21,7 @@
 //a function to convert from scalar maps to versors
 std::vector<XB::cluster> struct2cluster( const octave_map &given );
 
-DEFUN_DLD( xb_write_track_info, args, , "XB::write data interface for Octave" ){
+DEFUN_DLD( xb_write_clusterZ, args, , "XB::write data interface for Octave" ){
 	if( sizeof(octave_uint32) != sizeof(unsigned int) ){
 		error( "Quirky types." );
 	}
@@ -68,10 +68,11 @@ DEFUN_DLD( xb_write_track_info, args, , "XB::write data interface for Octave" ){
 	//write on file
 	char out_fname[256];
 	strcpy( out_fname, args(0).string_value().c_str() );
-	XB::write( out_fname, data );
-	
-	//more cleanup
-	for( int i=0; i < data.size(); ++i ) delete data[i];
+	try{
+		XB::write( out_fname, data );
+	} catch( XB::error e ){
+		error( e.what );
+	}
 	
 	//happy thoughts
 	return octave_value_list();
@@ -81,7 +82,7 @@ DEFUN_DLD( xb_write_track_info, args, , "XB::write data interface for Octave" ){
 std::vector<XB::cluster> struct2cluster( const octave_map &given ){
 	//some buffers
 	octave_scalar_map m_buf;
-	cluster c_buf;
+	XB::cluster c_buf;
 	
 	//make the cluster array
 	std::vector<XB::cluster> klZ( given.length() );
@@ -91,28 +92,28 @@ std::vector<XB::cluster> struct2cluster( const octave_map &given ){
 		m_buf = given(i); //get the i-th map
 		
 		//copy the easy ones
-		if( m_buf.isfield( "n" ) ) current_numel = m_buf.getfield( "n" ).uint32_value();
+		if( m_buf.isfield( "n" ) ) current_numel = m_buf.getfield( "n" ).uint_value();
 		klZ[i].n = current_numel;
-		if( m_buf.isfield( "centroi_id" ) )
-			klz[i].centroid_id = m_buf.getfield( "centroid_id" ).uint32_value();
+		if( m_buf.isfield( "centroid_id" ) )
+			klZ[i].centroid_id = m_buf.getfield( "centroid_id" ).int_value();
 		if( m_buf.isfield( "c_altitude" ) )
-			klz[i].centroid_id = m_buf.getfield( "c_altitude" ).uint32_value();
+			klZ[i].c_altitude = m_buf.getfield( "c_altitude" ).float_value();
 		if( m_buf.isfield( "c_azimuth" ) )
-			klz[i].centroid_id = m_buf.getfield( "c_azimuth" ).uint32_value();
+			klZ[i].c_azimuth = m_buf.getfield( "c_azimuth" ).float_value();
 		if( m_buf.isfield( "sum_e" ) )
-			klz[i].centroid_id = m_buf.getfield( "sum_e" ).uint32_value();
+			klZ[i].sum_e = m_buf.getfield( "sum_e" ).float_value();
 		
 		//vector copies
 		if( m_buf.isfield( "crys_e" ) ){
 			klZ[i].crys_e.resize( current_numel );
 			memcpy( &klZ[i].crys_e[0],
-			        m_buf.getfield( "crys_e" ).float_array_value(), 
+			        m_buf.getfield( "crys_e" ).float_array_value().fortran_vec(), 
 			        current_numel*sizeof(float) );
 		}
 		if( m_buf.isfield( "crys" ) ){
 			klZ[i].crys.resize( current_numel );
 			memcpy( &klZ[i].crys[0],
-			        m_buf.getfield( "crys" ).uint32_array_value(), 
+			        m_buf.getfield( "crys" ).uint32_array_value().fortran_vec(), 
 			        current_numel*sizeof(unsigned int) );
 		}
 	}

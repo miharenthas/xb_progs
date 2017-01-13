@@ -161,7 +161,7 @@ namespace XB{
 			}catch( error e ){ return the_clusters; }
 			
 			//checkpoint on the created cluster
-			if( the_evnt.n-kl.n > the_evnt.n ) break; //immediately, because we have underflow!
+			//if( the_evnt.n-kl.n > the_evnt.n ) break; //immediately, because we have underflow!
 			
 			//empty the event of the associated crystals
 			new_evnt = data( the_evnt.n-kl.n, evnt.evnt ); //redo the event
