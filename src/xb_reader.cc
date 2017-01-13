@@ -274,8 +274,11 @@ void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
 			
 			xb_book.back()->i[t] = p_data->GetCrystalNumber();
 			xb_book.back()->t[t] = p_data->GetTime();
-			xb_book.back()->e[t] = p_data->GetEnergy();
+			xb_book.back()->e[t] = 1e6*p_data->GetEnergy(); //GeV to KeV
 		}
+		
+		//this basically sets the flags correctly, here
+		xb_book.back()->probe_for_crap();
 	}
 	
 	f.Close();

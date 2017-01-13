@@ -40,7 +40,7 @@ namespace XB{
 	
 	//the memory allocator
 	void data::make_buf(){
-		buf = (void*)malloc( 4*n*sizeof(float) + n*sizeof(unsigned int) );
+		buf = (void*)calloc( 1, 4*n*sizeof(float) + n*sizeof(unsigned int) );
 		t = (float*)buf;
 		pt = (float*)buf + n;
 		e = (float*)buf + 2*n;
@@ -127,7 +127,7 @@ namespace XB{
 	//the memory allocator
 	void track_info::make_buf(){
 		//allocate the memory buffer
-		buf = malloc( 3*n*sizeof(float) + 2*n*sizeof(versor) );
+		buf = calloc( 1, 3*n*sizeof(float) + 2*n*sizeof(versor) );
 		
 		//link the pointers
 		fragment_A = (float*)buf;
