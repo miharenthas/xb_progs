@@ -23,11 +23,12 @@ GNUPLOT_I = $(GNUPLOT_I_HOME)/gnuplot_i.o
 
 #compiler and flags
 CXX = g++
-CXXFLAGS = -I$(INCLUDE) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lCGAL_Core -lgmp
+CXXFLAGS = -I$(INCLUDE) -L$(LIB) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lCGAL_Core -lgmp
 ROOT_CXXFLAGS = `root-config --cflags`
+ROOT_CXXFLAGS += -I $(FAIRROOTPATH)/include
 FAIR_LIBS = -lBaseMQ -lBase -lEventDisplay -lfairmq_logger -lFairMQ -lFairMQTest -lFairRutherford -lFairTestDetector -lFairTools -lGeane -lGen -lGeoBase -lLmdMQSampler -lMbsAPI -lMCStack -lParBase -lParMQ -lPassive -lPixel -lTrkBase
 R3B_LIBS = -lELILuMon -lField -lR3Bbase -lR3BCalo -lR3BData -lR3BDch -lR3BdTof -lR3BEvtVis -lR3BFi4 -lR3BGen -lR3BGfi -lR3BLand -lR3BLos -lR3BMfi -lR3BmTof -lR3BNeuland -lR3BPassive -lR3BPlist -lR3BPsp -lR3BSTaRTra -lR3BTCal -lR3BTof -lR3BTra -lR3BXBall -ltimestitcher
-ROOT_LDFLAGS = `root-config --glibs`
+ROOT_LDFLAGS = `root-config --glibs` -L $(FAIRROOTPATH)/lib
 ROOT_FLAGS = $(ROOT_LDFLAGS) $(ROOT_CXXFLAGS) $(FAIR_LIBS) $(R3B_LIBS)
 GNUPLOT_FLAGS = -I$(GNUPLOT_I_HOME)/src
 
@@ -143,6 +144,9 @@ xb_try_sim_reader: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I) $(OBJ_W_ROOT)
 #collective operations
 .PHONY: all
 all: $(OBJECTS) $(LIBRARIES) $(PROGRAMS)
+
+.PHONY: libs
+libs: $(LIBRARIES)
 
 .PHONY: test
 test: $(OBJECTS) $(TESTS)
