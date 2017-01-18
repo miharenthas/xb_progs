@@ -253,7 +253,7 @@ void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
 	                                                                    //emptiness
 
 	//associate the target branch to a pointer
-	TClonesArray buf( "R3BXBallCrystalHitSim", 1024 ), *p_buf; //the clones array buffer
+	TClonesArray buf( "R3BXBallCrystalHitSim", 4096 ), *p_buf; //the clones array buffer
 	                                                           //and a pointer
 	p_buf = &buf;
 	int rc = data_tree->SetBranchAddress( "XBCrystalHitSim", &p_buf );
