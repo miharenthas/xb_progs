@@ -264,7 +264,7 @@ void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
 	
 	//loop on the data
 	for( int i=0; i < n_events; ++i ){
-		data_tree->GetEntry( i ); //retrieve the entry
+		data_tree->GetBranch( "XBCrystalHitSim" )->GetEntry( i ); //retrieve the entry
 		
 		n_tracks = buf.GetEntries();
 		xb_book.push_back( new XB::data( n_tracks, i ) );
