@@ -210,6 +210,16 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 	o_data_m.setfield( "incoming", o_field_incoming );
 	o_data_m.setfield( "outgoing", o_field_outgoing );
 	
+	//look for still living elements in data
+	if( data.size() > load_nb_events[1] - load_nb_events[1] ){
+		for( int i=0; i < data.size(); ++i ){
+			if( data[i] != NULL ){
+				delete data[i];
+				data[i] = NULL;
+			}
+		}
+	}
+
 	//happy thoughts
 	return octave_value_list( octave_value( o_data_m ) );
 }

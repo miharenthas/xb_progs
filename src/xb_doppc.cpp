@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 #include <omp.h>
 
 #include <algorithm>
@@ -20,10 +22,14 @@ enum correct_mode{
 	             //interpolate (fit) the available data to get an estimate
 	FASTIDIOUS, //correct and propagate only
 	            //those events for which track data are available
-	VERY_FASTIDIOUS //correct and propagate only those events
-	                //for which track data are available AND
-	                //only one fragment is detected. Also, this mode
-	                //uses the outgoing direction from the tracker.
+	VERY_FASTIDIOUS, //correct and propagate only those events
+	                 //for which track data are available AND
+	                 //only one fragment is detected. Also, this mode
+	                 //uses the outgoing direction from the tracker.
+	SIMULATION //apply the doppler correction to a simulation
+	           //which of course doesn't have any track information
+	           //so the track info for a run is borrowed and acessed
+	           //randomly.
 };
 
 //------------------------------------------------------------------------------------
@@ -40,9 +46,9 @@ class is_event_id : public std::unary_function< XB::event_holder*, bool > {
 		bool operator()( XB::event_holder *given ){ return given->evnt == evnt; };
 		
 		//various type of assignement
-		is_event_id &operator=( unsigned int given ){ evnt = given; return *this; };
-		is_event_id &operator=( is_event_id &given ){ evnt = given.evnt; return *this; };
-		is_event_id &operator=( XB::event_holder &given ){ evnt = given.evnt; return *this; };
+		is_event_id &operator=( const unsigned int given ){ evnt = given; return *this; };
+		is_event_id &operator=( const is_event_id &given ){ evnt = given.evnt; return *this; };
+		is_event_id &operator=( const XB::event_holder &given ){ evnt = given.evnt; return *this; };
 	
 	private:
 		//the datum for comparison
@@ -55,6 +61,7 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
                                std::vector<XB::track_info*> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
                                bool verbose );
+
 //the (piped) interface to read a root file with xb_data_translator
 void translate_track_info( std::vector<XB::track_info*> &xb_track_book,
                            unsigned int track_f_count, char track_f_name[][256],
@@ -98,9 +105,9 @@ int main( int argc, char **argv ){
 	if( track_f_count != 0 ) track_flag = true;
 		
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:RfFvb:" )) != -1 ){
+	while( (iota = getopt( argc, argv, "d:o:RfFsvb:" )) != -1 ){
 		switch( iota ){
-			case 'i' :
+			case 'd' :
 				if( strlen( optarg ) < 256 ){
 					strcpy( in_f_name, optarg );
 					in_flag = true;
@@ -127,6 +134,9 @@ int main( int argc, char **argv ){
 			case 'F' :
 				mode = VERY_FASTIDIOUS;
 				break;
+			case 's' :
+				mode = SIMULATION;
+				break;
 			case 'v' :
 				verbose = true;
 				break;
@@ -140,7 +150,7 @@ int main( int argc, char **argv ){
 			default :
 				printf( "\"%s\" is not a valid option.\n", optopt );
 				printf( "Valid options are: -i <file_name>\n-o <file_name>\n" );
-				printf( "-R\n-f\n-F\n-v\n-b [1..162]\n" );
+				printf( "-R\n-f\n-F\n-s\n-v\n-b [1..162]\n" );
 				exit( 0 );
 		}
 	}
@@ -228,9 +238,9 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 	XB::b_interp interp_beta_0( xb_track_book );
 	
 	//some useful iterators
-	XB::track_info** xbtb_begin = &xb_track_book.front();
-	XB::track_info** xbtb_end = &xb_track_book.back()+1;
-	XB::track_info** track_iter;
+	XB::track_info **xbtb_begin = &xb_track_book.front();
+	XB::track_info **xbtb_end = &xb_track_book.back()+1;
+	XB::track_info **track_iter;
 	
 	//the comparison functional
 	is_event_id is_evnt;
@@ -327,6 +337,26 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 				} else xb_book.at(i)->evnt = 0;
 			}
 			break;
+		case SIMULATION : //process them all if we aren't fastidious
+			//init a random sequence
+			srand( time( NULL ) );
+			
+			//loop on all of them (cleverly and in parallel)
+			#pragma omp for schedule( static, 10 ) 
+			for( int i=0; i < xb_book.size(); ++i ){
+				
+				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				
+				//The simulation has NO in_beta information available, so we need it
+				//from the track info of the run we are tailoring the simulation to.
+				track_iter = &xb_track_book.at( rand()%xb_track_book.size() ); //set up the functional
+				
+				//and correct it
+				XB::doppler_correct( *xb_book.at(i),
+					                   (*track_iter)->beta_0,
+					                   default_beam_out );
+			}
+			break;
 	}
 	
 	if( verbose && !thread_num ) printf( "\n" );
@@ -335,7 +365,7 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 	
 	//if we were fastidious, clean up the events. In a clever way.
 	int n_zeroed = 0;
-	if( mode != RELAXED ){
+	if( mode != RELAXED && mode != SIMULATION ){
 		if( verbose ) printf( "Pruning data...\n" );
 	
 		//first: sort them again, all the 0-ed events will bubble up at the beginning.

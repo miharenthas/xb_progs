@@ -208,6 +208,16 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	o_data_m.setfield( "sum_e", o_field_sum_e );
 	o_data_m.setfield( "in_beta", o_field_in_beta );
 	
+	//look for still living elements in data
+	if( data.size() > load_nb_events[1] - load_nb_events[1] ){
+		for( int i=0; i < data.size(); ++i ){
+			if( data[i] != NULL ){
+				delete data[i];
+				data[i] = NULL;
+			}
+		}
+	}
+
 	//happy thoughts
 	return octave_value_list( octave_value( o_data_m ) );
 }		
