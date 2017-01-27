@@ -1,4 +1,4 @@
-//this class (and structures) represents the crystal ball. As for now, it's a passtime to loof for the nearest neighbour
+//this class (and structures) represents the crystal ball. As for now, it's a passtime to look for the nearest neighbour
 #ifndef XB_BALL__H
 #define XB_BALL__H
 

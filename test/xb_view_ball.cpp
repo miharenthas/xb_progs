@@ -12,6 +12,17 @@ extern "C" {
 #define PI 3.14159265359
 
 int main( int argc, char **argv ){
+	//set up also a range
+	int crystal_range[2] = {0, 161};
+	
+	if( argc == 3 ){
+		if( strstr( argv[1], "-" ) ) crystal_range[0] = 0;
+		else crystal_range[0] = atoi( argv[1] ) -1;
+		if( strstr( argv[2], "-" ) ) crystal_range[1] = 161;
+		else crystal_range[1] = atoi( argv[2] ) -1;
+	}
+
+
 	//open the gnuplot pipe
 	gnuplot_ctrl *gp_h = gnuplot_init();
 	
@@ -30,7 +41,7 @@ int main( int argc, char **argv ){
 	
 	//loop on the crystals, converting them to cartesian coords
 	float v[3], altitude, azimuth; //the vertex buffer and two angle buffers 
-	for( int c=0; c < 162; ++c ){
+	for( int c=crystal_range[0]; c <= crystal_range[1]; ++c ){
 		//get the angles
 		altitude = the_cb.ball[c].altitude;
 		azimuth = the_cb.ball[c].azimuth;
@@ -46,7 +57,7 @@ int main( int argc, char **argv ){
 	gnuplot_cmd( gp_h, "e\n" );
 	
 	//pause here
-	sleep(3600);
+	getc( stdin );
 	
 	//close the pipe
 	gnuplot_close( gp_h );
