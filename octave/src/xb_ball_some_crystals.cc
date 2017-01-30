@@ -1,6 +1,7 @@
 //implementation of the array of idexes to map-array routine
 
 #include "xb_ball_some_crystals.h"
+#include "octave/oct.h"
 
 octave_map xb_ball_some_crystals( const unsigned int *indexes, const unsigned int howmany ){
 	dim_vector o_dim( howmany, 1 );
@@ -14,6 +15,7 @@ octave_map xb_ball_some_crystals( const unsigned int *indexes, const unsigned in
 	Array<int> neigh( dim_vector( 6, 1 ) );
 	XB::xb_ball the_ball;
 	
+
 	//do the copying
 	for( int i=0; i < howmany; ++i ){
 		o_field_i(i) = the_ball.at(indexes[i]).i;
@@ -23,9 +25,10 @@ octave_map xb_ball_some_crystals( const unsigned int *indexes, const unsigned in
 		o_field_opp(i) = the_ball.at(indexes[i]).opp->i;
 		
 		neigh(5) = 0;
-		for( int n=0; n < ( the_ball.at(indexes[i]).sh == XB::PENTAGON )? 5 : 6; ++n ){
+		for( int n=0; n < (( the_ball.at(indexes[i]).sh == XB::PENTAGON )? 5 : 6); ++n ){
 			neigh(n) = the_ball.at(indexes[i]).neigh[n]->i;
 		}
+		o_field_neigh(i) = neigh;
 	}
 	
 	//make the map and return it

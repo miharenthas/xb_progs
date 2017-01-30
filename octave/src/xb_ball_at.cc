@@ -23,10 +23,10 @@ DEFUN_DLD( xb_ball_at, args, , O_DOC_STRING ){
 	//return that.
 	//If we are given an array, return an array of crystals.
 	//if we are given many arguments, return according to those
-	if( nargin == 1 && args(0).is_integer_type() ){
+	if( nargin == 1 && args(0).is_scalar_type() ){
 		indexes[0] = args(0).int_value();
 		howmany = 1;
-	} else if( nargin == 1 && !args(0).is_scalar_type() && args(0).is_integer_type() ){
+	} else if( nargin == 1 && !args(0).is_scalar_type() ){
 		uint32NDArray idx = args(0).uint32_array_value();
 		howmany = idx.numel();
 		indexes = (unsigned int*)realloc( indexes, howmany*sizeof(int) );
@@ -34,12 +34,20 @@ DEFUN_DLD( xb_ball_at, args, , O_DOC_STRING ){
 	} else if( nargin > 1 ){
 		indexes = (unsigned int*)realloc( indexes, nargin*sizeof(int) );
 		for( int i=0; i < nargin; ++i ){
-			if( args(i).is_integer_type() )	indexes[i] = args(i).int32_array_value()(i);
+			if( args(i).is_scalar_type() ){
+				indexes[i] = args(i).int_value();
+				++howmany;
+			}
 		}
 	} else error( "Wrong combination of arguments." );
 	
 	//so, now let's get the crystals
-	octave_map o_map = xb_ball_some_crystals( indexes, howmany );
+	octave_map o_map;
+	try{
+		o_map = xb_ball_some_crystals( indexes, howmany );
+	} catch( XB::error e ){
+		error( "%s", e.what );
+	}
 	
 	return octave_value_list( o_map );
 }

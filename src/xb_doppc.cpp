@@ -342,7 +342,7 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 			srand( time( NULL ) );
 			
 			//loop on all of them (cleverly and in parallel)
-			#pragma omp for schedule( static, 10 ) 
+			#pragma omp for schedule( dynamic ) 
 			for( int i=0; i < xb_book.size(); ++i ){
 				
 				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
@@ -352,9 +352,16 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 				track_iter = &xb_track_book.at( rand()%xb_track_book.size() ); //set up the functional
 				
 				//and correct it
-				XB::doppler_correct( *xb_book.at(i),
-					                   (*track_iter)->beta_0,
-					                   default_beam_out );
+				//added some error handling (for now, only for simulations
+				//but it will be extended).
+				try{
+					XB::doppler_correct( *xb_book.at(i),
+					                     (*track_iter)->beta_0,
+					                     default_beam_out );
+				} catch( XB::error e ){
+					//TODO: figure out how to get rid of the corrupted events
+					continue;
+				}
 			}
 			break;
 	}

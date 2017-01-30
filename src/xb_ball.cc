@@ -1801,7 +1801,7 @@ namespace XB{
 	//---------------------------------------------------------
 	//this access method throws an error if someone tries to access a non existent crystal.
 	xb_cry &xb_ball::at( const unsigned int i ){
-		if( i > 162 && i < 1 ) throw XB::error( "Out of range!", "xb_ball::at()" );
+	if( i > 162 || i < 1 ) throw XB::error( "Out of range!", "xb_ball::at()" );
 		else return ball[i-1];
 	}
 

@@ -15,7 +15,7 @@ function [klz_cut, nb_removed] = xb_cluster_cut_on_field( klz_cut, op_handle, fi
 		error( "Second argument **MUST** be a function handle!" );
 	end
 	if ~ischar( field_name )
-		error( 'Second argument **MUST** be a string.' );
+		error( 'Third argument **MUST** be a string.' );
 	end
 	
 	%loop clear the uninsteresting stuff.

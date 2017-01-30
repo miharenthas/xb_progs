@@ -112,18 +112,22 @@ namespace XB{
 		float gamma = 1./sqrt( 1. - pow( beta, 2 ) );
 		float altitude, azimuth, inclination; //the current crystal's angles, and
 		                                      //its inclination from the beam line
-		
+
 		//loop on the energy deposits
 		for( int i=0; i < evnt.n; ++i ){
 			//check there's something to correct first
 			//if both energies are set to 0, there's no point in
 			//doing anything to them
 			if( !evnt.e[i] && !evnt.he[i] ) continue;
-		
+
 			//get the angles of the current crystal
-			altitude = the_cb.at( evnt.i[i] ).altitude;
-			azimuth = the_cb.at( evnt.i[i] ).azimuth;
-			
+			try{
+				altitude = the_cb.at( evnt.i[i] ).altitude;
+				azimuth = the_cb.at( evnt.i[i] ).azimuth;
+			} catch( XB::error e ){
+				throw( XB::error( e.what , "XB::doppler_correct" ) );
+			}
+						
 			//calculate the aperture from the beam line
 			inclination = angular_distance( b_altitude, b_azimuth,
 			                                altitude, azimuth );			
