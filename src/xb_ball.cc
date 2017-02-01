@@ -1819,9 +1819,9 @@ namespace XB{
 		unsigned int len[6]; //the lengths 
 	
 		//allocate at least enough memory
-		neigh_list = (unsigned int*)malloc( (pow(6,order)+1)*sizeof(unsigned int) );
+		neigh_list = (unsigned int*)calloc( (pow(6,order)+1)*sizeof(unsigned int), 1 );
 		//and check if it went badly
-		if( neigh_list == NULL ) throw XB::error( "Memory error!", "neigh" );
+		if( neigh_list == NULL ) throw XB::error( "Memory error!", "XB::neigh" );
 	
 		//set it to 0
 		memset( neigh_list, 0, pow(6,order)*sizeof(unsigned int) );
@@ -1848,15 +1848,22 @@ namespace XB{
 	
 		//prune the neigh_list
 		std::sort( neigh_list, neigh_list+(int)pow(6,order)+1 ); //sorting is a necessary step
-		unsigned int* last = std::unique( neigh_list, neigh_list+(int)pow(6,order)+1 ); //just preserve the
+		unsigned int* last = std::unique( neigh_list, neigh_list+(int)pow(6,order)+1 );//just preserve the
 		                                                                               //unique entries
 			                                                                             //and get the
 		                                                                               //terminating pointer
+		//check for an initial zero (we already know it's unique)
+		//if so, shift the list forward of one
+		if( neigh_list[0] == 0 ){
+			for( unsigned int *itr = neigh_list; itr < last-1; ++itr ) *itr = *(itr+1);
+			--last;
+		}
+		
 		length = (unsigned int)(last - neigh_list); //set the length of the produced list (will bubble
 		                                            //out of the function!)
 		neigh_list = (unsigned int*)realloc( neigh_list, length*sizeof(unsigned int) ); //shrink the list
 		                                                                                //to fit its length
-		if( neigh_list == NULL ) throw XB::error( "Memory error!", "neigh" );
+		if( neigh_list == NULL ) throw XB::error( "Memory error!", "XB::neigh" );
 	
 		//return it
 		return neigh_list;

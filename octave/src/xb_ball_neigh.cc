@@ -53,8 +53,12 @@ DEFUN_DLD( xb_ball_neigh, args, nargout, O_DOC_STRING ){
 	octave_value_list o_list;
 	XB::xb_ball the_ball;
 	for( int i=0; i < howmany && i < (( nargout > 1 )? nargout : 1); ++i ){
-		neighs = XB::neigh( the_ball.at(indexes[i]), order, n_neighs );
-		o_list.append( xb_ball_some_crystals( neighs, n_neighs ) );
+		try{
+			neighs = XB::neigh( the_ball.at(indexes[i]), order, n_neighs );
+			o_list.append( xb_ball_some_crystals( neighs, n_neighs ) );
+		} catch( XB::error e ){
+			error( e.what );
+		}
 	}
 	
 	return o_list;
