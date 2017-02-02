@@ -2,8 +2,61 @@
 #include "xb_io.h"
 
 //-------------------------------------------------------------------------------
+//write an header to a file
+void XB::write_header( FILE *f_out, const XB::io_header &hdr ){
+	//writes three times the same header to the beginning of a file
+	//this should make it robust against corruption (?)
+	XB::io_header hhh[] = { hdr, hdr, hdr };
+	fwrite( hhh, 3*sizeof(XB::io_header), 1, f_out );
+}
+
+//load the header of a file
+void XB::load_header( FILE *f_in, XB::io_header &hdr ){
+	XB::io_header hhh[3];
+	fread( hhh, 3*sizeof(XB::io_header), 1, f_in );
+
+	//copy the safest one
+	if( !hhh[0]._n ){ hdr = hhh[0]; return; }
+	if( !hhh[1]._n ){ hdr = hhh[1]; return; }
+	if( !hhh[2]._n ){ hdr = hhh[2]; return; }
+	throw XB::error( "bad header!", "XB::load_header" );
+}
+
+//compare two headers
+bool XB::operator==( const io_header &left, const io_header &right ){
+	if( left.f_version != right.f_version ) return false;
+	char dsc_l[11]; strcpy( dsc_l, &left.d );
+	char dsc_r[11]; strcpy( dsc_r, &left.d );
+	if( strcmp( dsc_l, dsc_r ) ) return false;
+	
+	return true;
+}
+
+//allocate the header
+XB::io_header *XB::alloc_header( const unsigned int f_version, const char desc[11] ){
+	XB::io_header *hdr = (XB::io_header*)malloc( sizeof( XB::io_header ) );
+	hdr->f_version = f_version;
+	memcpy( &hdr->d, desc, 11*sizeof(char) );
+	
+	if( hdr->_n ){
+		free( hdr );
+		throw XB::error( "bad header!", "XB::alloc_header" );
+	}
+}
+
+//free the header
+void XB::free_header( XB::io_header *hdr ){
+	free( hdr );
+}
+
+//-------------------------------------------------------------------------------
 //The writer bit implementation
 void XB::write( FILE* f_out, std::vector<XB::data*> &xb_book ){
+	//write the the header
+	XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_DATA );
+	XB::write_header( f_out, *hdr );
+	XB::free_header( hdr );
+	
 	//begin writing:
 	//the format is:
 	//header:
@@ -75,6 +128,11 @@ void XB::write( std::string f_name, std::vector<XB::data*> &xb_book ){
 void XB::load( FILE* f_in, std::vector<XB::data*> &xb_book ){
 	//check if the vector is empty. If it's not, raise an exception.
 	if( !xb_book.empty() ) throw XB::error( "Vector not empty!", "XB::load" );
+
+	//get and check the header
+	XB::io_header hdr;
+	XB::load_header( f_in, hdr );
+	if( !strstr( &hdr.d, "DATA" ) ) throw XB::error( "Wrong data file!", "XB::load" );
 
 	//prepare the buffers
 	void *buf = malloc( 5*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) ), *data_buf;
@@ -151,6 +209,11 @@ void XB::load( std::string f_name, std::vector<XB::data*> &xb_book ){
 //-------------------------------------------------------------------------------
 //The writer bit implementation for the tracker info
 void XB::write( FILE* f_out, std::vector<XB::track_info*> &xb_book ){
+	//write the the header
+	XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_TRACK );
+	XB::write_header( f_out, *hdr );
+	XB::free_header( hdr );
+
 	//begin writing:
 	//the format is:
 	//header:
@@ -211,6 +274,11 @@ void XB::write( std::string f_name, std::vector<XB::track_info*> &xb_book ){
 void XB::load( FILE* f_in, std::vector<XB::track_info*> &xb_book ){
 	//check if the vector is empty. If it's not, raise an exception.
 	if( !xb_book.empty() ) throw XB::error( "Vector not empty!", "XB::load" );
+
+	//get and check the header
+	XB::io_header hdr;
+	XB::load_header( f_in, hdr );
+	if( !strstr( &hdr.d, "TRACK" ) ) throw XB::error( "Wrong track file!", "XB::load" );
 
 	//prepare the buffers
 	void *data_buf; //allocated time by time
@@ -289,9 +357,14 @@ void XB::load( std::string f_name, std::vector<XB::track_info*> &xb_book ){
 //      because it's not filled. The code is there, though:
 //      just uncomment it when ready.
 void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ ){
+	//write the the header
+	XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_CLUSTERS );
+	XB::write_header( f_out, *hdr );
+	XB::free_header( hdr );
+
 	//the format is:
 	//header:
-	//1*unsigned int - the multiplicity
+	//1*unsigned int - the.n
 	//body:
 	//n*clusters:
 	//  2*unsigned int
@@ -308,10 +381,10 @@ void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ ){
 	//loop on the events
 	for( int i=0; i < event_klZ.size(); ++i ){
 		//write the header
-		fwrite( &event_klZ[i].multiplicity, sizeof(unsigned int), 1, f_out );
+		fwrite( &event_klZ[i].n, sizeof(unsigned int), 1, f_out );
 		
 		//loop on the clusters
-		for( int k=0; k < event_klZ[i].multiplicity; ++k ){
+		for( int k=0; k < event_klZ[i].n; ++k ){
 			//fill the buffer
 			u_buf[0] = event_klZ[i].clusters[k].n;
 			u_buf[1] = event_klZ[i].clusters[k].centroid_id;
@@ -362,16 +435,22 @@ void XB::load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ ){
 	if( !event_klZ.empty() )
 		throw XB::error( "Vector not empty!", "XB::load" );
 	
+	//get and check the header
+	XB::io_header hdr;
+	XB::load_header( f_in, hdr );
+	if( !strstr( &hdr.d, "KLZ" ) ) throw XB::error( "Wrong cluster file!", "XB::load" );
+	
 	void *uf_buf = malloc( 2*sizeof(unsigned int) + 3*sizeof(float) );
 	unsigned int *u_buf = (unsigned int*)uf_buf;
 	float *f_buf = (float*)((unsigned int*)uf_buf + 2);
 	clusterZ klZ;
+	void *klZ_begin = &klZ.n; //point of entry for the structures
 	
 	while( !feof( f_in ) ){
-		fread( &klZ.multiplicity, sizeof(unsigned int), 1, f_in );
+		fread( klZ_begin, 2*sizeof(unsigned int)+sizeof(float), 1, f_in );
 		
-		klZ.clusters = std::vector<cluster>( klZ.multiplicity );
-		for( int k=0; k < klZ.multiplicity; ++k ){
+		klZ.clusters = std::vector<cluster>( klZ.n );
+		for( int k=0; k < klZ.n; ++k ){
 			fread( uf_buf, 2*sizeof(unsigned int) + 3*sizeof(float), 1, f_in );
 			
 			klZ.clusters[k].n = u_buf[0];

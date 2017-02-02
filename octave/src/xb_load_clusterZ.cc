@@ -22,7 +22,7 @@ The format of @var{clusterZ} is the same-ish used in the xb_progs toolkit:\n\
 @group\n\
 data = xb_load_clusterZ( 'some_file.cluster.xb' );\n\
 @result{} structure array data:\n\
-     multiplicity\n\
+    .n\n\
      structure array clusters:\n\
          n\n\
          centroid_id\n\
@@ -127,13 +127,15 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	
 	//copy the data:
 	//prepare the fields:
-	Cell o_field_multiplicity( o_dim_v );
+	Cell o_field.n( o_dim_v );
+	Cell o_field_event_id( o_dim_v );
+	Cell o_field_in_beta( o_dim_v );
 	Cell o_field_clusters( o_dim_v );
 	
 	for( int i=load_nb_events[0], off_i; i < data.size() && i < load_nb_events[1]; ++i ){
 		off_i = i - load_nb_events[0];
 		//copy the number of clusters at event i
-		o_field_multiplicity(off_i) = data[i].multiplicity;
+		o_field.n(off_i) = data[i].n;
 		
 		//load the clusters
 		o_field_clusters(off_i) = cluster2struct( data[i] );
@@ -141,7 +143,9 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	
 	//make the map
 	octave_map o_data_m;
-	o_data_m.setfield( "multiplicity", o_field_multiplicity );
+	o_data_m.setfield( .n", o_field.n );
+	o_data_m.setfield( "evnt", o_field_event_id );
+	o_data_m.setfield( "in_beta", o_field_in_beta );
 	o_data_m.setfield( "clusters", o_field_clusters );
 	
 	//happy thoughts
@@ -152,7 +156,7 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 //implementation of the helper function
 octave_map cluster2struct( XB::clusterZ &given ){
 	//dimensions
-	dim_vector o_dim_v( given.multiplicity, 1 );
+	dim_vector o_dim_v( given.n, 1 );
 	
 	//instantiate the fields
 	Cell o_field_n( o_dim_v );

@@ -104,7 +104,7 @@ int main( int argc, char **argv ){
 	if( draw ) for( int i=0; i < event_klZ.size(); ++i ){
 		if( verbose ){
 			printf( "Drawing event %d:\n", i );
-			printf( "-multiplicity: %u.\n\n", event_klZ[i].multiplicity );
+			printf( ".n: %u.\n\n", event_klZ[i].n );
 		}
 		
 		gp_h = XB::draw_cluster_ball( event_klZ[i] );
@@ -134,7 +134,7 @@ int main( int argc, char **argv ){
 			if( verbose && i ) printf( "\b\b\b\b\b\b\b\b\b\b" );
 			if( verbose ) printf( "%010d", i );
 			
-			if( event_klZ[i].multiplicity != event_klZ_check.at(i).multiplicity ){
+			if( event_klZ[i].n != event_klZ_check.at(i).n ){
 				printf( "Ooops: screwed up.\n" );
 				break;
 			}

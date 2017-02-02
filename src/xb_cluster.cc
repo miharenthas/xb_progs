@@ -152,12 +152,14 @@ namespace XB{
 		cluster kl; //a cluster
 
 		//loop until empty
-		the_clusters.multiplicity = 0;
+		the_clusters.n = 0;
+		the_clusters.evnt = the_evnt.evnt;
+		the_clusters.in_beta = the_evnt.in_beta;
 		while( the_evnt.n ){
 			try{
 				kl = make_one_cluster_NN( the_evnt, order );
 				the_clusters.clusters.push_back( kl );
-				++the_clusters.multiplicity;
+				++the_clusters.n;
 			}catch( error e ){ return the_clusters; }
 			
 			//checkpoint on the created cluster
@@ -174,13 +176,14 @@ namespace XB{
 			new_evnt.sum_e = the_evnt.sum_e;
 
 			int cc=0; //loop index for "new_evnt"
-			for( int c=0; c < the_evnt.n; ++c )
+			for( int c=0; c < the_evnt.n && cc < new_evnt.n; ++c )
 				if( !std::binary_search( kl.crys.begin(), kl.crys.end(), the_evnt.i[c] ) ){
 					new_evnt.i[cc] = the_evnt.i[c];
 					new_evnt.t[cc] = the_evnt.t[c];
 					new_evnt.pt[cc] = the_evnt.pt[c];
 					new_evnt.e[cc] = the_evnt.e[c];
 					new_evnt.he[cc] = the_evnt.he[c];
+					++cc;
 				}
 			
 			//swap the events

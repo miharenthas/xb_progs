@@ -3,71 +3,24 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
 #include <stdlib.h>
-#include <omp.h>
 
 #include <algorithm>
-#include <functional>
 #include <vector>
 
 #include "xb_doppler_corr.h"
+#include "xb_cluster.h"
 #include "xb_data.h"
 #include "xb_io.h"
+#include "xb_error.h"
+
+#include "xb_doppc.h"
 
 //------------------------------------------------------------------------------------
-//a handy structure to control the operation mode
-enum correct_mode{
-	RELAXED = 0, //correct everything; when a beta_0 isn't available
-	             //interpolate (fit) the available data to get an estimate
-	FASTIDIOUS, //correct and propagate only
-	            //those events for which track data are available
-	VERY_FASTIDIOUS, //correct and propagate only those events
-	                 //for which track data are available AND
-	                 //only one fragment is detected. Also, this mode
-	                 //uses the outgoing direction from the tracker.
-	SIMULATION //apply the doppler correction to a simulation
-	           //which of course doesn't have any track information
-	           //so the track info for a run is borrowed and acessed
-	           //randomly.
-};
-
-//------------------------------------------------------------------------------------
-//a little functional to look for elements by event id
-class is_event_id : public std::unary_function< XB::event_holder*, bool > {
-	public:
-		//constructors
-		is_event_id(): evnt( 0 ) {}; //default
-		is_event_id( unsigned int the_evnt ): evnt( the_evnt ) {}; //from uint
-		is_event_id( XB::event_holder &given  ): evnt( given.evnt ) {}; //from XB::event_holder
-		is_event_id( is_event_id &given ): evnt( given.evnt ) {}; //copy
-		
-		//the main thing
-		bool operator()( XB::event_holder *given ){ return given->evnt == evnt; };
-		
-		//various type of assignement
-		is_event_id &operator=( const unsigned int given ){ evnt = given; return *this; };
-		is_event_id &operator=( const is_event_id &given ){ evnt = given.evnt; return *this; };
-		is_event_id &operator=( const XB::event_holder &given ){ evnt = given.evnt; return *this; };
-	
-	private:
-		//the datum for comparison
-		unsigned int evnt;
-};
-
-//------------------------------------------------------------------------------------
-//the wrapper function that applies the doppler correction
-void apply_doppler_correction( std::vector<XB::data*> &xb_book,
-                               std::vector<XB::track_info*> &xb_track_book,
-                               unsigned int default_beam_out, correct_mode mode,
-                               bool verbose );
-
 //the (piped) interface to read a root file with xb_data_translator
 void translate_track_info( std::vector<XB::track_info*> &xb_track_book,
                            unsigned int track_f_count, char track_f_name[][256],
                            bool verbose );
-//an utility for sorting
-bool evnt_id_comparison( const XB::event_holder *one, const XB::event_holder *two );
 
 //------------------------------------------------------------------------------------
 //the main
@@ -83,6 +36,7 @@ int main( int argc, char **argv ){
 	bool verbose = false; //if true, verbose output
 	bool in_flag = false; //if true, read from a file and not stdin
 	bool track_flag = false; //if true, read the track info from file and not stdin
+	bool cluster_flag = false; //if true, correct clusters instead of just events.
 	bool out_flag = false; //if true, write to a file and not to stdout
 	bool reader_flag = false; //if true, use xb_data_translator to read the TRACK file
 	correct_mode mode = RELAXED; //the default is: correct everything
@@ -105,7 +59,7 @@ int main( int argc, char **argv ){
 	if( track_f_count != 0 ) track_flag = true;
 		
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "d:o:RfFsvb:" )) != -1 ){
+	while( (iota = getopt( argc, argv, "d:o:RfFskvb:" )) != -1 ){
 		switch( iota ){
 			case 'd' :
 				if( strlen( optarg ) < 256 ){
@@ -136,6 +90,9 @@ int main( int argc, char **argv ){
 				break;
 			case 's' :
 				mode = SIMULATION;
+				break;
+			case 'k' :
+				cluster_flag = true;
 				break;
 			case 'v' :
 				verbose = true;
@@ -189,26 +146,36 @@ int main( int argc, char **argv ){
 	
 	//then, load the actual data to correct
 	std::vector<XB::data*> xb_book;
+	std::vector<XB::clusterZ> klz;
 	if( in_flag ){
 		if( verbose ) printf( "Reading data from %s...\n", in_f_name );
-		XB::load( in_f_name, xb_book );
+		if( cluster_flag ) XB::load( in_f_name, klz );
+		else XB::load( in_f_name, xb_book );
 	} else {
 		if( verbose ) printf( "Reading data from STDIN...\n" );
-		XB::load( stdin, xb_book );
+		if( cluster_flag ) XB::load( stdin, klz );
+		else XB::load( stdin, xb_book );
 	}
 	
 	//------------------------------------
 	//do the correction
 	if( verbose ) printf( "Processing...\n" );
-	apply_doppler_correction( xb_book, xb_track_book, default_beam_out, mode, verbose );
+	if( cluster_flag ) apply_doppler_correction( klz, xb_track_book,
+	                                             default_beam_out,
+	                                             mode, verbose );
+	else apply_doppler_correction( xb_book, xb_track_book,
+	                               default_beam_out,
+	                               mode, verbose );
 
 	//------------------------------------	
 	//now, save
 	if( out_flag ){
 		if( verbose ) printf( "Writing to %s...\n", out_f_name );
-		XB::write( out_f_name, xb_book );
+		if( cluster_flag ) XB::write( out_f_name, klz );
+		else XB::write( out_f_name, xb_book );
 	} else {
-		XB::write( stdout, xb_book );
+		if( cluster_flag ) XB::write( stdout, klz );
+		else XB::write( stdout, xb_book );
 	}
 	
 	//happy thoughts
@@ -216,179 +183,6 @@ int main( int argc, char **argv ){
 	return 0;
 }
 
-//------------------------------------------------------------------------------------
-//implementation of the function that drives the doppler correction
-//in parallel.
-//NOTE: for now, the fedault beam out is always used as the direction
-//      in the near future, the directional information from the tracker
-//      will be used when available
-//NOTE2: I do apologize to whoever will read this function, it is a bit
-//       more complicated than usual -especially because it's a bit of a fest
-//       of double-pointers and whatever.
-void apply_doppler_correction( std::vector<XB::data*> &xb_book,
-                               std::vector<XB::track_info*> &xb_track_book,
-                               unsigned int default_beam_out, correct_mode mode,
-                               bool verbose ){
-	//ok, now do some actual work:
-	//prepare the thing by ordering the vectors according to the event number
-	std::sort( xb_track_book.begin(), xb_track_book.end(), evnt_id_comparison );
-	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
-
-	//prepare the beta interpolator
-	XB::b_interp interp_beta_0( xb_track_book );
-	
-	//some useful iterators
-	XB::track_info **xbtb_begin = &xb_track_book.front();
-	XB::track_info **xbtb_end = &xb_track_book.back()+1;
-	XB::track_info **track_iter;
-	
-	//the comparison functional
-	is_event_id is_evnt;
-	
-	//this is a perfect candidate to do in parallel
-	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
-	 private( track_iter, is_evnt )
-	{
-	
-	//some verbosty cosmetics
-	unsigned int thread_num = omp_get_thread_num();
-	if( verbose && !thread_num ) printf( "Event: 0000000000" );
-	
-	switch( mode ){
-		case RELAXED : //process them all if we aren't fastidious
-		
-			//loop on all of them (cleverly and in parallel)
-			#pragma omp for schedule( static, 10 ) 
-			for( int i=0; i < xb_book.size(); ++i ){
-				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-					
-					//find the track info
-					is_evnt = *xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//and correct it
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
-					                     default_beam_out );
-				
-				//else, use the default beam out direction (given as a crystal)
-				//and interpolate the beta
-				} else XB::doppler_correct( *xb_book.at(i),
-				                            interp_beta_0( xb_book.at(i)->in_beta ),
-				                            default_beam_out );
-			}
-			break;
-		case FASTIDIOUS : //just those in the track book
-		
-			#pragma omp for schedule( static, 10 )
-			for( int i=0; i < xb_book.size(); ++i ){
-				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-				    					
-					//find the track info
-					is_evnt = *xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//and correct it
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
-					                     default_beam_out );
-				
-				//if the datum doesn't have tracking information
-				//mark it for deletion
-				} else xb_book.at(i)->evnt = 0;
-			}
-			break;
-		case VERY_FASTIDIOUS : //just those in the track book AND with a single fragment
-			#pragma omp for schedule( static, 10 )
-			for( int i=0; i < xb_book.size(); ++i ){
-			
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-									
-					//find the track info
-					is_evnt = *xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//since we are very fastidious, check the number fo fragments
-					//if it's more than one, makr for deletion and continue
-					if( (*track_iter)->n != 1 ){
-						xb_book.at(i)->evnt = 0;
-						continue;
-					}
-					
-					//and correct it
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
-					                     (*track_iter)->outgoing[0] );
-				//else mark it for deletion
-				} else xb_book.at(i)->evnt = 0;
-			}
-			break;
-		case SIMULATION : //process them all if we aren't fastidious
-			//init a random sequence
-			srand( time( NULL ) );
-			
-			//loop on all of them (cleverly and in parallel)
-			#pragma omp for schedule( dynamic ) 
-			for( int i=0; i < xb_book.size(); ++i ){
-				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//The simulation has NO in_beta information available, so we need it
-				//from the track info of the run we are tailoring the simulation to.
-				track_iter = &xb_track_book.at( rand()%xb_track_book.size() ); //set up the functional
-				
-				//and correct it
-				//added some error handling (for now, only for simulations
-				//but it will be extended).
-				try{
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
-					                     default_beam_out );
-				} catch( XB::error e ){
-					//TODO: figure out how to get rid of the corrupted events
-					continue;
-				}
-			}
-			break;
-	}
-	
-	if( verbose && !thread_num ) printf( "\n" );
-	
-	} //parallel pragma ends here
-	
-	//if we were fastidious, clean up the events. In a clever way.
-	int n_zeroed = 0;
-	if( mode != RELAXED && mode != SIMULATION ){
-		if( verbose ) printf( "Pruning data...\n" );
-	
-		//first: sort them again, all the 0-ed events will bubble up at the beginning.
-		std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
-		
-		//then, find the first non-zero event. To do so, count the 0-ed elements,
-		//which are now at the beginning of the vector.
-		is_evnt = 0; //get a functional for event id 0
-		n_zeroed = std::count_if( xb_book.begin(), xb_book.end(), is_evnt );
-		
-		//finally, chop off those elements.
-		xb_book.erase( xb_book.begin(), xb_book.begin()+n_zeroed );
-	}
-		
-	
-}
 
 //------------------------------------------------------------------------------------
 //implementation of the (piped) interface to xb_data_translator
@@ -423,10 +217,4 @@ void translate_track_info( std::vector<XB::track_info*> &xb_track_book,
 
 	//close the pipe
 	pclose( p_xb_data_translator );
-}
-
-//------------------------------------------------------------------------------------
-//the comparison utility
-bool evnt_id_comparison( const XB::event_holder *one, const XB::event_holder *two ){
-	return one->evnt < two->evnt;
 }

@@ -35,7 +35,7 @@ namespace XB{
 		const char unk_cmd[] = "'-' using 1:2:3:(sprintf( \"%%d\", $4 ) ) with labels offset char 2 point pt 6 lc rgb ";
 		char gp_c[2048];
 		strcpy( gp_c, "splot " );
-		for( int i=0; i < clusters.multiplicity ; ++i ){ //loop on the clusters
+		for( int i=0; i < clusters.n ; ++i ){ //loop on the clusters
 			strcat( gp_c, std_cmd );
 			strcat( gp_c, colors[i%10] );
 			strcat( gp_c, ", " );
@@ -48,9 +48,9 @@ namespace XB{
 		K_cry clustered[162]; //clustered
 		for( int c=0; c < 162; ++c ){
 			clustered[c].K_ed = false;
-			clustered[c].K_ind = clusters.multiplicity+1;
+			clustered[c].K_ind = clusters.n+1;
 			clustered[c].C_ind = c;
-			for( int k=0; k < clusters.multiplicity; ++k ){
+			for( int k=0; k < clusters.n; ++k ){
 				if( binary_search( clusters.clusters[k].crys.begin(),
 					  clusters.clusters[k].crys.end(), c+1 ) ){ //c+1 because I need to look for the global
 					                                            //index referred to the CB, not the array index!

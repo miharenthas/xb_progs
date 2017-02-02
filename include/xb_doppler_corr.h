@@ -51,6 +51,11 @@ namespace XB{
 	void doppler_correct( data &evnt, float beta, unsigned int beam_line ); //with just the beam line
 	void doppler_correct( data &evnt, float beta, float b_altitude, float b_azimuth ); //with the angles
 	
+	//these perform the same action, but on clusters.
+	void doppler_correct( clusterZ &klz, float beta, versor &directon ); //with the tracker's versor
+	void doppler_correct( clusterZ &klz, float beta, unsigned int beam_line ); //with just the beam line
+	void doppler_correct( clusterZ &klz, float beta, float b_altitude, float b_azimuth ); //with the angles
+	
 }
 
 #endif

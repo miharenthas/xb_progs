@@ -100,7 +100,8 @@ xb_make_spc : libxb_core libxb_viz
 	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_make_spc.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_make_spc
 
 xb_doppc : libxb_core
-	$(CXX) -lxb_core $(SRC)/xb_doppc.cpp $(CXXFLAGS) -o xb_doppc
+	$(CXX) $(SRC)/xb_doppc.cc $(CXXFLAGS) -lxb_core -c -o $(BIN)/xb_doppc.o
+	$(CXX) -lxb_core $(BIN)/xb_doppc.o $(SRC)/xb_doppc.cpp $(CXXFLAGS) -o xb_doppc
 
 xb_do_cut : libxb_core libxb_viz
 	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_do_cut.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_do_cut
