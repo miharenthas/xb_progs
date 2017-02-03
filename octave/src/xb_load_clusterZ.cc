@@ -86,7 +86,7 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 				try{
 					XB::load( in_fname, data_buf );
 				} catch( XB::error e ){
-					error( e.what );
+					error( e.what() );
 				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
 			} else {

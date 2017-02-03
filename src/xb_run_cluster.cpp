@@ -125,7 +125,7 @@ int main( int argc, char **argv ){
 		try{
 			XB::load( out_fname, event_klZ_check );
 		}catch( XB::error e ){
-			printf( "There has been an error: %s\n", e.what );
+			printf( "There has been an error: %s\n", e.what() );
 			exit( 1 );
 		}
 		

@@ -128,7 +128,7 @@ namespace XB{
 				altitude = the_cb.at( evnt.i[i] ).altitude;
 				azimuth = the_cb.at( evnt.i[i] ).azimuth;
 			} catch( XB::error e ){
-				throw( XB::error( e.what , "XB::doppler_correct" ) );
+				throw( XB::error( e.what() , "XB::doppler_correct" ) );
 			}
 						
 			//calculate the aperture from the beam line

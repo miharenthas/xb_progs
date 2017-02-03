@@ -135,7 +135,7 @@ int main( int argc, char** argv ){
 		if( settings.track_flag ) track_engine.data_loader();
 		else data_engine.data_loader();
 	} catch( XB::error e ) {
-		cerr << "There has been an error: " << e.what << endl;
+		cerr << "There has been an error: " << e.what() << endl;
 		exit( 1 );
 	}
 	
@@ -144,7 +144,7 @@ int main( int argc, char** argv ){
 		if( settings.track_flag ) track_engine.data_putter();
 		else data_engine.data_putter();
 	} catch( XB::error e ) {
-		cerr << "There has been an error: " << e.what << endl;
+		cerr << "There has been an error: " << e.what() << endl;
 		exit( 1 );
 	}
 	
@@ -153,7 +153,7 @@ int main( int argc, char** argv ){
 		if( settings.track_flag && settings.check_flag ) track_engine.check();
 		else if( !settings.track_flag && settings.check_flag ) data_engine.check();
 	} catch( XB::error e ) {
-		cerr << "There has been an error: " << e.what << endl;
+		cerr << "There has been an error: " << e.what() << endl;
 		exit( 1 );
 	}
 	
@@ -206,7 +206,7 @@ void xb_data_translator<xb_data_type>::data_loader(){
 			else XB::reader( xb_book_buf, settings.in_f_name[i] );
 			xb_book.insert( xb_book.end(), xb_book_buf.begin(), xb_book_buf.end() ); //cat it at the end
 		}catch( XB::error e ){
-			if( !strcmp( e.what, "File error!XB::reader" ) ){
+			if( !strcmp( e.what(), "File error!XB::reader" ) ){
 				if( settings.verbose ) printf( "File \"%s\" not found.\n", settings.in_f_name[i] );
 				continue;
 			} else {

@@ -146,7 +146,7 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 	try{
 		XB::write( out_fname, data );
 	} catch( XB::error e ){
-		error( e.what );
+		error( e.what() );
 	}
 	
 	//more cleanup
