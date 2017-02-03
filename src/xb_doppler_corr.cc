@@ -18,7 +18,7 @@ namespace XB{
 	//the one that's supposed to be used.
 	//it takes in the tracker info and sets up a linear fit
 	//(despite being called "interpolation" ) of the beta_0( in_beta ) function.
-	b_interp::_xb_beta_0_interpolate( std::vector<track_info*> &xb_track_book ){
+	b_interp::_xb_beta_0_interpolate( std::vector<track_info> &xb_track_book ){
 		const unsigned int N = xb_track_book.size();
 		
 		//first, populate the arrays
@@ -31,8 +31,8 @@ namespace XB{
 		
 		//copy the various betas
 		for( int i=0; i < N; ++i ){
-			in_betas[i] = xb_track_book[i]->in_beta;
-			beta_0s[i] = xb_track_book[i]->beta_0;
+			in_betas[i] = xb_track_book[i].in_beta;
+			beta_0s[i] = xb_track_book[i].beta_0;
 		}
 		
 		//do the fit

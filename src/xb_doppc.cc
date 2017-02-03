@@ -9,8 +9,8 @@
 //NOTE2: I do apologize to whoever will read this function, it is a bit
 //       more complicated than usual -especially because it's a bit of a fest
 //       of double-pointers and whatever.
-void apply_doppler_correction( std::vector<XB::data*> &xb_book,
-                               std::vector<XB::track_info*> &xb_track_book,
+void apply_doppler_correction( std::vector<XB::data> &xb_book,
+                               std::vector<XB::track_info> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
                                bool verbose ){
 	//ok, now do some actual work:
@@ -22,9 +22,9 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 	XB::b_interp interp_beta_0( xb_track_book );
 	
 	//some useful iterators
-	XB::track_info **xbtb_begin = &xb_track_book.front();
-	XB::track_info **xbtb_end = &xb_track_book.back()+1;
-	XB::track_info **track_iter;
+	XB::track_info *xbtb_begin = &xb_track_book.front();
+	XB::track_info *xbtb_end = &xb_track_book.back()+1;
+	XB::track_info *track_iter;
 	
 	//the comparison functional
 	is_event_id is_evnt;
@@ -52,18 +52,18 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
 					
 					//find the track info
-					is_evnt = *xb_book.at(i); //set up the functional
+					is_evnt = xb_book.at(i); //set up the functional
 					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
 					                                                            //know it's here
 					//and correct it
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
+					XB::doppler_correct( xb_book.at(i),
+					                     track_iter->beta_0,
 					                     default_beam_out );
 				
 				//else, use the default beam out direction (given as a crystal)
 				//and interpolate the beta
-				} else XB::doppler_correct( *xb_book.at(i),
-				                            interp_beta_0( xb_book.at(i)->in_beta ),
+				} else XB::doppler_correct( xb_book.at(i),
+				                            interp_beta_0( xb_book.at(i).in_beta ),
 				                            default_beam_out );
 			}
 			break;
@@ -79,17 +79,17 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
 				    					
 					//find the track info
-					is_evnt = *xb_book.at(i); //set up the functional
+					is_evnt = xb_book.at(i); //set up the functional
 					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
 					                                                            //know it's here
 					//and correct it
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
+					XB::doppler_correct( xb_book.at(i),
+					                     track_iter->beta_0,
 					                     default_beam_out );
 				
 				//if the datum doesn't have tracking information
 				//mark it for deletion
-				} else xb_book.at(i)->evnt = 0;
+				} else xb_book.at(i).evnt = 0;
 			}
 			break;
 		case VERY_FASTIDIOUS : //just those in the track book AND with a single fragment
@@ -103,22 +103,22 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
 									
 					//find the track info
-					is_evnt = *xb_book.at(i); //set up the functional
+					is_evnt = xb_book.at(i); //set up the functional
 					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
 					                                                            //know it's here
 					//since we are very fastidious, check the number fo fragments
 					//if it's more than one, makr for deletion and continue
-					if( (*track_iter)->n != 1 ){
-						xb_book.at(i)->evnt = 0;
+					if( track_iter->n != 1 ){
+						xb_book.at(i).evnt = 0;
 						continue;
 					}
 					
 					//and correct it
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
-					                     (*track_iter)->outgoing[0] );
+					XB::doppler_correct( xb_book.at(i),
+					                     track_iter->beta_0,
+					                     track_iter->outgoing[0] );
 				//else mark it for deletion
-				} else xb_book.at(i)->evnt = 0;
+				} else xb_book.at(i).evnt = 0;
 			}
 			break;
 		case SIMULATION : //process them all if we aren't fastidious
@@ -139,8 +139,8 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 				//added some error handling (for now, only for simulations
 				//but it will be extended).
 				try{
-					XB::doppler_correct( *xb_book.at(i),
-					                     (*track_iter)->beta_0,
+					XB::doppler_correct( xb_book.at(i),
+					                     track_iter->beta_0,
 					                     default_beam_out );
 				} catch( XB::error e ){
 					//TODO: figure out how to get rid of the corrupted events
@@ -167,9 +167,6 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 		is_evnt = 0; //get a functional for event id 0
 		n_zeroed = std::count_if( xb_book.begin(), xb_book.end(), is_evnt );
 		
-		//free the memory (remembre, the XB::data entries are allocated dynamically)
-		for( int i=0; i < n_zeroed; ++i ) delete xb_book.at(i);
-		
 		//finally, chop off those elements.
 		xb_book.erase( xb_book.begin(), xb_book.begin()+n_zeroed );
 	}
@@ -187,21 +184,21 @@ void apply_doppler_correction( std::vector<XB::data*> &xb_book,
 //       more complicated than usual -especially because it's a bit of a fest
 //       of double-pointers and whatever.
 void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
-                               std::vector<XB::track_info*> &xb_track_book,
+                               std::vector<XB::track_info> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
                                bool verbose ){
 	//ok, now do some actual work:
 	//prepare the thing by ordering the vectors according to the event number
 	std::sort( xb_track_book.begin(), xb_track_book.end(), evnt_id_comparison );
-	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison_ref );
+	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
 
 	//prepare the beta interpolator
 	XB::b_interp interp_beta_0( xb_track_book );
 	
 	//some useful iterators
-	XB::track_info **xbtb_begin = &xb_track_book.front();
-	XB::track_info **xbtb_end = &xb_track_book.back()+1;
-	XB::track_info **track_iter;
+	XB::track_info *xbtb_begin = &xb_track_book.front();
+	XB::track_info *xbtb_end = &xb_track_book.back()+1;
+	XB::track_info *track_iter;
 	
 	//the comparison functional
 	is_event_id is_evnt;
@@ -226,7 +223,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, &xb_book.at(i), evnt_id_comparison ) ){
+				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
 					
 					//find the track info
 					is_evnt = xb_book.at(i); //set up the functional
@@ -234,7 +231,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 					                                                            //know it's here
 					//and correct it
 					XB::doppler_correct( xb_book.at(i),
-					                     (*track_iter)->beta_0,
+					                     track_iter->beta_0,
 					                     default_beam_out );
 				
 				//else, use the default beam out direction (given as a crystal)
@@ -253,7 +250,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, &xb_book.at(i), evnt_id_comparison ) ){
+				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
 				    					
 					//find the track info
 					is_evnt = xb_book.at(i); //set up the functional
@@ -261,7 +258,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 					                                                            //know it's here
 					//and correct it
 					XB::doppler_correct( xb_book.at(i),
-					                     (*track_iter)->beta_0,
+					                     track_iter->beta_0,
 					                     default_beam_out );
 				
 				//if the datum doesn't have tracking information
@@ -277,7 +274,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, &xb_book.at(i), evnt_id_comparison ) ){
+				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
 									
 					//find the track info
 					is_evnt = xb_book.at(i); //set up the functional
@@ -285,15 +282,15 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 					                                                            //know it's here
 					//since we are very fastidious, check the number fo fragments
 					//if it's more than one, makr for deletion and continue
-					if( (*track_iter)->n != 1 ){
+					if( track_iter->n != 1 ){
 						xb_book.at(i).evnt = 0;
 						continue;
 					}
 					
 					//and correct it
 					XB::doppler_correct( xb_book.at(i),
-					                     (*track_iter)->beta_0,
-					                     (*track_iter)->outgoing[0] );
+					                     track_iter->beta_0,
+					                     track_iter->outgoing[0] );
 				//else mark it for deletion
 				} else xb_book.at(i).evnt = 0;
 			}
@@ -317,7 +314,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 				//but it will be extended).
 				try{
 					XB::doppler_correct( xb_book.at(i),
-					                     (*track_iter)->beta_0,
+					                     track_iter->beta_0,
 					                     default_beam_out );
 				} catch( XB::error e ){
 					//TODO: figure out how to get rid of the corrupted events
@@ -337,7 +334,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 		if( verbose ) printf( "Pruning data...\n" );
 	
 		//first: sort them again, all the 0-ed events will bubble up at the beginning.
-		std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison_ref );
+		std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
 		
 		//then, find the first non-zero event. To do so, count the 0-ed elements,
 		//which are now at the beginning of the vector.
@@ -354,10 +351,6 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 //------------------------------------------------------------------------------------
 //the comparison utility
 //for the event holder structure
-bool evnt_id_comparison( const XB::event_holder *one, const XB::event_holder *two ){
-	return one->evnt < two->evnt;
-}
-
-bool evnt_id_comparison_ref( const XB::event_holder &one, const XB::event_holder &two ){
+bool evnt_id_comparison( const XB::event_holder &one, const XB::event_holder &two ){
 	return one.evnt < two.evnt;
 }

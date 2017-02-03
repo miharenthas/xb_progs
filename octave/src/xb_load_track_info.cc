@@ -74,7 +74,7 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 	}
 	
 	//loop-load the files
-	std::vector<XB::track_info*> data, data_buf;
+	std::vector<XB::track_info> data, data_buf;
 	char in_fname[256];
 	for( int f=0; f < nargin; ++f ){
 		if( args(f).is_string() ){ //if the argument is a string
@@ -147,18 +147,16 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 	unsigned int current_numel = 0;
 	for( int i=load_nb_events[0], off_i; i < data.size() && i < load_nb_events[1]; ++i ){
 		off_i = i - load_nb_events[0];
-		//check for NULLs
-		if( data[i] == NULL ) continue;
-		current_numel = data[i]->n;
+		current_numel = data[i].n;
 	
 		//make the structure:
 		//firts, copy the trivially copiable
 		o_field_n(off_i) = current_numel;
-		o_field_evnt(off_i) = data[i]->evnt;
-		o_field_in_beta(off_i) = data[i]->in_beta;
-		o_field_beta_0(off_i) = data[i]->beta_0;
-		o_field_in_Z(off_i) = data[i]->in_Z;
-		o_field_in_A_on_Z(off_i) = data[i]->in_A_on_Z;
+		o_field_evnt(off_i) = data[i].evnt;
+		o_field_in_beta(off_i) = data[i].in_beta;
+		o_field_beta_0(off_i) = data[i].beta_0;
+		o_field_in_Z(off_i) = data[i].in_Z;
+		o_field_in_A_on_Z(off_i) = data[i].in_A_on_Z;
 				
 		//then, copy the arrays
 		//sizing
@@ -167,31 +165,29 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 		ov_buf.resize( o_dim );
 		
 		//all the rest
-		memcpy( f_buf.fortran_vec(), data[i]->fragment_A,
+		memcpy( f_buf.fortran_vec(), data[i].fragment_A,
 		        current_numel*sizeof(float) );
 		o_field_fragment_A(off_i) = f_buf;
 		
-		memcpy( f_buf.fortran_vec(), data[i]->fragment_Z,
+		memcpy( f_buf.fortran_vec(), data[i].fragment_Z,
 		        current_numel*sizeof(float) );
 		o_field_fragment_Z(off_i) = f_buf;
 		
-		memcpy( f_buf.fortran_vec(), data[i]->fragment_beta,
+		memcpy( f_buf.fortran_vec(), data[i].fragment_beta,
 		        current_numel*sizeof(float) );
 		o_field_fragment_beta(off_i) = f_buf;
 		
 		for( int v=0; v < current_numel; ++v ){
-			ov_buf(v) = versor2struct( data[i]->incoming[v] );
+			ov_buf(v) = versor2struct( data[i].incoming[v] );
 		}
 		o_field_incoming(off_i) = ov_buf;
 		
 		for( int v=0; v < current_numel; ++v ){
-			ov_buf(v) = versor2struct( data[i]->outgoing[v] );
+			ov_buf(v) = versor2struct( data[i].outgoing[v] );
 		}
 		o_field_outgoing(off_i) = ov_buf;
 		
 		//finally, deallocate and nullify the copied element
-		delete data[i];
-		data[i] = NULL;
 		f_buf.clear();
 		ov_buf.clear();
 	}
@@ -211,14 +207,7 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 	o_data_m.setfield( "outgoing", o_field_outgoing );
 	
 	//look for still living elements in data
-	if( data.size() > load_nb_events[1] - load_nb_events[1] ){
-		for( int i=0; i < data.size(); ++i ){
-			if( data[i] != NULL ){
-				delete data[i];
-				data[i] = NULL;
-			}
-		}
-	}
+	data.clear();
 
 	//happy thoughts
 	return octave_value_list( octave_value( o_data_m ) );

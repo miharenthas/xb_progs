@@ -16,7 +16,7 @@ namespace XB{
 	//1D cut on the number of fragments
 	class cut_on_fragment_nb : public cut_data_1D< track_info >{
 		public:
-			cut_on_fragment_nb( std::vector< track_info* > &data_array ):
+			cut_on_fragment_nb( std::vector< track_info > &data_array ):
 				cut_data_1D< track_info >( data_array ) {};
 			
 			double operator()( unsigned int index );
@@ -25,7 +25,7 @@ namespace XB{
 	//cut on the incoming beta
 	class cut_on_inbeta : public cut_data_1D< track_info >{
 		public:
-			cut_on_inbeta( std::vector< track_info* > &data_array ):
+			cut_on_inbeta( std::vector< track_info > &data_array ):
 				cut_data_1D< track_info >( data_array ) {};
 			
 			double operator()( unsigned int index );
@@ -34,7 +34,7 @@ namespace XB{
 	//cut on the outgoing beta
 	class cut_on_beta_0 : public cut_data_1D< track_info >{
 		public:
-			cut_on_beta_0( std::vector< track_info* > &data_array ):
+			cut_on_beta_0( std::vector< track_info > &data_array ):
 				cut_data_1D< track_info >( data_array ) {};
 			
 			double operator()( unsigned int index );
@@ -44,7 +44,7 @@ namespace XB{
 	//two dimensional cuts
 	typedef class cut_on_charge_mass_charge_ratio : public cut_data_2D< track_info >{
 		public:
-			cut_on_charge_mass_charge_ratio( std::vector< track_info* > &data_array ):
+			cut_on_charge_mass_charge_ratio( std::vector< track_info > &data_array ):
 				cut_data_2D< track_info >( data_array ) {};
 			
 			pt_holder operator()( unsigned int index );

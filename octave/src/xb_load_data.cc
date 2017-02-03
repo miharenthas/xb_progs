@@ -66,7 +66,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	}
 	
 	//loop-load the files
-	std::vector<XB::data*> data, data_buf;
+	std::vector<XB::data> data, data_buf;
 	char in_fname[256];
 	for( int f=0; f < nargin; ++f ){
 		if( args(f).is_string() ){ //if the argument is a string
@@ -136,17 +136,15 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	unsigned int current_numel = 0;
 	for( int i=load_nb_events[0], off_i; i < data.size() && i < load_nb_events[1]; ++i ){
 		off_i = i - load_nb_events[0];
-		//check for NULLs
-		if( data[i] == NULL ) continue;
 		
-		current_numel = data[i]->n;
+		current_numel = data[i].n;
 	
 		//make the structure:
 		//firts, copy the trivially copiable
 		o_field_n(off_i) = current_numel;
-		o_field_evnt(off_i) = data[i]->evnt;
-		o_field_sum_e(off_i) = data[i]->sum_e;
-		o_field_in_beta(off_i) = data[i]->in_beta;
+		o_field_evnt(off_i) = data[i].evnt;
+		o_field_sum_e(off_i) = data[i].sum_e;
+		o_field_in_beta(off_i) = data[i].in_beta;
 				
 		//then, copy the arrays
 		//sizing
@@ -156,7 +154,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 		
 		//crystal indexes
 		if( current_numel ){
-			memcpy( i_buf.fortran_vec(), data[i]->i,
+			memcpy( i_buf.fortran_vec(), data[i].i,
 			        current_numel*sizeof(unsigned int) );
 			o_field_i(off_i) = i_buf;
 		} else {
@@ -165,33 +163,31 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 		}
 		
 		//all the rest
-		if( !data[i]->empty_t ){
-			memcpy( f_buf.fortran_vec(), data[i]->t,
+		if( !data[i].empty_t ){
+			memcpy( f_buf.fortran_vec(), data[i].t,
 			        current_numel*sizeof(float) );
 			o_field_t(i) = f_buf;
 		} else o_field_t(off_i) = Array<float>( o_dim_null );
 		
-		if( !data[i]->empty_pt ){
-			memcpy( f_buf.fortran_vec(), data[i]->pt,
+		if( !data[i].empty_pt ){
+			memcpy( f_buf.fortran_vec(), data[i].pt,
 			        current_numel*sizeof(float) );
 			o_field_pt(i) = f_buf;
 		} else o_field_t(off_i) = Array<float>( o_dim_null );
 		
-		if( !data[i]->empty_e ){
-			memcpy( f_buf.fortran_vec(), data[i]->e,
+		if( !data[i].empty_e ){
+			memcpy( f_buf.fortran_vec(), data[i].e,
 			        current_numel*sizeof(float) );
 			o_field_e(i) = f_buf;
 		} else o_field_t(off_i) = Array<float>( o_dim_null );
 		
-		if( !data[i]->empty_he ){
-			memcpy( f_buf.fortran_vec(), data[i]->he,
+		if( !data[i].empty_he ){
+			memcpy( f_buf.fortran_vec(), data[i].he,
 			        current_numel*sizeof(float) );
 			o_field_he(i) = f_buf;
 		} else o_field_t(off_i) = Array<float>( o_dim_null );
 		
-		//finally, deallocate and nullify the copied element
-		delete data[i];
-		data[i] = NULL;
+		//finally, cleanup
 		i_buf.clear();
 		f_buf.clear();
 	}
@@ -208,15 +204,8 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	o_data_m.setfield( "sum_e", o_field_sum_e );
 	o_data_m.setfield( "in_beta", o_field_in_beta );
 	
-	//look for still living elements in data
-	if( data.size() > load_nb_events[1] - load_nb_events[1] ){
-		for( int i=0; i < data.size(); ++i ){
-			if( data[i] != NULL ){
-				delete data[i];
-				data[i] = NULL;
-			}
-		}
-	}
+	//final cleanup
+	data.clear();
 
 	//happy thoughts
 	return octave_value_list( octave_value( o_data_m ) );

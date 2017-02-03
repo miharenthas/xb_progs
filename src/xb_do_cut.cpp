@@ -98,7 +98,7 @@ int main( int argc, char **argv ){
 	XB::parse_config( &cut_config, the_cut );
 	
 	//load the input
-	std::vector< XB::track_info* > data, buf;
+	std::vector< XB::track_info > data, buf;
 	if( in_fcount ){ //there are input files; load them.
 		for( int i=0; i < in_fcount; ++i ){
 			if( verbose )

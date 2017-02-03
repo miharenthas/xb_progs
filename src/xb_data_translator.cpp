@@ -41,7 +41,7 @@ class xb_data_translator{
 	private:
 		xb_data_translator(); //this class cannot be dfault constructed
 		                      //you need the options
-		vector<xb_data_type*> xb_book; //the read data
+		vector<xb_data_type> xb_book; //the read data
 		struct translator_settings settings; //the settings
 };
 
@@ -193,7 +193,7 @@ xb_data_translator<xb_data_type>::~xb_data_translator(){} //nothing to do...
 template< class xb_data_type >
 void xb_data_translator<xb_data_type>::data_loader(){
 	//load the TTree into the vector (loop on the files)
-	vector<xb_data_type*> xb_book_buf;
+	vector<xb_data_type> xb_book_buf;
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( settings.verbose ) cout << "Reading from " << settings.in_f_name[i] << "..." << endl;
 
@@ -243,7 +243,7 @@ void xb_data_translator<xb_data_type>::data_putter(){
 //performs the check
 template< class xb_data_type >
 void xb_data_translator<xb_data_type>::check(){
-	vector<xb_data_type*> xb_book_check;
+	vector<xb_data_type> xb_book_check;
 	//verify-ish
 	if( settings.out_flag ){
 		if( settings.verbose ) cout << "Veryfiyng..." << endl;
@@ -258,7 +258,7 @@ void xb_data_translator<xb_data_type>::check(){
 			if( settings.verbose && i ) printf( "\b\b\b\b\b\b\b\b\b\b" );
 			if( settings.verbose ) printf( "%010d", i );
 			
-			if( *xb_book[i] != *xb_book_check.at(i) ){
+			if( xb_book[i] != xb_book_check.at(i) ){
 				cerr << endl << "Ooops, screwed up.";
 				break;
 			}

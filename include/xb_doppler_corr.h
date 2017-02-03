@@ -23,7 +23,7 @@ namespace XB{
 		public:
 			//ctors
 			_xb_beta_0_interpolate();
-			_xb_beta_0_interpolate( std::vector<track_info*>& );
+			_xb_beta_0_interpolate( std::vector<track_info>& );
 			~_xb_beta_0_interpolate();
 			
 			//a couple of get methods

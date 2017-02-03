@@ -22,7 +22,9 @@ The format of @var{clusterZ} is the same-ish used in the xb_progs toolkit:\n\
 @group\n\
 data = xb_load_clusterZ( 'some_file.cluster.xb' );\n\
 @result{} structure array data:\n\
-    .n\n\
+    n\n\
+    evnt\n\
+    in_beta\n\
      structure array clusters:\n\
          n\n\
          centroid_id\n\
@@ -127,7 +129,7 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	
 	//copy the data:
 	//prepare the fields:
-	Cell o_field.n( o_dim_v );
+	Cell o_field_n( o_dim_v );
 	Cell o_field_event_id( o_dim_v );
 	Cell o_field_in_beta( o_dim_v );
 	Cell o_field_clusters( o_dim_v );
@@ -135,7 +137,7 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	for( int i=load_nb_events[0], off_i; i < data.size() && i < load_nb_events[1]; ++i ){
 		off_i = i - load_nb_events[0];
 		//copy the number of clusters at event i
-		o_field.n(off_i) = data[i].n;
+		o_field_n(off_i) = data[i].n;
 		
 		//load the clusters
 		o_field_clusters(off_i) = cluster2struct( data[i] );
@@ -143,7 +145,7 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	
 	//make the map
 	octave_map o_data_m;
-	o_data_m.setfield( .n", o_field.n );
+	o_data_m.setfield( "n", o_field_n );
 	o_data_m.setfield( "evnt", o_field_event_id );
 	o_data_m.setfield( "in_beta", o_field_in_beta );
 	o_data_m.setfield( "clusters", o_field_clusters );

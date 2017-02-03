@@ -74,7 +74,7 @@ int main( int argc, char **argv ){
 	if( verbose && in_flag ) printf( "Reading from: %s...\n", in_fname );
 	else if( verbose && !in_flag ) printf( "Reading from STDIN...\n" );
 
-	std::vector<XB::data*> xb_book;
+	std::vector<XB::data> xb_book;
 	if( in_flag ) XB::load( in_fname, xb_book );
 	else XB::load( stdin, xb_book );
 	
@@ -92,7 +92,7 @@ int main( int argc, char **argv ){
 		if( verbose && !omp_get_thread_num() )
 			printf( "\b\b\b\b\b\b\b\b\b\b" );
 		
-		event_klZ[i] = XB::make_clusters_NN( *xb_book[i], neigh_order );
+		event_klZ[i] = XB::make_clusters_NN( xb_book[i], neigh_order );
 		
 		if( verbose && !omp_get_thread_num() )
 			printf( "%010d", i );

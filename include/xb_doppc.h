@@ -61,17 +61,16 @@ class is_event_id : public std::unary_function< XB::event_holder*, bool > {
 
 //------------------------------------------------------------------------------------
 //the wrapper function that applies the doppler correction
-void apply_doppler_correction( std::vector<XB::data*> &xb_book,
-                               std::vector<XB::track_info*> &xb_track_book,
+void apply_doppler_correction( std::vector<XB::data> &xb_book,
+                               std::vector<XB::track_info> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
                                bool verbose );
 
 //the wrapper function that applies the doppler correction
 void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
-                               std::vector<XB::track_info*> &xb_track_book,
+                               std::vector<XB::track_info> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
                                bool verbose );
 //an utility collection for sorting
-bool evnt_id_comparison( const XB::event_holder *one, const XB::event_holder *two );
-bool evnt_id_comparison_ref( const XB::event_holder &one, const XB::event_holder &two );
+bool evnt_id_comparison( const XB::event_holder &one, const XB::event_holder &two );
 #endif

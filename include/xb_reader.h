@@ -31,19 +31,19 @@
 
 namespace XB{
 	//read the data
-	void reader( std::vector<XB::data*> &xb_book, std::string f_name );
-	void reader( std::vector<XB::data*> &xb_book, char *f_name );
+	void reader( std::vector<XB::data> &xb_book, std::string f_name );
+	void reader( std::vector<XB::data> &xb_book, char *f_name );
 	
 	//read the tracker output
-	void reader( std::vector<XB::track_info*> &xb_book, std::string f_name );
-	void reader( std::vector<XB::track_info*> &xb_book, char *f_name );
+	void reader( std::vector<XB::track_info> &xb_book, std::string f_name );
+	void reader( std::vector<XB::track_info> &xb_book, char *f_name );
 
 	//read the simulation data
-	void sim_reader( std::vector<XB::data*> &xb_book, std::string f_name );
-	void sim_reader( std::vector<XB::data*> &xb_book, char *f_name );
+	void sim_reader( std::vector<XB::data> &xb_book, std::string f_name );
+	void sim_reader( std::vector<XB::data> &xb_book, char *f_name );
 
 	//read the simulation track (for now: dummy)
-	void sim_reader( std::vector<XB::track_info*> &xb_book, std::string f_name );
-	void sim_reader( std::vector<XB::track_info*> &xb_book, char *f_name );
+	void sim_reader( std::vector<XB::track_info> &xb_book, std::string f_name );
+	void sim_reader( std::vector<XB::track_info> &xb_book, char *f_name );
 }
 #endif

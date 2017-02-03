@@ -18,7 +18,7 @@
 
 //------------------------------------------------------------------------------------
 //the (piped) interface to read a root file with xb_data_translator
-void translate_track_info( std::vector<XB::track_info*> &xb_track_book,
+void translate_track_info( std::vector<XB::track_info> &xb_track_book,
                            unsigned int track_f_count, char track_f_name[][256],
                            bool verbose );
 
@@ -122,7 +122,7 @@ int main( int argc, char **argv ){
 	
 	//------------------------------------
 	//first of all, read the track data
-	std::vector<XB::track_info*> xb_track_book, tb_buf;
+	std::vector<XB::track_info> xb_track_book, tb_buf;
 	
 	if( reader_flag && track_flag ){ //if the file(s) haven't been translated yet
 	                                 //use the translator
@@ -145,7 +145,7 @@ int main( int argc, char **argv ){
 	}
 	
 	//then, load the actual data to correct
-	std::vector<XB::data*> xb_book;
+	std::vector<XB::data> xb_book;
 	std::vector<XB::clusterZ> klz;
 	if( in_flag ){
 		if( verbose ) printf( "Reading data from %s...\n", in_f_name );
@@ -186,7 +186,7 @@ int main( int argc, char **argv ){
 
 //------------------------------------------------------------------------------------
 //implementation of the (piped) interface to xb_data_translator
-void translate_track_info( std::vector<XB::track_info*> &xb_track_book,
+void translate_track_info( std::vector<XB::track_info> &xb_track_book,
                            unsigned int track_f_count, char track_f_name[][256],
                            bool verbose ){
 

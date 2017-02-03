@@ -39,14 +39,14 @@ namespace XB{
 	//to save space, this uses a pipe to bzip2 and saves compressed.
 	
 	//this block of functions work with XB::data kind of data
-	void write( FILE* f_out, std::vector<XB::data*> &xb_book );
-	void write( std::string f_name, std::vector<XB::data*> &xb_book );
-	void write( char* f_name, std::vector<XB::data*> &xb_book );
+	void write( FILE* f_out, std::vector<XB::data> &xb_book );
+	void write( std::string f_name, std::vector<XB::data> &xb_book );
+	void write( char* f_name, std::vector<XB::data> &xb_book );
 	
 	//this block of functions work with XB::data kind of data
-	void write( FILE* f_out, std::vector<XB::track_info*> &xb_book );
-	void write( std::string f_name, std::vector<XB::track_info*> &xb_book );
-	void write( char* f_name, std::vector<XB::track_info*> &xb_book );
+	void write( FILE* f_out, std::vector<XB::track_info> &xb_book );
+	void write( std::string f_name, std::vector<XB::track_info> &xb_book );
+	void write( char* f_name, std::vector<XB::track_info> &xb_book );
 
 	//this block of functions work wiht XB::clusterZ kind of data
 	void write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ );
@@ -59,14 +59,14 @@ namespace XB{
 	//though bunzip2
 	
 	//this block of functions work with XB::data kind of data
-	void load( FILE* f_in, std::vector<XB::data*> &xb_book );
-	void load( std::string f_name, std::vector<XB::data*> &xb_book );
-	void load( char* f_name, std::vector<XB::data*> &xb_book );
+	void load( FILE* f_in, std::vector<XB::data> &xb_book );
+	void load( std::string f_name, std::vector<XB::data> &xb_book );
+	void load( char* f_name, std::vector<XB::data> &xb_book );
 
 	//this block of functions work with XB::data kind of data
-	void load( FILE* f_in, std::vector<XB::track_info*> &xb_book );
-	void load( std::string f_name, std::vector<XB::track_info*> &xb_book );
-	void load( char* f_name, std::vector<XB::track_info*> &xb_book );
+	void load( FILE* f_in, std::vector<XB::track_info> &xb_book );
+	void load( std::string f_name, std::vector<XB::track_info> &xb_book );
+	void load( char* f_name, std::vector<XB::track_info> &xb_book );
 	
 	//this block of functions work with XB:clusterZ kind of data
 	void load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ );

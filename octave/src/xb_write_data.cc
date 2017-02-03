@@ -62,12 +62,12 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 		return octave_value_list();
 	}*/
 	
-	std::vector<XB::data*> data;
+	std::vector<XB::data> data;
 	
 	//if we got here, we should be able to proceed.
 	//declare the necessary bits and pieces
 	unsigned int current_numel = 0, current_evnt = 0;
-	XB::data *buf;
+	XB::data buf;
 	octave_scalar_map o_map;
 	
 	//loop-copy the data
@@ -78,16 +78,16 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 		current_evnt = o_map.getfield( "evnt" ).uint_value();
 		
 		//make the data (dynamic)
-		buf = new XB::data( current_numel, current_evnt );
+		buf = XB::data( current_numel, current_evnt );
 		
 		//do the copying
-		buf->sum_e = o_map.getfield( "sum_e" ).float_value();
-		if( !buf->sum_e ) buf->empty_sum_e = true;
-		buf->in_beta = o_map.getfield( "in_beta" ).float_value();
+		buf.sum_e = o_map.getfield( "sum_e" ).float_value();
+		if( !buf.sum_e ) buf.empty_sum_e = true;
+		buf.in_beta = o_map.getfield( "in_beta" ).float_value();
 		
 		if( o_map.isfield( "i" ) ){
 			if( !o_map.getfield( "i" ).is_zero_by_zero() ){
-				memcpy( buf->i,
+				memcpy( buf.i,
 					o_map.getfield( "i" ).uint32_array_value().fortran_vec(),
 					current_numel*sizeof(unsigned int) );
 			}
@@ -95,39 +95,39 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 		
 		if( o_map.isfield( "t" ) ){
 			if( !o_map.getfield( "t" ).is_zero_by_zero() ){
-				memcpy( buf->t,
+				memcpy( buf.t,
 					o_map.getfield( "t" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
-				buf->empty_t = false;
-			} else buf->empty_t = true;
-		} else buf->empty_t = true;
+				buf.empty_t = false;
+			} else buf.empty_t = true;
+		} else buf.empty_t = true;
 		
 		if( o_map.isfield( "pt" ) ){
 			if( !o_map.getfield( "pt" ).is_zero_by_zero() ){
-				memcpy( buf->pt,
+				memcpy( buf.pt,
 					o_map.getfield( "pt" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
-				buf->empty_pt = false;
-			} else buf->empty_pt = true;
-		} else buf->empty_pt = true;
+				buf.empty_pt = false;
+			} else buf.empty_pt = true;
+		} else buf.empty_pt = true;
 		
 		if( o_map.isfield( "e" ) ){
 			if( !o_map.getfield( "e" ).is_zero_by_zero() ){
-				memcpy( buf->e,
+				memcpy( buf.e,
 					o_map.getfield( "e" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
-				buf->empty_e = false;
-			} else buf->empty_e = true;
-		} else buf->empty_e = true;
+				buf.empty_e = false;
+			} else buf.empty_e = true;
+		} else buf.empty_e = true;
 		
 		if( o_map.isfield( "he" ) ){
 			if( !o_map.getfield( "he" ).is_zero_by_zero() ){
-				memcpy( buf->he,
+				memcpy( buf.he,
 					o_map.getfield( "he" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
-				buf->empty_he = false;
-			} else buf->empty_he = true;
-		} else buf->empty_he = true;
+				buf.empty_he = false;
+			} else buf.empty_he = true;
+		} else buf.empty_he = true;
 		
 		
 		
@@ -150,7 +150,7 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 	}
 	
 	//more cleanup
-	for( int i=0; i < data.size(); ++i ) delete data[i];
+	data.clear();
 	
 	//happy thoughts
 	return octave_value_list();

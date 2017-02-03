@@ -176,7 +176,7 @@ namespace XB{
 			new_evnt.sum_e = the_evnt.sum_e;
 
 			int cc=0; //loop index for "new_evnt"
-			for( int c=0; c < the_evnt.n && cc < new_evnt.n; ++c )
+			for( int c=0; c < the_evnt.n && cc < new_evnt.n; ++c ){
 				if( !std::binary_search( kl.crys.begin(), kl.crys.end(), the_evnt.i[c] ) ){
 					new_evnt.i[cc] = the_evnt.i[c];
 					new_evnt.t[cc] = the_evnt.t[c];
@@ -185,6 +185,7 @@ namespace XB{
 					new_evnt.he[cc] = the_evnt.he[c];
 					++cc;
 				}
+			}
 			
 			//swap the events
 			the_evnt = new_evnt;

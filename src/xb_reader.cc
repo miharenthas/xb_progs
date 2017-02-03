@@ -3,7 +3,7 @@
 
 //--------------------------------------------------------------------------
 //the reader bit implementation
-void XB::reader( std::vector<XB::data*> &xb_book, char* f_name ){
+void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
             !(sizeof(float) == sizeof(Float_t)) ){
@@ -61,17 +61,17 @@ void XB::reader( std::vector<XB::data*> &xb_book, char* f_name ){
 		xbn->GetEntry( i );
 		
 		//create the new book page (haha, funny)
-		xb_book.push_back( new XB::data( n_on_this, (unsigned int)evnt_id ) );
+		xb_book.push_back( XB::data( n_on_this, (unsigned int)evnt_id ) );
 		
 		//fill it:
 		//associate the branches
-		xbi->SetAddress( (UInt_t*)xb_book.back()->i );
-		xbt->SetAddress( (Float_t*)xb_book.back()->t );
-		xbpt->SetAddress( (Float_t*)xb_book.back()->pt );
-		xbe->SetAddress( (Float_t*)xb_book.back()->e );
-		xbhe->SetAddress( (Float_t*)xb_book.back()->he );
-		xbsume->SetAddress( (Float_t*)&xb_book.back()->sum_e );
-		inbeta->SetAddress( (Float_t*)&xb_book.back()->in_beta );
+		xbi->SetAddress( (UInt_t*)xb_book.back().i );
+		xbt->SetAddress( (Float_t*)xb_book.back().t );
+		xbpt->SetAddress( (Float_t*)xb_book.back().pt );
+		xbe->SetAddress( (Float_t*)xb_book.back().e );
+		xbhe->SetAddress( (Float_t*)xb_book.back().he );
+		xbsume->SetAddress( (Float_t*)&xb_book.back().sum_e );
+		inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
 		
 		//issue the copy order
 		xbi->GetEntry( i );
@@ -83,7 +83,7 @@ void XB::reader( std::vector<XB::data*> &xb_book, char* f_name ){
 		inbeta->GetEntry( i );
 		
 		//probe for nans
-		xb_book.back()->probe_for_crap();
+		xb_book.back().probe_for_crap();
 	}
 	
 	//close the file
@@ -91,13 +91,13 @@ void XB::reader( std::vector<XB::data*> &xb_book, char* f_name ){
 }
 
 //std::string interface...
-void XB::reader( std::vector<XB::data*> &xb_book, std::string f_name ){
+void XB::reader( std::vector<XB::data> &xb_book, std::string f_name ){
 	XB::reader( xb_book, f_name.c_str() );
 }
 
 //--------------------------------------------------------------------------
 //the reader bit implementation
-void XB::reader( std::vector<XB::track_info*> &xb_book, char* f_name ){
+void XB::reader( std::vector<XB::track_info> &xb_book, char* f_name ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
             !(sizeof(float) == sizeof(Float_t)) ){
@@ -164,17 +164,17 @@ void XB::reader( std::vector<XB::track_info*> &xb_book, char* f_name ){
 		dir_out = new float[3*n_frags];
 		
 		//create the new book page (haha, funny)
-		xb_book.push_back( new XB::track_info( n_frags, (unsigned int)evnt_id ) );
+		xb_book.push_back( XB::track_info( n_frags, (unsigned int)evnt_id ) );
 		
 		//fill it:
 		//associate the branches
-		inbeta->SetAddress( (Float_t*)&xb_book.back()->in_beta );
-		inbeta0->SetAddress( (Float_t*)&xb_book.back()->beta_0 );
-		inz->SetAddress( (Float_t*)&xb_book.back()->in_Z );
-		inaoverz->SetAddress( (Float_t*)&xb_book.back()->in_A_on_Z );
-		fraa->SetAddress( (Float_t*)xb_book.back()->fragment_A );
-		fraz->SetAddress( (Float_t*)xb_book.back()->fragment_Z );
-		frabeta->SetAddress( (Float_t*)xb_book.back()->fragment_beta );
+		inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
+		inbeta0->SetAddress( (Float_t*)&xb_book.back().beta_0 );
+		inz->SetAddress( (Float_t*)&xb_book.back().in_Z );
+		inaoverz->SetAddress( (Float_t*)&xb_book.back().in_A_on_Z );
+		fraa->SetAddress( (Float_t*)xb_book.back().fragment_A );
+		fraz->SetAddress( (Float_t*)xb_book.back().fragment_Z );
+		frabeta->SetAddress( (Float_t*)xb_book.back().fragment_beta );
 		for( int j=0; j < 3; ++j ){
 			in_dir[j]->SetAddress( (Float_t*)&dir_in[j*n_frags] );
 			out_dir[j]->SetAddress( (Float_t*)&dir_out[j*n_frags] );
@@ -196,12 +196,12 @@ void XB::reader( std::vector<XB::track_info*> &xb_book, char* f_name ){
 		
 		//actually copy the directions
 		for( int f=0; f < n_frags; ++f ){
-			xb_book.back()->incoming[f].i = dir_in[f];
-			xb_book.back()->incoming[f].j = dir_in[f+n_frags];
-			xb_book.back()->incoming[f].k = dir_in[f+n_frags<<1];
-			xb_book.back()->outgoing[f].i = dir_out[f];
-			xb_book.back()->outgoing[f].j = dir_out[f+n_frags];
-			xb_book.back()->outgoing[f].k = dir_out[f+n_frags<<1];
+			xb_book.back().incoming[f].i = dir_in[f];
+			xb_book.back().incoming[f].j = dir_in[f+n_frags];
+			xb_book.back().incoming[f].k = dir_in[f+n_frags<<1];
+			xb_book.back().outgoing[f].i = dir_out[f];
+			xb_book.back().outgoing[f].j = dir_out[f+n_frags];
+			xb_book.back().outgoing[f].k = dir_out[f+n_frags<<1];
 		}
 		
 		//cleanup
@@ -214,13 +214,13 @@ void XB::reader( std::vector<XB::track_info*> &xb_book, char* f_name ){
 }
 
 //std::string interface...
-void XB::reader( std::vector<XB::track_info*> &xb_book, std::string f_name ){
+void XB::reader( std::vector<XB::track_info> &xb_book, std::string f_name ){
 	XB::reader( xb_book, f_name.c_str() );
 }
 
 //------------------------------------------------------------------------------------
 //the simulation reader implementation
-void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
+void XB::sim_reader( std::vector<XB::data> &xb_book, char *f_name ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
             !(sizeof(float) == sizeof(Float_t)) ){
@@ -267,30 +267,30 @@ void XB::sim_reader( std::vector<XB::data*> &xb_book, char *f_name ){
 		data_tree->GetBranch( "XBCrystalHitSim" )->GetEntry( i ); //retrieve the entry
 		
 		n_tracks = buf.GetEntries();
-		xb_book.push_back( new XB::data( n_tracks, i ) );
+		xb_book.push_back( XB::data( n_tracks, i ) );
 		
 		for( int t=0; t < n_tracks; ++t ){
 			p_data = (R3BXBallCrystalHitSim*)buf.At( t );
 			
-			xb_book.back()->i[t] = p_data->GetCrystalNumber();
-			xb_book.back()->t[t] = p_data->GetTime();
-			xb_book.back()->e[t] = 1e6*p_data->GetEnergy(); //GeV to KeV
+			xb_book.back().i[t] = p_data->GetCrystalNumber();
+			xb_book.back().t[t] = p_data->GetTime();
+			xb_book.back().e[t] = 1e6*p_data->GetEnergy(); //GeV to KeV
 		}
 		
 		//this basically sets the flags correctly, here
-		xb_book.back()->probe_for_crap();
+		xb_book.back().probe_for_crap();
 	}
 	
 	f.Close();
 }
 
 //std::string interface...
-void XB::sim_reader( std::vector<XB::data*> &xb_book, std::string f_name ){
+void XB::sim_reader( std::vector<XB::data> &xb_book, std::string f_name ){
 	XB::sim_reader( xb_book, f_name.c_str() );
 }
 
 //------------------------------------------------------------------------------------
 //dummy track readers
-void XB::sim_reader( std::vector<XB::track_info*> &xb_book, std::string f_name ){ return; }
-void XB::sim_reader( std::vector<XB::track_info*> &xb_book, char *f_name ){ return; }
+void XB::sim_reader( std::vector<XB::track_info> &xb_book, std::string f_name ){ return; }
+void XB::sim_reader( std::vector<XB::track_info> &xb_book, char *f_name ){ return; }
 		
