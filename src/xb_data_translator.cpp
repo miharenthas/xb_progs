@@ -2,6 +2,8 @@
 //it can also be piped into another program(!!!)
 
 #include <iostream>
+#include <algorithm>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -41,9 +43,17 @@ class xb_data_translator{
 	private:
 		xb_data_translator(); //this class cannot be dfault constructed
 		                      //you need the options
+		//cleaner
+		void clean_data( vector<XB::data> &xb_data );
+		void clean_data( vector<XB::track_info> &xb_track ) {};
+		
 		vector<xb_data_type> xb_book; //the read data
 		struct translator_settings settings; //the settings
 };
+
+//------------------------------------------------------------------------------------
+//a function to check goodness
+bool is_crappy( XB::data &given );
 
 //------------------------------------------------------------------------------------
 //main
@@ -222,6 +232,9 @@ void xb_data_translator<xb_data_type>::data_loader(){
 	if( xb_book.empty() ){
 		throw XB::error( "No data!", "xb_data_translator" );
 	}
+	
+	//clean the data: remove things that had nans in them
+	clean_data( xb_book );
 }
 
 //------------------------------------------------------------------------------------
@@ -265,4 +278,26 @@ void xb_data_translator<xb_data_type>::check(){
 		}
 		if( settings.verbose ) putchar( '\n' );
 	}
+}
+
+//------------------------------------------------------------------------------------
+//the crapfinder
+//NOTE: this is custom and may change. In the future, this could also
+//      become an input option. As for now, let's hardcode it in.
+bool is_crappy( XB::data &given ){
+	if( given.empty_e && given.empty_he || given.empty_in_beta ) return true;
+	return false;
+}
+
+//------------------------------------------------------------------------------------
+//the cleaner
+template< class xb_data_type >
+void xb_data_translator< xb_data_type >::clean_data( vector<XB::data> &xb_data ){
+	int read_events = xb_data.size();
+
+	vector<XB::data>::iterator new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy );
+	xb_data.erase( new_end, xb_data.end() );
+	
+	if( settings.verbose )
+		printf( "Read events: %d\nValid events: %d\n", read_events, xb_data.size() );
 }

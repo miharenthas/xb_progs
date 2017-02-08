@@ -1,7 +1,7 @@
 //implementation of xb_cluster
 
 #include "xb_cluster.h"
-#include <stdio.h>
+
 
 namespace XB{
 

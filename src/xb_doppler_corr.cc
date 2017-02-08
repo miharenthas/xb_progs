@@ -3,6 +3,8 @@
 
 #include "xb_doppler_corr.h"
 
+
+
 namespace XB{
 	//----------------------------------------------------------------------------
 	//implementation of the class "b_interp"
@@ -188,17 +190,18 @@ namespace XB{
 			//NOTE: these may not be coincide with a crystal
 			//      therefore it's better to get them directly
 			//      from the cluster.
-			altitude = klz.clusters[i].c_altitude;
-			azimuth = klz.clusters[i].c_azimuth;
+			altitude = klz.clusters[i].c_altitude; 
+			azimuth = klz.clusters[i].c_azimuth; 
 						
 			//calculate the aperture from the beam line
 			inclination = angular_distance( b_altitude, b_azimuth,
 			                                altitude, azimuth );			
-			
+
 			//do the correction
 			klz.clusters[i].sum_e *= gamma*(1. - beta*cos( inclination ) );
-			for( int c=0; c < klz.clusters[i].n; ++c )
+			for( int c=0; c < klz.clusters[i].n; ++c ){
 				klz.clusters[i].crys_e[c] *= gamma*(1. - beta*cos( inclination ) );
+			}
 		}
 	}
 }

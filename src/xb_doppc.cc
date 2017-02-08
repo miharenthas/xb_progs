@@ -236,9 +236,11 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 				
 				//else, use the default beam out direction (given as a crystal)
 				//and interpolate the beta
-				} else XB::doppler_correct( xb_book.at(i),
+				} else {
+					XB::doppler_correct( xb_book.at(i),
 				                            interp_beta_0( xb_book.at(i).in_beta ),
 				                            default_beam_out );
+				}
 			}
 			break;
 		case FASTIDIOUS : //just those in the track book

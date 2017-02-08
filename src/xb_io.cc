@@ -67,14 +67,14 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book ){
 	//4*n*sizeof(float) + n*sizeof(unsigned int)
 	
 	//a handy buffer for the single data)
-	void *buf = malloc( 5*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) );
+	void *buf = malloc( 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) );
 	bool *flag_buf; 
 	unsigned int *u_buf, n;
 	float *f_buf;
 	//link the pointers
 	u_buf = (unsigned int*)buf;
 	flag_buf = (bool*)(u_buf + 2);
-	f_buf = (float*)(flag_buf + 5);
+	f_buf = (float*)(flag_buf + 6);
 	for( int i=0; i < xb_book.size(); ++i ){
 		//copy the number of elements and event id
 		u_buf[0] = xb_book[i].n;
@@ -86,13 +86,14 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book ){
 		flag_buf[2] = xb_book[i].empty_e;
 		flag_buf[3] = xb_book[i].empty_he;
 		flag_buf[4] = xb_book[i].empty_sum_e;
+		flag_buf[5] = xb_book[i].empty_in_beta;
 		
 		//copy the two floats
 		f_buf[0] = xb_book[i].sum_e;
 		f_buf[1] = xb_book[i].in_beta;
 		
 		//write it all down
-		fwrite( buf, 5*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float), 1, f_out );
+		fwrite( buf, 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float), 1, f_out );
 		
 		//copy the actual data buffer
 		//the array "t" is the beginning of the class' data buffer
@@ -137,18 +138,18 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book ){
 	if( !strstr( &hdr.d, "DATA" ) ) throw XB::error( "Wrong data file!", "XB::load" );
 
 	//prepare the buffers
-	void *buf = malloc( 5*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) ), *data_buf;
+	void *buf = malloc( 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) ), *data_buf;
 	bool *flag_buf; 
 	unsigned int *u_buf, n;
 	float *f_buf;
 	//link the pointers
 	u_buf = (unsigned int*)buf;
 	flag_buf = (bool*)(u_buf + 2);
-	f_buf = (float*)(flag_buf + 5);	
+	f_buf = (float*)(flag_buf + 6);	
 	//read
 	while( !feof( f_in ) ){
 		//get the number of elemets in the current event
-		fread( buf, 5*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float), 1, f_in );
+		fread( buf, 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float), 1, f_in );
 		
 		//construct the class in the back of the vector
 		xb_book.push_back( XB::data( u_buf[0], u_buf[1] ) );
@@ -159,6 +160,7 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book ){
 		xb_book.back().empty_e = flag_buf[2];
 		xb_book.back().empty_he = flag_buf[3];
 		xb_book.back().empty_sum_e = flag_buf[4];
+		xb_book.back().empty_in_beta = flag_buf[5];
 		
 		//copy the floats
 		xb_book.back().sum_e = f_buf[0];

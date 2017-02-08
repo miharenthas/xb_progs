@@ -2,6 +2,7 @@
 
 #include "xb_data.h"
 
+
 namespace XB{
 	//----------------------------------------------------------------------------
 	//XB::data implementation
@@ -15,7 +16,8 @@ namespace XB{
 		empty_pt( true ),
 		empty_e( true ),
 		empty_he( true ),
-		empty_sum_e( true )
+		empty_sum_e( true ),
+		empty_in_beta( true )
 	{
 		make_buf();
 	}
@@ -29,7 +31,8 @@ namespace XB{
 		empty_pt( given.empty_pt ),
 		empty_e( given.empty_e ),
 		empty_he( given.empty_he ),
-		empty_sum_e( given.empty_sum_e )
+		empty_sum_e( given.empty_sum_e ),
+		empty_in_beta( given.empty_in_beta )
 	{
 		make_buf();
 		
@@ -63,6 +66,8 @@ namespace XB{
 		}
 		if( !isnan( sum_e ) ) empty_sum_e = false;
 		else sum_e = 0;
+		if( !isnan( in_beta ) ) empty_in_beta = false;
+		else in_beta = 1;
 	}
 
 	
@@ -78,6 +83,7 @@ namespace XB{
 		empty_e = given.empty_e;
 		empty_he = given.empty_he;
 		empty_sum_e = given.empty_sum_e;
+		empty_in_beta = given.empty_in_beta;
 		
 		//free the current buffer
 		if( this->buf != NULL ) free( this->buf );
