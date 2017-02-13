@@ -48,13 +48,13 @@ namespace XB{
 	template< class xb_T >
 	class cut_data_1D : public std::unary_function<unsigned int, double> {
 		public:
-			cut_data_1D( std::vector<xb_T*> &data_array ):
+			cut_data_1D( std::vector<xb_T> &data_array ):
 				_data_array( data_array ) {};
 			
 			virtual double operator()( unsigned int index ) =0;
 			inline unsigned int size(){ return _data_array.size(); };
 		protected:
-			std::vector<xb_T*> &_data_array; //the address of the data array
+			std::vector<xb_T> &_data_array; //the address of the data array
 			                                 //that will be
 			                                 //handled by the class.
 			                                 //This is *NOT* owned
@@ -65,13 +65,13 @@ namespace XB{
 	template< class xb_T >
 	class cut_data_2D : public std::unary_function<unsigned int, pt_holder> {
 		public:
-			cut_data_2D( std::vector<xb_T*> &data_array ):
+			cut_data_2D( std::vector<xb_T> &data_array ):
 				_data_array( data_array ) {};
 			
 			virtual pt_holder operator()( unsigned int index ) =0;
 			inline unsigned int size(){ return _data_array.size(); };
 		protected:
-			std::vector<xb_T*> &_data_array; //the address of the data array
+			std::vector<xb_T> &_data_array; //the address of the data array
 			                                 //that will be
 			                                 //handled by the class.
 			                                 //This is *NOT* owned
@@ -110,7 +110,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//apply the cut given the flags
 	template< class xb_T >
-	int apply_flagged_cut( std::vector<xb_T*> &the_data, std::vector<bool> &flags );
+	int apply_flagged_cut( std::vector<xb_T> &the_data, std::vector<bool> &flags );
 	                
 	//============================================================================
 	//function implementations (they are templates...)
@@ -261,18 +261,22 @@ namespace XB{
 	//here is a little unary function that allows for the usage of
 	//std::remove_if in the flagged_cut function.
 	template< class xb_T >
-	bool is_null( xb_T *given ){ return given == NULL; }
+	bool is_marked( xb_T &given ){
+		return ((XB::event_holder)given).evnt == 0 &&
+		       ((XB::event_holder)given).n == 0; }
 				
 	template< class xb_T >
-	int apply_flagged_cut( std::vector<xb_T*> &the_data, std::vector<bool> &flags ){
+	int apply_flagged_cut( std::vector<xb_T> &the_data, std::vector<bool> &flags ){
 		int count = 0;
 		
 		//destroy the unflagged members and set their pointer to NULL
 		//meanwhile, count them.
+		xb_T *indirect;
 		for( int i=0; i < the_data.size(); ++i ){
 			if( !flags[i] ){
-				delete the_data.at( i );
-				the_data.at( i ) = NULL;
+				indirect = &the_data.at(i);
+				indirect->evnt = 0;
+				indirect->n = 0;
 				++count;
 			}
 		}
@@ -280,11 +284,11 @@ namespace XB{
 		//retrieve the pointers to the beginning and end of the
 		//std::vector holding the data, and get another one
 		//for the new size
-		typename std::vector< xb_T* >::iterator pbegin = the_data.begin();
-		typename std::vector< xb_T* >::iterator pend = the_data.end(), pnew_end;
+		typename std::vector< xb_T >::iterator pbegin = the_data.begin();
+		typename std::vector< xb_T >::iterator pend = the_data.end(), pnew_end;
 		
 		//get the new end with std::remove_if
-		pnew_end = std::remove_if( pbegin, pend, is_null< xb_T > );
+		pnew_end = std::remove_if( pbegin, pend, is_marked< xb_T > );
 		
 		//chop away the tail of the container, now full of nulls
 		the_data.erase( pnew_end, pend );

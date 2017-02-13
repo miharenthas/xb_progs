@@ -74,7 +74,7 @@ int main( int argc, char **argv ){
 	if( verbose && in_flag ) printf( "Reading from: %s...\n", in_fname );
 	else if( verbose && !in_flag ) printf( "Reading from STDIN...\n" );
 
-	std::vector<XB::data*> xb_book;
+	std::vector<XB::data> xb_book;
 	if( in_flag ) XB::load( in_fname, xb_book );
 	else XB::load( stdin, xb_book );
 	
@@ -92,7 +92,7 @@ int main( int argc, char **argv ){
 		if( verbose && !omp_get_thread_num() )
 			printf( "\b\b\b\b\b\b\b\b\b\b" );
 		
-		event_klZ[i] = XB::make_clusters_NN( *xb_book[i], neigh_order );
+		event_klZ[i] = XB::make_clusters_NN( xb_book[i], neigh_order );
 		
 		if( verbose && !omp_get_thread_num() )
 			printf( "%010d", i );
@@ -104,7 +104,7 @@ int main( int argc, char **argv ){
 	if( draw ) for( int i=0; i < event_klZ.size(); ++i ){
 		if( verbose ){
 			printf( "Drawing event %d:\n", i );
-			printf( "-multiplicity: %u.\n\n", event_klZ[i].multiplicity );
+			printf( ".n: %u.\n\n", event_klZ[i].n );
 		}
 		
 		gp_h = XB::draw_cluster_ball( event_klZ[i] );
@@ -125,7 +125,7 @@ int main( int argc, char **argv ){
 		try{
 			XB::load( out_fname, event_klZ_check );
 		}catch( XB::error e ){
-			printf( "There has been an error: %s\n", e.what );
+			printf( "There has been an error: %s\n", e.what() );
 			exit( 1 );
 		}
 		
@@ -134,7 +134,7 @@ int main( int argc, char **argv ){
 			if( verbose && i ) printf( "\b\b\b\b\b\b\b\b\b\b" );
 			if( verbose ) printf( "%010d", i );
 			
-			if( event_klZ[i].multiplicity != event_klZ_check.at(i).multiplicity ){
+			if( event_klZ[i].n != event_klZ_check.at(i).n ){
 				printf( "Ooops: screwed up.\n" );
 				break;
 			}

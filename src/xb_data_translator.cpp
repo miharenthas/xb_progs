@@ -2,6 +2,8 @@
 //it can also be piped into another program(!!!)
 
 #include <iostream>
+#include <algorithm>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -41,9 +43,17 @@ class xb_data_translator{
 	private:
 		xb_data_translator(); //this class cannot be dfault constructed
 		                      //you need the options
-		vector<xb_data_type*> xb_book; //the read data
+		//cleaner
+		void clean_data( vector<XB::data> &xb_data );
+		void clean_data( vector<XB::track_info> &xb_track ) {};
+		
+		vector<xb_data_type> xb_book; //the read data
 		struct translator_settings settings; //the settings
 };
+
+//------------------------------------------------------------------------------------
+//a function to check goodness
+bool is_crappy( XB::data &given );
 
 //------------------------------------------------------------------------------------
 //main
@@ -135,7 +145,7 @@ int main( int argc, char** argv ){
 		if( settings.track_flag ) track_engine.data_loader();
 		else data_engine.data_loader();
 	} catch( XB::error e ) {
-		cerr << "There has been an error: " << e.what << endl;
+		cerr << "There has been an error: " << e.what() << endl;
 		exit( 1 );
 	}
 	
@@ -144,7 +154,7 @@ int main( int argc, char** argv ){
 		if( settings.track_flag ) track_engine.data_putter();
 		else data_engine.data_putter();
 	} catch( XB::error e ) {
-		cerr << "There has been an error: " << e.what << endl;
+		cerr << "There has been an error: " << e.what() << endl;
 		exit( 1 );
 	}
 	
@@ -153,7 +163,7 @@ int main( int argc, char** argv ){
 		if( settings.track_flag && settings.check_flag ) track_engine.check();
 		else if( !settings.track_flag && settings.check_flag ) data_engine.check();
 	} catch( XB::error e ) {
-		cerr << "There has been an error: " << e.what << endl;
+		cerr << "There has been an error: " << e.what() << endl;
 		exit( 1 );
 	}
 	
@@ -193,7 +203,7 @@ xb_data_translator<xb_data_type>::~xb_data_translator(){} //nothing to do...
 template< class xb_data_type >
 void xb_data_translator<xb_data_type>::data_loader(){
 	//load the TTree into the vector (loop on the files)
-	vector<xb_data_type*> xb_book_buf;
+	vector<xb_data_type> xb_book_buf;
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( settings.verbose ) cout << "Reading from " << settings.in_f_name[i] << "..." << endl;
 
@@ -206,7 +216,7 @@ void xb_data_translator<xb_data_type>::data_loader(){
 			else XB::reader( xb_book_buf, settings.in_f_name[i] );
 			xb_book.insert( xb_book.end(), xb_book_buf.begin(), xb_book_buf.end() ); //cat it at the end
 		}catch( XB::error e ){
-			if( !strcmp( e.what, "File error!XB::reader" ) ){
+			if( !strcmp( e.what(), "File error!XB::reader" ) ){
 				if( settings.verbose ) printf( "File \"%s\" not found.\n", settings.in_f_name[i] );
 				continue;
 			} else {
@@ -222,6 +232,9 @@ void xb_data_translator<xb_data_type>::data_loader(){
 	if( xb_book.empty() ){
 		throw XB::error( "No data!", "xb_data_translator" );
 	}
+	
+	//clean the data: remove things that had nans in them
+	clean_data( xb_book );
 }
 
 //------------------------------------------------------------------------------------
@@ -243,7 +256,7 @@ void xb_data_translator<xb_data_type>::data_putter(){
 //performs the check
 template< class xb_data_type >
 void xb_data_translator<xb_data_type>::check(){
-	vector<xb_data_type*> xb_book_check;
+	vector<xb_data_type> xb_book_check;
 	//verify-ish
 	if( settings.out_flag ){
 		if( settings.verbose ) cout << "Veryfiyng..." << endl;
@@ -258,11 +271,33 @@ void xb_data_translator<xb_data_type>::check(){
 			if( settings.verbose && i ) printf( "\b\b\b\b\b\b\b\b\b\b" );
 			if( settings.verbose ) printf( "%010d", i );
 			
-			if( *xb_book[i] != *xb_book_check.at(i) ){
+			if( xb_book[i] != xb_book_check.at(i) ){
 				cerr << endl << "Ooops, screwed up.";
 				break;
 			}
 		}
 		if( settings.verbose ) putchar( '\n' );
 	}
+}
+
+//------------------------------------------------------------------------------------
+//the crapfinder
+//NOTE: this is custom and may change. In the future, this could also
+//      become an input option. As for now, let's hardcode it in.
+bool is_crappy( XB::data &given ){
+	if( given.empty_e && given.empty_he || given.empty_in_beta ) return true;
+	return false;
+}
+
+//------------------------------------------------------------------------------------
+//the cleaner
+template< class xb_data_type >
+void xb_data_translator< xb_data_type >::clean_data( vector<XB::data> &xb_data ){
+	int read_events = xb_data.size();
+
+	vector<XB::data>::iterator new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy );
+	xb_data.erase( new_end, xb_data.end() );
+	
+	if( settings.verbose )
+		printf( "Read events: %d\nValid events: %d\n", read_events, xb_data.size() );
 }

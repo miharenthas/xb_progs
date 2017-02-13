@@ -71,12 +71,12 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 		return octave_value_list();
 	}*/
 	
-	std::vector<XB::track_info*> data;
+	std::vector<XB::track_info> data;
 	
 	//if we got here, we should be able to proceed.
 	//declare the necessary bits and pieces
 	unsigned int current_numel = 0, current_evnt = 0;
-	XB::track_info *buf;
+	XB::track_info buf;
 	octave_scalar_map o_map;
 	
 	//loop-copy the data
@@ -87,17 +87,17 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 		current_evnt = o_map.getfield( "evnt" ).uint_value();
 		
 		//make the data (dynamic)
-		buf = new XB::track_info( current_numel, current_evnt );
+		buf = XB::track_info( current_numel, current_evnt );
 		
 		//do the copying
-		buf->in_beta = o_map.getfield( "in_beta" ).float_value();
-		buf->beta_0 = o_map.getfield( "beta_0" ).float_value();
-		buf->in_Z = o_map.getfield( "in_Z" ).float_value();
-		buf->in_A_on_Z = o_map.getfield( "in_A_on_Z" ).float_value();
+		buf.in_beta = o_map.getfield( "in_beta" ).float_value();
+		buf.beta_0 = o_map.getfield( "beta_0" ).float_value();
+		buf.in_Z = o_map.getfield( "in_Z" ).float_value();
+		buf.in_A_on_Z = o_map.getfield( "in_A_on_Z" ).float_value();
 		
 		if( o_map.isfield( "fragment_A" ) ){
 			if( !o_map.getfield( "fragment_A" ).is_zero_by_zero() ){
-				memcpy( buf->fragment_A,
+				memcpy( buf.fragment_A,
 					o_map.getfield( "fragment_A" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
 			}
@@ -105,7 +105,7 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 		
 		if( o_map.isfield( "fragment_Z" ) ){
 			if( !o_map.getfield( "fragment_Z" ).is_zero_by_zero() ){
-				memcpy( buf->fragment_Z,
+				memcpy( buf.fragment_Z,
 					o_map.getfield( "fragment_Z" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
 			}
@@ -113,7 +113,7 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 		
 		if( o_map.isfield( "fragment_beta" ) ){
 			if( !o_map.getfield( "fragment_beta" ).is_zero_by_zero() ){
-				memcpy( buf->fragment_beta,
+				memcpy( buf.fragment_beta,
 					o_map.getfield( "fragment_beta" ).float_array_value().fortran_vec(),
 					current_numel*sizeof(float) );
 			}
@@ -121,7 +121,7 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 		
 		if( o_map.isfield( "incoming" ) ){
 			for( int v=0; v < current_numel; ++v ){
-				buf->incoming[v] = struct2versor( o_map.getfield( "incoming" ).
+				buf.incoming[v] = struct2versor( o_map.getfield( "incoming" ).
 				                                        cell_value()(v).
 				                                        scalar_map_value() );
 			}
@@ -129,7 +129,7 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 		
 		if( o_map.isfield( "outgoing" ) ){
 			for( int v=0; v < current_numel; ++v ){
-				buf->outgoing[v] = struct2versor( o_map.getfield( "outgoing" ).
+				buf.outgoing[v] = struct2versor( o_map.getfield( "outgoing" ).
 				                                        cell_value()(v).
 				                                        scalar_map_value() );
 			}
@@ -150,11 +150,11 @@ DEFUN_DLD( xb_write_track_info, args, , O_DOC_STRING ){
 	try{
 		XB::write( out_fname, data );
 	} catch( XB::error e ){
-		error( e.what );
+		error( e.what() );
 	}
 	
 	//more cleanup
-	for( int i=0; i < data.size(); ++i ) delete data[i];
+	data.clear();
 	
 	//happy thoughts
 	return octave_value_list();

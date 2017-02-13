@@ -34,9 +34,10 @@ namespace XB{
 	} cluster;
 	
 	//this structure holds all the clusters
-	typedef struct _xb_clusters_per_event {
-		unsigned int multiplicity; //multiplicity of the cluster
-		std::vector<cluster> clusters; //array of culsters
+	typedef class _xb_clusters_per_event : public event_holder {
+		public:
+			float in_beta; //in beat, for doppler correction.
+			std::vector<cluster> clusters; //array of culsters
 	} clusterZ;
 	
 	

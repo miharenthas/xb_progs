@@ -45,6 +45,7 @@ namespace XB{
 			bool empty_e;
 			bool empty_he;
 			bool empty_sum_e;
+			bool empty_in_beta;
 		private:
 			void *buf; //this is a contiguos buffer holding the class' data
 			void make_buf(); //allocates the buffer and links the pointers

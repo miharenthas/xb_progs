@@ -19,8 +19,8 @@ extern "C"{
 #include "xb_io.h"
 
 //------------------------------------------------------------------------------------
-//a functional to test for multiplicity
-//this functional returns TRUE whenever the multiplicity is NOT the one
+//a functional to test for_multiplicity
+//this functional returns TRUE whenever the_multiplicity is NOT the one
 //with which is constructed. This is because std::remove_if removes on TRUE.
 typedef class is_not_multiplicity : public std::unary_function< XB::clusterZ, bool > {
 	public:
@@ -29,7 +29,7 @@ typedef class is_not_multiplicity : public std::unary_function< XB::clusterZ, bo
 		is_not_multiplicity( unsigned int mult ): _mul( mult ) {};
 	
 		//the operator()
-		bool operator()( XB::clusterZ &klZ ){ return klZ.multiplicity != _mul; }
+		bool operator()( XB::clusterZ &klZ ){ return klZ.n != _mul; }
 		
 		//assignment operator?
 		is_not_multiplicity operator=( is_not_multiplicity given ){
@@ -50,7 +50,7 @@ typedef struct _program_settings{
 	bool interactive; //if true, display prompt.
 	unsigned int in_f_count; //number of input files.
 	unsigned int num_bins; //number of bins with which to create the histogram
-	unsigned int target_mul; //taget multiplicity -- 0 indicates "sum all"
+	unsigned int target_mul; //taget_multiplicity -- 0 indicates "sum all"
 	float range[2]; //the range of the histogram
 	XB::gp_options gp_opt; //gnuplot options
 	XB::histogram_mode histo_mode; //the histogram population mode.
@@ -75,7 +75,7 @@ class xb_make_spc{
 		xb_make_spc(); //default constructor. This class cannot be instantiated without valid settings.
 		
 		void load_files(); //file loader
-		void target_multiplicity(); //set the target multiplicity
+		void target_multiplicity(); //set the target_multiplicity
 		
 		std::vector<XB::clusterZ> event_klZ[64]; //the clusters
 		std::vector<XB::clusterZ>::iterator last[64]; //its tail iterator
@@ -334,7 +334,7 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	if( settings.in_f_count <= 1 ) settings.histo_mode = XB::JOIN;
 	
 	load_files(); //and issues the file loading.
-	target_multiplicity(); //target the set multiplicity
+	target_multiplicity(); //target the set_multiplicity
 }
 
 xb_make_spc::~xb_make_spc(){
@@ -363,7 +363,7 @@ void xb_make_spc::load_files(){
 }
 
 //------------------------------------------------------------------------------------
-//multiplicity pruner
+//_multiplicity pruner
 void xb_make_spc::target_multiplicity(){
 	if( settings.target_mul != 0 ){
 		//create a comparison functional 
@@ -373,7 +373,7 @@ void xb_make_spc::target_multiplicity(){
 			last[i] = std::remove_if( event_klZ[i].begin(), event_klZ[i].end(), isnt_mul );
 		}
 	} else for( int i=0; i < settings.in_f_count; ++i ){
-		last[i] = event_klZ[i].end(); //if not target multiplicity is specified
+		last[i] = event_klZ[i].end(); //if not target_multiplicity is specified
 		                              //get the whole thing
 	}
 }
@@ -475,7 +475,7 @@ void xb_make_spc::populate_histogram(){
 			if( settings.verbose ){ //produce one sum histogram
 				printf( "Populating the histogram:\n" );
 				printf( "\t#channels: %u\n", settings.num_bins );
-				printf( "\tEvent multiplicity: %u\n", settings.target_mul );
+				printf( "\tEvent_multiplicity: %u\n", settings.target_mul );
 				printf( "\tRange (KeV): %f:%f\n", settings.range[0], settings.range[1] );
 			}
 
@@ -489,7 +489,7 @@ void xb_make_spc::populate_histogram(){
 				for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[i].begin();
 					 klZ != last[i]; ++klZ ){
 					for( int k=0;
-					     k < ( settings.target_mul ? settings.target_mul : klZ->multiplicity );
+					     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 					     ++k ){
 						gsl_histogram_accumulate( histo[0], klZ->clusters[k].sum_e, 1. );
 					}
@@ -501,7 +501,7 @@ void xb_make_spc::populate_histogram(){
 				if( settings.verbose ){ //produce many histograms that will be compared
 				printf( "Populating the histogram #%d:\n", i );
 				printf( "\t#channels: %u\n", settings.num_bins );
-				printf( "\tEvent multiplicity: %u\n", settings.target_mul );
+				printf( "\tEvent_multiplicity: %u\n", settings.target_mul );
 				printf( "\tRange (KeV): %f:%f\n", settings.range[0], settings.range[1] );
 				}
 				
@@ -514,7 +514,7 @@ void xb_make_spc::populate_histogram(){
 				for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[i].begin();
 					 klZ != last[i]; ++klZ ){
 					for( int k=0;
-					     k < ( settings.target_mul ? settings.target_mul : klZ->multiplicity );
+					     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 					     ++k ){
 						gsl_histogram_accumulate( histo[i], klZ->clusters[k].sum_e, 1. );
 					}
@@ -525,7 +525,7 @@ void xb_make_spc::populate_histogram(){
 			if( settings.verbose ){ //produce one histogram, subtracted
 				printf( "Populating the histogram:\n" );
 				printf( "\t#channels: %u\n", settings.num_bins );
-				printf( "\tEvent multiplicity: %u\n", settings.target_mul );
+				printf( "\tEvent_multiplicity: %u\n", settings.target_mul );
 				printf( "\tRange (KeV): %f:%f\n", settings.range[0], settings.range[1] );
 			}
 
@@ -539,7 +539,7 @@ void xb_make_spc::populate_histogram(){
 			for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[0].begin();
 				 klZ != last[0]; ++klZ ){
 				for( int k=0;
-				     k < ( settings.target_mul ? settings.target_mul : klZ->multiplicity );
+				     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 				     ++k ){
 					gsl_histogram_accumulate( histo[0], klZ->clusters[k].sum_e, 1. );
 				}
@@ -550,7 +550,7 @@ void xb_make_spc::populate_histogram(){
 				for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[i].begin();
 					 klZ != last[i]; ++klZ ){
 				for( int k=0;
-				     k < ( settings.target_mul ? settings.target_mul : klZ->multiplicity );
+				     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 				     ++k ){
 						gsl_histogram_accumulate( histo[0], klZ->clusters[k].sum_e, -1. );
 					}

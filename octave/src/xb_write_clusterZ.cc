@@ -15,7 +15,9 @@ The format of @var{clusterZ} should be the same-ish used in the xb_progs toolkit
 @example\n\
 @group\n\
 structure array data:\n\
-     multiplicity\n\
+    n\n\
+    evnt\n\
+    in_beta\n\
      structure array clusters:\n\
          n\n\
          centroid_id\n\
@@ -79,7 +81,9 @@ DEFUN_DLD( xb_write_clusterZ, args, , O_DOC_STRING ){
 	for( int i=0; i < o_data_m.length(); ++i ){
 		o_map = o_data_m(i);
 		
-		buf.multiplicity = o_map.getfield( "multiplicity" ).uint_value();
+		buf.n = o_map.getfield( "n" ).uint_value();
+		buf.evnt = o_map.getfield( "evnt" ).uint_value();
+		buf.in_beta = o_map.getfield( "in_beta" ).float_value();
 		buf.clusters = struct2cluster( o_map.getfield( "clusters" ).map_value() );		
 		
 		data.push_back( buf );
@@ -97,7 +101,7 @@ DEFUN_DLD( xb_write_clusterZ, args, , O_DOC_STRING ){
 	try{
 		XB::write( out_fname, data );
 	} catch( XB::error e ){
-		error( e.what );
+		error( e.what() );
 	}
 	
 	//happy thoughts

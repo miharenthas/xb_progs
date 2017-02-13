@@ -3,6 +3,8 @@
 
 #include "xb_doppler_corr.h"
 
+
+
 namespace XB{
 	//----------------------------------------------------------------------------
 	//implementation of the class "b_interp"
@@ -18,7 +20,7 @@ namespace XB{
 	//the one that's supposed to be used.
 	//it takes in the tracker info and sets up a linear fit
 	//(despite being called "interpolation" ) of the beta_0( in_beta ) function.
-	b_interp::_xb_beta_0_interpolate( std::vector<track_info*> &xb_track_book ){
+	b_interp::_xb_beta_0_interpolate( std::vector<track_info> &xb_track_book ){
 		const unsigned int N = xb_track_book.size();
 		
 		//first, populate the arrays
@@ -31,8 +33,8 @@ namespace XB{
 		
 		//copy the various betas
 		for( int i=0; i < N; ++i ){
-			in_betas[i] = xb_track_book[i]->in_beta;
-			beta_0s[i] = xb_track_book[i]->beta_0;
+			in_betas[i] = xb_track_book[i].in_beta;
+			beta_0s[i] = xb_track_book[i].beta_0;
 		}
 		
 		//do the fit
@@ -75,6 +77,9 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//implementation of the library functions
+	
+	//----------------------------------------------------------------------------
+	//single energy deposit correction
 	
 	//----------------------------------------------------------------------------
 	//implementation of the routine for doppler-correcting using crystal
@@ -125,7 +130,7 @@ namespace XB{
 				altitude = the_cb.at( evnt.i[i] ).altitude;
 				azimuth = the_cb.at( evnt.i[i] ).azimuth;
 			} catch( XB::error e ){
-				throw( XB::error( e.what , "XB::doppler_correct" ) );
+				throw( XB::error( e.what() , "XB::doppler_correct" ) );
 			}
 						
 			//calculate the aperture from the beam line
@@ -135,6 +140,68 @@ namespace XB{
 			//do the correction
 			if( evnt.e[i] ) evnt.e[i] *= gamma*(1. - beta*cos( inclination ) );
 			else evnt.he[i] *= gamma*(1. - beta*cos( inclination ) );
+		}
+	}
+
+	//----------------------------------------------------------------------------
+	//cluster correction
+	
+	//----------------------------------------------------------------------------
+	//implementation of the routine for doppler-correcting using crystal
+	//index from which the beam exits
+	void doppler_correct( clusterZ &klz, float beta, unsigned int beam_line ){
+		//get a ball...
+		xb_ball the_cb;
+		
+		//get the angles
+		float b_altitude = the_cb.at( beam_line ).altitude; //and of the beam's out
+		float b_azimuth = the_cb.at( beam_line ).azimuth;
+		
+		//call the engine
+		doppler_correct( klz, beta, b_altitude, b_azimuth );
+	}
+	
+	//----------------------------------------------------------------------------
+	//implementation of the interface with a given versor
+	void doppler_correct( clusterZ &klz, float beta, versor &direction ){
+		float b_altitude = asin( direction.k ); 
+		float b_azimuth = asin( direction.j );
+		
+		//call the engine
+		doppler_correct( klz, beta, b_altitude, b_azimuth );
+		
+	}
+	
+	//----------------------------------------------------------------------------
+	//implementation of the "engine"
+	void doppler_correct( clusterZ &klz, float beta, float b_altitude, float b_azimuth ){
+	
+		//get gamma from the beta
+		float gamma = 1./sqrt( 1. - pow( beta, 2 ) );
+		float altitude, azimuth, inclination; //the current crystal's angles, and
+		                                      //its inclination from the beam line
+
+		//loop on the energy deposits
+		for( int i=0; i < klz.n; ++i ){
+			//if the cluster is empty, jump
+			if( !klz.clusters[i].n ) continue;
+
+			//retrieve the coordinates of the centroid
+			//NOTE: these may not be coincide with a crystal
+			//      therefore it's better to get them directly
+			//      from the cluster.
+			altitude = klz.clusters[i].c_altitude; 
+			azimuth = klz.clusters[i].c_azimuth; 
+						
+			//calculate the aperture from the beam line
+			inclination = angular_distance( b_altitude, b_azimuth,
+			                                altitude, azimuth );			
+
+			//do the correction
+			klz.clusters[i].sum_e *= gamma*(1. - beta*cos( inclination ) );
+			for( int c=0; c < klz.clusters[i].n; ++c ){
+				klz.clusters[i].crys_e[c] *= gamma*(1. - beta*cos( inclination ) );
+			}
 		}
 	}
 }

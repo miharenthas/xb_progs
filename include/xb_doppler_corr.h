@@ -23,7 +23,7 @@ namespace XB{
 		public:
 			//ctors
 			_xb_beta_0_interpolate();
-			_xb_beta_0_interpolate( std::vector<track_info*>& );
+			_xb_beta_0_interpolate( std::vector<track_info>& );
 			~_xb_beta_0_interpolate();
 			
 			//a couple of get methods
@@ -50,6 +50,11 @@ namespace XB{
 	void doppler_correct( data &evnt, float beta, versor &directon ); //with the tracker's versor
 	void doppler_correct( data &evnt, float beta, unsigned int beam_line ); //with just the beam line
 	void doppler_correct( data &evnt, float beta, float b_altitude, float b_azimuth ); //with the angles
+	
+	//these perform the same action, but on clusters.
+	void doppler_correct( clusterZ &klz, float beta, versor &directon ); //with the tracker's versor
+	void doppler_correct( clusterZ &klz, float beta, unsigned int beam_line ); //with just the beam line
+	void doppler_correct( clusterZ &klz, float beta, float b_altitude, float b_azimuth ); //with the angles
 	
 }
 

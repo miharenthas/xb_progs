@@ -46,7 +46,7 @@ DEFUN_DLD( xb_ball_at, args, , O_DOC_STRING ){
 	try{
 		o_map = xb_ball_some_crystals( indexes, howmany );
 	} catch( XB::error e ){
-		error( "%s", e.what );
+		error( "%s", e.what() );
 	}
 	
 	return octave_value_list( o_map );
