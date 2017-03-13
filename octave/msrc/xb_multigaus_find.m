@@ -20,9 +20,12 @@ function [maxima, m_idx] = xb_multigaus_find( data_series )
 	%the procedure at this point is:
 	% 1 -- calculate first and second derivatives
 	% 2 -- flag as maxima those that have first derivative 0 and second positive
-	
-	first_d = sgolay( 3, 5, 1 ); %first derivative
-	second_d = sgolay( 3, 5, 2 ); %second derivative
+	sg_len = floor( length( data_series )/100 )
+	if mod( sg_len, 2 ) == 0
+		sg_len += 1;
+	end
+	first_d = sgolay( 3, sg_len, 1 ); %first derivative
+	second_d = sgolay( 3, sg_len, 2 ); %second derivative
 
 	%apply the derivatives
 	d_data = sgolayfilt( data_series, first_d );
@@ -32,7 +35,7 @@ function [maxima, m_idx] = xb_multigaus_find( data_series )
 	sgn_changes = find( sign( d_data(1:end-1) ) ~= sign( d_data(2:end) ) );
 	%check if i'm seeing double
 	adj = find( sgn_changes(2:end) - sgn_changes(1:end-1) == 1 );
-	if ~numel( adj ) %then we have adjacent hits
+	if numel( adj ) >= 1 %then we have adjacent hits
 		sgn_changes(adj) = sgn_changes(adj.+1);
 		sgn_changes = unique( sgn_changes );
 	end
