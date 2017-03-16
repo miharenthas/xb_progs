@@ -190,7 +190,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 	//ok, now do some actual work:
 	//prepare the thing by ordering the vectors according to the event number
 	std::sort( xb_track_book.begin(), xb_track_book.end(), evnt_id_comparison );
-	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
+	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison ); //TODO: make this parallel!
 
 	//prepare the beta interpolator
 	XB::b_interp interp_beta_0( xb_track_book );

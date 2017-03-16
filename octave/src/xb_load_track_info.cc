@@ -88,6 +88,7 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 					error( e.what() );
 				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
+				data_buf.clear();
 			} else {
 				octave_stdout << "xb_load_track_info: warning: file \""
 				              << args(f).string_value() << "\" doesn't exist.\n";
