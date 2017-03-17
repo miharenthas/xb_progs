@@ -29,6 +29,8 @@
 #include "xb_data.h"
 #include "xb_error.h"
 
+#define CK_NULL( ptr, what, who ) if( !ptr ) throw XB::error( what, who );
+
 namespace XB{
 	//read the data
 	void reader( std::vector<XB::data> &xb_book, std::string f_name );

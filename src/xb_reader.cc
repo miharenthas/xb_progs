@@ -32,16 +32,16 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 	
 	//let's get ready to read stuff
 	//thats utter braindamage
-	TBranch *evnt = data_tree->GetBranch( "Evnt" );
-	TBranch *xbn = data_tree->GetBranch( "Xbn" );
-	TBranch *xbi = data_tree->GetBranch( "Xbi" );
-	TBranch *xbt = data_tree->GetBranch( "Xbt" );
-	TBranch *xbpt = data_tree->GetBranch( "Xbpt" );
-	TBranch *xbe = data_tree->GetBranch( "Xbe" );
-	TBranch *xbhe = data_tree->GetBranch( "Xbhe" );
-	TBranch *xbsume = data_tree->GetBranch( "Xbsume" );
-	TBranch *inbeta = data_tree->GetBranch( "Inbeta" );
-	
+	TBranch *evnt = data_tree->GetBranch( "Evnt" ); CK_NULL( evnt, "no Evnt!", "XB::reader" );
+	TBranch *xbn = data_tree->GetBranch( "Xbn" ); CK_NULL( xbn, "no Xbn!", "XB::reader" );
+	TBranch *xbi = data_tree->GetBranch( "Xbi" ); CK_NULL( xbi, "no Xbi!", "XB::reader" );
+	TBranch *xbt = data_tree->GetBranch( "Xbt" ); CK_NULL( xbt, "no Xbt!", "XB::reader" );
+	TBranch *xbpt = data_tree->GetBranch( "Xbpt" ); CK_NULL( xbpt, "no Xbpt!", "XB::reader" );
+	TBranch *xbe = data_tree->GetBranch( "Xbe" ); CK_NULL( xbe, "no Xbe!", "XB::reader" );
+	TBranch *xbhe = data_tree->GetBranch( "Xbhe" ); CK_NULL( xbhe, "no Xbhe!", "XB::reader" );
+	TBranch *xbsume = data_tree->GetBranch( "Xbsume" ); CK_NULL( xbsume, "no Xbsume!",
+                                                                     "XB::reader" );
+	TBranch *inbeta = data_tree->GetBranch( "Inbeta" );	
 	
 	//reader loop
 	unsigned int n_on_this = 0;
@@ -71,7 +71,7 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 		xbe->SetAddress( (Float_t*)xb_book.back().e );
 		xbhe->SetAddress( (Float_t*)xb_book.back().he );
 		xbsume->SetAddress( (Float_t*)&xb_book.back().sum_e );
-		inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
+		if( inbeta ) inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
 		
 		//issue the copy order
 		xbi->GetEntry( i );
@@ -80,7 +80,7 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 		xbe->GetEntry( i );
 		xbhe->GetEntry( i );
 		xbsume->GetEntry( i );
-		inbeta->GetEntry( i );
+		if( inbeta ) inbeta->GetEntry( i );
 		
 		//probe for nans
 		xb_book.back().probe_for_crap();

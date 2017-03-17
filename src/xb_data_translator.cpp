@@ -21,6 +21,7 @@ struct translator_settings{
 	bool check_flag;
 	bool track_flag;
 	bool sim_flag;
+	bool source_flag;
 	bool verbose;
 	char in_f_name[64][256];
 	char out_f_name[256];
@@ -53,7 +54,8 @@ class xb_data_translator{
 
 //------------------------------------------------------------------------------------
 //a function to check goodness
-bool is_crappy( XB::data &given );
+bool is_crappy_beam( XB::data &given );
+bool is_crappy_source( XB::data &given );
 
 //------------------------------------------------------------------------------------
 //main
@@ -80,13 +82,14 @@ int main( int argc, char** argv ){
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "tracking-data", no_argument, NULL, 't' },
 		{ "simulation-data", no_argument, NULL, 's' },
+		{ "source-run", no_argument, NULL, 'S' },
 		{ "help", no_argument, NULL, 'h' },
 		{ 0, 0, 0, 999 }
 	};
 
 	//further input parsing
 	char iota = 0; int opt_idx = 0;
-	while( (iota = getopt_long( argc, argv, "i:o:cvts", opts, &opt_idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:cvtsS", opts, &opt_idx )) != -1 ){
 		switch( iota ){
 			case 'i':
 				if( strlen( optarg ) > 256 ){
@@ -116,6 +119,9 @@ int main( int argc, char** argv ){
 				break;
 			case 's':
 				settings.sim_flag = true;
+				break;
+			case 'S':
+				settings.source_flag = true;
 				break;
 			case 'h':
 				system( "cat doc/xb_data_translator" );
@@ -284,8 +290,13 @@ void xb_data_translator<xb_data_type>::check(){
 //the crapfinder
 //NOTE: this is custom and may change. In the future, this could also
 //      become an input option. As for now, let's hardcode it in.
-bool is_crappy( XB::data &given ){
+bool is_crappy_beam( XB::data &given ){
 	if( given.empty_e && given.empty_he || given.empty_in_beta ) return true;
+	return false;
+}
+
+bool is_crappy_source( XB::data &given ){
+	if( given.empty_e && given.empty_he ) return true;
 	return false;
 }
 
@@ -295,7 +306,9 @@ template< class xb_data_type >
 void xb_data_translator< xb_data_type >::clean_data( vector<XB::data> &xb_data ){
 	int read_events = xb_data.size();
 
-	vector<XB::data>::iterator new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy );
+	vector<XB::data>::iterator new_end;
+	if( settings.source_flag ) new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy_source );
+	else new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy_beam );
 	xb_data.erase( new_end, xb_data.end() );
 	
 	if( settings.verbose )
