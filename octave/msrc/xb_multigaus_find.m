@@ -19,13 +19,29 @@ function [maxima, m_idx] = xb_multigaus_find( data_series, varargin )
 	
 	%input parsing
 	trg = min( data_series ); %trigger level
-	sg_len = min( max( floor( length( data_series )/100 ), 5 ), 100 ); %between 5 and 100
-	if nargin >= 2 %then we have also a trigger level specified
-		trg = varargin(1);
+	sg_len = 3; %default sgolay length
+	sg_smt = 5; %smoother settings
+	sg_ord = 2; %filter order
+	
+	if ~isempty( varargin )
+		prop_name = varargin(1:2:end);
+		prop_value = varargin(2:2:end);
+		
+		for aa=1:length( prop_name )
+			if strcmp( prop_name{aa}, 'triglevel' )
+				trg = prop_value{aa};
+			elseif strcmp( prop_name{aa}, 'sgolaylength' )
+				sg_len = prop_value{aa};
+			elseif strcmp( prop_name{aa}, 'sgolayorder' )
+				sg_ord = prop_value{aa};
+			elseif strcmp( prop_name{aa}, 'smoothpasses' )
+				sg_smt = prop_value{aa};
+			else
+				error( [prop_name{aa}, ' is an uknown propery.'] );
+			end
+		end
 	end
-	if nargin >= 3 %then we also have a length for the sgolay smoother
-		sg_len = varargin(2);
-	end
+	
 	%the procedure at this point is:
 	% 1 -- calculate first and second derivatives
 	% 2 -- flag as maxima those that have first derivative 0 and second positive
@@ -33,18 +49,22 @@ function [maxima, m_idx] = xb_multigaus_find( data_series, varargin )
 	if mod( sg_len, 2 ) == 0
 		sg_len += 1;
 	end
-	first_d = sgolay( 3, sg_len, 1 ); %first derivative
-	second_d = sgolay( 3, sg_len, 2 ); %second derivative
+	first_d = sgolay( sg_ord, sg_len, 1 ); %first derivative
+	second_d = sgolay( sg_ord, sg_len, 2 ); %second derivative
+	smoother = sgolay( sg_ord, 5*sg_len ); %a smoother
 
-	%apply the derivatives
+	%apply the derivatives (and do smoothing)
 	d_data = sgolayfilt( data_series, first_d );
+	for ii=1:sg_smt d_data = sgolayfilt( d_data, smoother ); end %smoother
 	dd_data = sgolayfilt( data_series, second_d );
+	for ii=1:sg_smt dd_data = sgolayfilt( dd_data, smoother ); end %smoother
 	
 	%find the zeroes -- which means find when the sign changes
 	sgn_changes = find( sign( d_data(2:end) ) ~= sign( d_data(1:end-1) ) );
 	sgn_changes += 1; %seems to be needed.
 	%check if i'm seeing double
-	adj = find( sgn_changes(2:end) - sgn_changes(1:end-1) == 1 );
+	adj_stp = max( length( data_series )/1e3, 1 );
+	adj = find( sgn_changes(2:end) - sgn_changes(1:end-1) <= adj_stp );
 	if numel( adj ) >= 1 %then we have adjacent hits
 		sgn_changes(adj) = sgn_changes(adj.+1);
 		sgn_changes = unique( sgn_changes );
@@ -54,9 +74,16 @@ function [maxima, m_idx] = xb_multigaus_find( data_series, varargin )
 	%derivative
 	m_idx = find( dd_data( sgn_changes ) <= 0 );
 	m_idx = sgn_changes( m_idx );
-	if nargout == 2
-		maxima = data_series( m_idx );
-	end
+	maxima = data_series( m_idx );
+
+	%now, apply the trigger
+	t_idx = find( maxima >= trg );
+	m_idx = m_idx( t_idx );
+	maxima = maxima( t_idx );
+	
+	%and sort the result
+	[maxima, s_idx] = sort( maxima );
+	m_idx = m_idx( s_idx );
 	%and that should be it.
 end
 	
