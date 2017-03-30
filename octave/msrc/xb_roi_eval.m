@@ -19,47 +19,51 @@ function guesses = xb_roi_eval( data_series, span, centroid, varargin )
 		exp_bkg_guesses = varargin{1};
 	end
 	
-	%-----------------------------------------------------------------------------
-	%retrieve the extremes
-	c_right = [];
-	c_left = [];
-	c_all = [];
-	if isscalar( span )
-		c_right = data_series(1,:) < centroid + span/2;
-		c_left = data_series(1,:) > centroid - span/2;
-		c_all = c_left == c_right;
-	elseif isvector( span )
-		c_right = data_series(1,:) < span(2);
-		c_left = data_series(1,:) > span(1);
-		c_all = c_left == c_right;
+	%look for the centroid in the data series
+	c_idx = find( data_series(2,:) == centroid );
+	if isempty( c_idx ) %we didn't find the centroid
+		error( 'Could not find centroid in data_series' );
 	end
-	%do the cuttage
-	data_series = data_series(:,c_all);
-
+	
 	%-----------------------------------------------------------------------------
+	%BROKEN: this works with indexes, not with energies.
+	%        that is a BAD idea. FIX IT.
+	%retrieve the extremes
+	c_begin = [];
+	c_end = [];
+	if isscalar( span )
+		c_begin = max( 1, floor( c_idx-span/2 ) );
+		c_end = min( length( data_series ), ceil( c_idx+span/2 ) );
+	elseif isvector( span )
+		c_begin = span(1);
+		c_end = span(2);
+	end
+	if isempty( c_begin ) || isempty( c_end )
+		error( 'Could not make sense of span' );
+	end
+	
+	%do the cuttage
+	data_series = data_series(:,[c_begin:c_end] );
+	%-----------------------------------------------------------------------------
+	
 	%make the cost function
-	gs = xb_multigaus_stack_alloc( data_series(1,:), 1 ); %one gaussian
-	
-	%educate the initial guess a bit
-	x0 = (data_series(1,end) + data_series(1,1))/2; %a very rough guess for the centering
-	sigma = .67*(data_series(1,end) - data_series(1,1))/2; %and for sigma
-	amp = max( data_series(2,:) ); %the amplitude
-	
+	gs = xb_multigaus_stack_alloc( data_series(1,:), 1 );
 	if ~isempty( exp_bkg_guesses )
 		bkg = @( p ) p(1)*exp( data_series(1,:)*p(2) );
 		J_fun = @( p ) sum( ( xb_multigaus_stack_exec( p(1:3), gs ) + ...
 		              bkg( p([4 5]) ) - data_series(2,:) ).^2 )/ ...
 		              ( length( data_series ) - 5 );
-		guesses = [[amp, x0, sigma], exp_bkg_guesses];
+		guesses = [[1, centroid, 1], exp_bkg_guesses]; %this is also BROKEN (idx vs nrg)
 	else
 		J_fun = @( p ) sum( ( xb_multigaus_stack_exec( p(1:3), gs ) - ...
 		              data_series(2,:) ).^2 )/ ...
-		              ( max( length( data_series ) - 5, 1 ) );
-		guesses = [amp, x0, sigma];
+		              ( length( data_series ) - 5 );
+		guesses = [1, centroid, 1]; %this is also BROKEN (idx vs nrg)
 	end
 	
 	
 	%do the fitting
+	
 	for ii=1:10
 		guesses = fminsearch( J_fun, guesses );
 	end
