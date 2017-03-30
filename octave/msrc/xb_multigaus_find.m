@@ -81,9 +81,6 @@ function [maxima, m_idx] = xb_multigaus_find( data_series, varargin )
 	m_idx = m_idx( t_idx );
 	maxima = maxima( t_idx );
 	
-	%and sort the result
-	[maxima, s_idx] = sort( maxima );
-	m_idx = m_idx( s_idx );
 	%and that should be it.
 end
 	
