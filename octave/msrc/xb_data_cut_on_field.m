@@ -65,6 +65,9 @@ function [evt, nb_removed] = xb_data_cut_on_field( evt, op_handle, field_name )
 	evt = reshape( evt_part, [], 1 );
 	if ~isempty( evt_rest ) evt = [evt(:); evt_rest(:)]; end
 	nb_removed = sum( nb_removed_part ) + nbr_rest; 
+
+	%prune the empty ones
+	evt = evt( find( [evt.n] ) );
 end
 
 %processor function: does the actaul cutting.
