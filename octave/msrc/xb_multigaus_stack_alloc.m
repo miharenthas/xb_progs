@@ -1,7 +1,7 @@
 %this function allocates a stack of gaussians from a bunch
 %of initial guess parameters.
 %
-% gaus_stack = xb_multigaus_stack_alloc( data_set, parameters )
+% gaus_stack = xb_multigaus_stack_alloc( data_x, nb_gaus )
 
 function gaus_stack = xb_multigaus_stack_alloc( data_abscissa, nb_gaus )
 	%loop create the gaussians
