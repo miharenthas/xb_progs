@@ -50,8 +50,8 @@ function [evt, nb_removed] = xb_data_cut_on_field( evt, op_handle, field_name )
 		catch
 			%I'm not yet sure this is the most brilliant solution
 			%but it's the best I can think right now.
-			[evt_rest nbr_rest] = xb_data_cut_on_field( evt(idx_part(ii):end), ...
-			                                            op_handle, field_name );
+			[evt_rest, nbr_rest] = xb_data_cut_on_field( evt(idx_part(ii):end), ...
+			                                             op_handle, field_name );
 			break;
 		end
 		nb_proc += 1;
