@@ -3,36 +3,33 @@
 %specified (TODO).
 %
 % [hst, binZ] = cc_do_spectrum( energy_data )
+% [hst, binZ] = cc_do_spectrum( energy_data, settings )
 %
 % -- energy_data: contains the energy deposits from a crystal
 %                 0-pruning will be repeated
-%
-%GLOBAL VARIABLES:
-% -- settings: a struct with at least the fields:
+% -- settings: a struct with at least three fields:
 %              -- bin: the width of the bin
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
 
-function [hst, binZ] = cc_do_spectrum( energy_data )
-	global settings;
-
+function [hst, binZ] = cc_do_spectrum( energy_data, varargin )
 	%parse the evtl. options
-	if isempty( settings )
+	if isempty( varargin )
 		settings.bin = 10;
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
-	elseif isstruct( settings )
-		settings.bin = settings.bin;
-		settings.ax_lb = settings.ax_lb;
-		settings.ax_ub = settings.ax_ub;
-		settings.crys_nb = settings.crys_nb;
-	elseif isscalar( settings )
+	elseif isstruct( varargin{1} )
+		settings.bin = varargin{1}.bin;
+		settings.ax_lb = varargin{1}.ax_lb;
+		settings.ax_ub = varargin{1}.ax_ub;
+		settings.crys_nb = varargin{1}.crys_nb;
+	elseif isscalar( varargin{1} )
 		settings.bin = 10;
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
-		settings.crys_nb = settings;
+		settings.crys_nb = varargin{1};
 	end
 
 	%do a spot of 0-pruning
@@ -54,10 +51,6 @@ function [hst, binZ] = cc_do_spectrum( energy_data )
 		title( ['Crystal #', num2str( settings.crys_nb ), ' energy spectrum'] );
 		grid on;
 		
-		leg = { ['Crystal #', num2str( settings.crys_nb )] };
-		lg = legend( leg );
-		set( lg, 'fontsize', 24 );
-
 		%ask for user's opinion
 		disp( "cc_do_spectrum: is this OK?" );
 		[go_on, settings] = cc_do_spectrum_prompt( fig, settings );
