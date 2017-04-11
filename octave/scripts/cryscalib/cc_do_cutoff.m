@@ -1,6 +1,7 @@
 %This function finds the cutoff of the crystal that is being examined
 %
 % cutoff = cc_do_cutoff( energy_spc )
+% cutoff = cc_do_cutoff( energy_spc, settings )
 %
 %NOTE: this function works on the spectrum, not on the raw energy data
 %      this means that the returned value is somewhat dependent from the
@@ -9,38 +10,35 @@
 %
 % -- energy_spc: contains the energy spectrum of the crystal
 %                energy_spc = [binZ;hst];
-%
-%GLOBAL VARIABLES
 % -- settings: a struct with at least the fields:
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
 
-function cutoff = cc_do_cutoff( energy_spc )
-	global settings;
-
+function cutoff = cc_do_cutoff( energy_spc, varargin )
 	%parse the evtl. options
-	if isempty( settings )
+	if isempty( varargin )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
-	elseif isstruct( settings )
-		settings.ax_lb = settings.ax_lb;
-		settings.ax_ub = settings.ax_ub;
-		settings.crys_nb = settings.crys_nb;
-	elseif isscalar( settings )
+	elseif isstruct( varargin{1} )
+		settings.ax_lb = varargin{1}.ax_lb;
+		settings.ax_ub = varargin{1}.ax_ub;
+		settings.crys_nb = varargin{1}.crys_nb;
+	elseif isscalar( varargin{1} )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
-		settings.crys_nb = settings;
+		settings.crys_nb = varargin{1};
 	end
 
 	go_on = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
-
-	%find the minimm value
-	cutoff = min( energy_spc(1,:) );
-	lin_hgt = max( energy_spc(2,:) );
 	while go_on
+		
+		%find the minimm value
+		cutoff = min( energy_spc(1,:) );
+		lin_hgt = max( energy_spc(2,:) );
+
 		%display
 		figure( fig );
 		stairs( energy_spc(1,:), energy_spc(2,:), 'linewidth', 2 );
@@ -54,19 +52,19 @@ function cutoff = cc_do_cutoff( energy_spc )
 		title( ['Crystal #', num2str( settings.crys_nb ), ' energy spectrum with cutoff'] );
 		grid on;
 		
-		leg = { ['Crystal #', num2str( settings.crys_nb )]; ['Cutoff ',num2str( cutoff )]  };
+		leg = { ['Crystal #', num2str( settings.crys_nb )]; 'Cutoff' };
 		lg = legend( leg );
 		set( lg, 'fontsize', 24 );
 		
 		%ask for user's opinion
 		disp( "cc_do_cutoff: is this OK?" );
-		[go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, settings, cutoff );
+		[go_on, settings] = cc_do_cutoff_prompt( fig, settings );
 	end
 	close( fig );
 end
 
 %this function's command line
-function [go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, old_settings, cutoff )
+function [go_on, settings] = cc_do_cutoff_prompt( fig, old_settings )
 	go_on = true;
 	settings = old_settings;
 	
@@ -103,16 +101,6 @@ function [go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, old_settings, cut
 				         num2str( settings.ax_lb ), '_to_', ...
 				         num2str( settings.ax_ub ) ];
 				hgsave( fig, name );
-			end
-		case 'mv'
-			if numel( opts ) == 2
-				if strcmp( opts{1}, '+' ) cutoff += str2num( opts{2} );
-				elseif strcmp( opts{1}, '-' ) cutoff -= str2num( opts{2} );
-				else disp( 'Operator not supported.' ); end
-			elseif numel( opts ) == 1
-				cutoff = str2num( opts{1} );
-			else
-				disp( 'command "mv" requires 1 or 2 arguments.' );
 			end
 		otherwise
 			disp( ['"', cmd, '" is not a valid command.'] );

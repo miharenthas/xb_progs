@@ -2,11 +2,11 @@
 %See the documentation of xb_multigaus_find for more details.
 %
 % [p_val, p_idx] = cc_find_peaks( energy_spc )
+% [p_val, p_idx] = cc_find_peaks( energy_spc, settings )
 %
 %
 % -- energy_spc: contains the energy spectrum of the crystal
 %                energy_spc = [binZ;hst];
-% GLOBAL VARIABLES:
 % -- settings: a struct with at least the fields:
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
@@ -16,15 +16,10 @@
 %              -- sg_len: the length of the Savitzky-Golay (sg) filter
 %              -- sg_smt: number of passes of the smoother
 %              -- sg_ord: order of the sg filter
-% -- ccg_repeat: a flag to cause the current fitting process to be discarded
-%                and repeated from scratch.
 
-function [p_val, p_idx] = cc_find_peaks( energy_spc )
-	global ccg_repeat;
-	global settings;
-
+function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
 	%parse the evtl. options
-	if isempty( settings )
+	if isempty( varargin )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
@@ -34,19 +29,19 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc )
 		settings.sg_len = 3;
 		settings.sg_smt = 5;
 		settings.sg_ord = 2;
-	elseif isstruct( settings )
-		settings.ax_lb = settings.ax_lb;
-		settings.ax_ub = settings.ax_ub;
-		settings.crys_nb = settings.crys_nb;
-		if isfield( settings, 'trg' ) settings.trg = settings.trg;
+	elseif isstruct( varargin{1} )
+		settings.ax_lb = varargin{1}.ax_lb;
+		settings.ax_ub = varargin{1}.ax_ub;
+		settings.crys_nb = varargin{1}.crys_nb;
+		if isfield( varargin{1}, 'trg' ) settings.trg = varargin{1}.trg;
 		else settings.trg = 10; end
-		if isfield( settings, 'sg_len' ) settings.sg_len = settings.sg_len;
+		if isfield( varargin{1}, 'sg_len' ) settings.sg_len = varargin{1}.sg_len;
 		else settings.sg_len = 3; end
-		if isfield( settings, 'sg_smt' ) settings.sg_smt = settings.sg_smt;
+		if isfield( varargin{1}, 'sg_smt' ) settings.sg_smt = varargin{1}.sg_smt;
 		else settings.sg_smt = 5; end
-		if isfield( settings, 'sg_ord' ) settings.sg_ord = settings.sg_ord;
+		if isfield( varargin{1}, 'sg_ord' ) settings.sg_ord = varargin{1}.sg_ord;
 		else settings.sg_ord = 2; end
-	elseif isscalar( settings )
+	elseif isscalar( varargin{1} )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		%these are the defaults fot xb_multigaus_find
@@ -55,20 +50,19 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc )
 		settings.sg_len = 3;
 		settings.sg_smt = 5;
 		settings.sg_ord = 2;
-		settings.crys_nb = settings;
+		settings.crys_nb = varargin{1};
 	end
 
-	go_on = true; rcl = true;
+	go_on = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
 	while go_on
 		%find the peaks
-		if rcl
-			[p_val, p_idx] = xb_multigaus_find( energy_spc(2,:), ...
-			                                    'triglevel', settings.trg, ...
-			                                    'sgolaylength', settings.sg_len, ...
-			                                    'sgolayorder', settings.sg_ord, ...
-			                                    'smoothpasses', settings.sg_smt );
-		end
+		[p_val, p_idx] = xb_multigaus_find( energy_spc(2,:), ...
+		                                    'triglevel', settings.trg, ...
+		                                    'sgolaylength', settings.sg_len, ...
+		                                    'sgolayorder', settings.sg_ord, ...
+		                                    'smoothpasses', settings.sg_smt );
+
 		%display
 		figure( fig );
 		stairs( energy_spc(1,:), energy_spc(2,:), 'linewidth', 2 );
@@ -99,21 +93,16 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc )
 		
 		%ask for user's opinion
 		disp( "cc_find_peaks: is this OK?" );
-		payload.p_val = p_val;
-		payload.p_idx = p_idx;
-		[go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, settings, payload );
+		[go_on, settings] = cc_find_peaks_prompt( fig, settings );
 	end
 	close( fig );
 end
 
 %this function's command line
-%TODO: some editing of the peak maxima might be useful here...
-function [go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, old_settings, payload )
-	go_on = true; rcl = true;
+function [go_on, settings] = cc_find_peaks_prompt( fig, old_settings )
+	go_on = true;
 	settings = old_settings;
-	p_val = payload.p_val;
-	p_idx = payload.p_idx;
-
+	
 	user_says = input( 'cc> ', 'S' );
 	if ~user_says
 		return;
@@ -162,20 +151,6 @@ function [go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, old_s
 			else
 				disp( 'command "smoothps" requires 1 argument.' );
 			end
-		case 'rm'
-			if numel( opts ) == 1
-				idx = 1:length( payload.p_idx );
-				idx = find( idx ~= str2num( opts{1} ) );
-				p_idx = payload.p_idx(idx);
-				p_val = payload.p_val(idx);
-				rcl = false;
-			else
-				disp( 'command "rm" supports one only argument.' );
-			end
-		case 'reset'
-			settings = old_settings;
-		case 'rcl'
-			rcl = true;
 		case 'save'
 			if ~isempty( opts )
 				name = opts{1};
@@ -186,9 +161,6 @@ function [go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, old_s
 				         num2str( settings.ax_ub ) ];
 				hgsave( fig, name );
 			end
-		case 'scrap'
-			ccg_repeat = true;
-			go_on = false;
 		otherwise
 			disp( ['"', cmd, '" is not a valid command.'] );
 	end
