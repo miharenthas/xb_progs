@@ -7,7 +7,7 @@
 %
 % -- energy_data: contains the energy deposits from a crystal
 %                 0-pruning will be repeated
-% -- settings: a struct with at least three fields:
+% -- settings: a struct with at least the fields:
 %              -- bin: the width of the bin
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
@@ -51,6 +51,10 @@ function [hst, binZ] = cc_do_spectrum( energy_data, varargin )
 		title( ['Crystal #', num2str( settings.crys_nb ), ' energy spectrum'] );
 		grid on;
 		
+		leg = { ['Crystal #', num2str( settings.crys_nb )] };
+		lg = legend( leg );
+		set( lg, 'fontsize', 24 );
+
 		%ask for user's opinion
 		disp( "cc_do_spectrum: is this OK?" );
 		[go_on, settings] = cc_do_spectrum_prompt( fig, settings );
