@@ -64,6 +64,7 @@ function cutoff = cc_do_cutoff( energy_spc, varargin )
 end
 
 %this function's command line
+%TODO: The possibility of moving the cutoff might be useful here.
 function [go_on, settings] = cc_do_cutoff_prompt( fig, old_settings )
 	go_on = true;
 	settings = old_settings;
