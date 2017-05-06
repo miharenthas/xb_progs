@@ -99,6 +99,7 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
 end
 
 %this function's command line
+%TODO: some editing of the peak maxima might be useful here...
 function [go_on, settings] = cc_find_peaks_prompt( fig, old_settings )
 	go_on = true;
 	settings = old_settings;
