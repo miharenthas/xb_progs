@@ -78,14 +78,16 @@ function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info,
 		
 		%ask for user's opinion
 		disp( "cc_find_rois: is this OK?" );
-		[go_on, settings, guesses] = cc_find_rois_prompt( fig, settings, guesses );
+		payload.gs = guesses;
+		payload.rois = roi_spans;
+		[go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, settings, guesses );
 	end
 	close( fig );
 end
 
 %this function's command line
 %TODO: some editing options for the ROI parameters might be useful here.
-function [go_on, settings, guesses] = cc_find_rois_prompt( fig, old_settings, guesses )
+function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_settings, payload )
 	go_on = true;
 	gogo_on = true;
 	settings = old_settings;
@@ -120,7 +122,7 @@ function [go_on, settings, guesses] = cc_find_rois_prompt( fig, old_settings, gu
 					disp( 'command "crys" requires 1 argument.' );
 				end
 			case 'guess?'
-				disp( guesses );
+				disp( payload.gs );
 			%change manually the parameters
 			%these commands take two options
 			%first is gaussian numner
@@ -128,7 +130,7 @@ function [go_on, settings, guesses] = cc_find_rois_prompt( fig, old_settings, gu
 			case 'A'
 				if numel( opts ) == 2
 					try
-						guesses(str2num( opts{1} ),1) = str2num( opts{2} );
+						payload.gs(str2num( opts{1} ),1) = str2num( opts{2} );
 					catch
 						disp( 'A out of range.' );
 					end
@@ -138,7 +140,7 @@ function [go_on, settings, guesses] = cc_find_rois_prompt( fig, old_settings, gu
 			case 'x0'
 				if numel( opts ) == 2
 					try
-						guesses(str2num( opts{1} ),2) = str2num( opts{2} );
+						payload.gs(str2num( opts{1} ),2) = str2num( opts{2} );
 					catch
 						disp( 'x0 out of range.' );
 					end
@@ -148,12 +150,24 @@ function [go_on, settings, guesses] = cc_find_rois_prompt( fig, old_settings, gu
 			case 'sigma'
 				if numel( opts ) == 2
 					try
-						guesses(str2num( opts{1} ),3) = str2num( opts{2} );
+						payload.gs(str2num( opts{1} ),3) = str2num( opts{2} );
 					catch
 						disp( 'sigma out of range.' );
 					end
 				else
 					disp( 'command "sigma" requires 2 arguments.' );
+				end
+			case 'rois?'
+				disp( payload.rois );
+			case 'mvroi'
+				if numel( opts ) == 2
+					try
+						payload.rois(str2num( opts{1} )) = str2num( opts{2} );
+					catch
+						disp( 'ROI out of range.' );
+					end
+				else
+					disp( 'command "mvroi" requires 2 arguments' );
 				end
 			case 'save'
 				if ~isempty( opts )
