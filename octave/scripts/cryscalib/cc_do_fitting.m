@@ -22,7 +22,7 @@
 % -- g_fit_pees: the parameters of the miltigaussian fit
 %                just completed.
 
-function [g_fit_pees, g_fit_err] = cc_do_fitting( energy_spc, settings ){
+function [g_fit_pees, g_fit_err] = cc_do_fitting( energy_spc, settings )
 	if nargin == 1
 		%don't pass any settings.
 		nosettings_flag = 1;
