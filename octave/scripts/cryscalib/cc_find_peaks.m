@@ -53,16 +53,17 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
 		settings.crys_nb = varargin{1};
 	end
 
-	go_on = true;
+	go_on = true; rcl = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
 	while go_on
 		%find the peaks
-		[p_val, p_idx] = xb_multigaus_find( energy_spc(2,:), ...
-		                                    'triglevel', settings.trg, ...
-		                                    'sgolaylength', settings.sg_len, ...
-		                                    'sgolayorder', settings.sg_ord, ...
-		                                    'smoothpasses', settings.sg_smt );
-
+		if rcl
+			[p_val, p_idx] = xb_multigaus_find( energy_spc(2,:), ...
+			                                    'triglevel', settings.trg, ...
+			                                    'sgolaylength', settings.sg_len, ...
+			                                    'sgolayorder', settings.sg_ord, ...
+			                                    'smoothpasses', settings.sg_smt );
+		end
 		%display
 		figure( fig );
 		stairs( energy_spc(1,:), energy_spc(2,:), 'linewidth', 2 );
@@ -93,17 +94,21 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
 		
 		%ask for user's opinion
 		disp( "cc_find_peaks: is this OK?" );
-		[go_on, settings] = cc_find_peaks_prompt( fig, settings );
+		payload.p_val = p_val;
+		payload.p_idx = p_idx;
+		[go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, settings, payload );
 	end
 	close( fig );
 end
 
 %this function's command line
 %TODO: some editing of the peak maxima might be useful here...
-function [go_on, settings] = cc_find_peaks_prompt( fig, old_settings )
-	go_on = true;
+function [go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, old_settings, payload )
+	go_on = true; rcl = true;
 	settings = old_settings;
-	
+	p_val = payload.p_val;
+	p_idx = payload.p_idx;
+
 	user_says = input( 'cc> ', 'S' );
 	if ~user_says
 		return;
@@ -152,6 +157,20 @@ function [go_on, settings] = cc_find_peaks_prompt( fig, old_settings )
 			else
 				disp( 'command "smoothps" requires 1 argument.' );
 			end
+		case 'rm'
+			if numel( opts ) == 1
+				idx = 1:length( payload.p_idx );
+				idx = find( idx ~= str2num( opts{1} ) );
+				p_idx = payload.p_idx(idx);
+				p_val = payload.p_val(idx);
+				rcl = false;
+			else
+				disp( 'command "rm" supports one only argument.' );
+			end
+		case 'reset'
+			settings = old_settings;
+		case 'rcl'
+			rcl = true;
 		case 'save'
 			if ~isempty( opts )
 				name = opts{1};
