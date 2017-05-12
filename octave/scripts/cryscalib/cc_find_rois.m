@@ -80,7 +80,7 @@ function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info,
 		disp( "cc_find_rois: is this OK?" );
 		payload.gs = guesses;
 		payload.rois = roi_spans;
-		[go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, settings, guesses );
+		[go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, settings, payload );
 	end
 	close( fig );
 end
@@ -162,6 +162,7 @@ function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_s
 			case 'mvroi'
 				if numel( opts ) == 2
 					try
+						payload
 						payload.rois(str2num( opts{1} )) = str2num( opts{2} );
 					catch
 						disp( 'ROI out of range.' );
@@ -183,4 +184,14 @@ function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_s
 				disp( ['"', cmd, '" is not a valid command.'] );
 		end
 	end
+	
+	%if we are doing another attempt, reset the pees
+	pees = [];
+	if go_on
+		for ii=1:size( payload.gs, 1 ) 
+			pees = [pees, payload.gs(ii,:)];
+		end
+	end
+	guesses = payload.gs;
+	roi_spans = payload.rois;
 end
