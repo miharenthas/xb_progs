@@ -1,7 +1,6 @@
 %This function finds the cutoff of the crystal that is being examined
 %
 % [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
-% [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses, settings )
 %
 %NOTE: p_err, which should contain the parameter errors, it's not deduced from the
 %      fit itself yet, but very bone idly estimated from the data. Very bone idly indeed.
@@ -9,25 +8,31 @@
 % -- energy_spc: contains the energy spectrum of the crystal
 %                energy_spc = [binZ;hst];
 % -- guesses: the ouptut of cc_find_rois, stacked
+%
+%GLOBAL VARIABLES
 % -- settings: a struct with at least the fields:
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
+% -- ccg_repeat: a flag to cause the current fitting process to be discarded
+%                and repeated from scratch.
 
-function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses, varargin )
+function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
+	global settings;
+
 	%parse the evtl. options
-	if isempty( varargin )
+	if isempty( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
-	elseif isstruct( varargin{1} )
-		settings.ax_lb = varargin{1}.ax_lb;
-		settings.ax_ub = varargin{1}.ax_ub;
-		settings.crys_nb = varargin{1}.crys_nb;
-	elseif isscalar( varargin{1} )
+	elseif isstruct( settings )
+		settings.ax_lb = settings.ax_lb;
+		settings.ax_ub = settings.ax_ub;
+		settings.crys_nb = settings.crys_nb;
+	elseif isscalar( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
-		settings.crys_nb = varargin{1};
+		settings.crys_nb = settings;
 	end
 
 	go_on = true;
@@ -102,6 +107,8 @@ end
 %this function's command line
 %TODO: some editing options for the ROI parameters might be useful here.
 function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings, payload )
+	global ccg_repeat;
+
 	go_on = true;
 	gogo_on = true; %internal loop flag
 	settings = old_settings;
@@ -190,6 +197,10 @@ function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings,
 						 num2str( settings.ax_ub ) ];
 					hgsave( fig, name );
 				end
+			case 'scrap'
+				ccg_repeat = true;
+				gogo_on = false;
+				go_on = false;
 			otherwise
 				disp( ['"', cmd, '" is not a valid command.'] );
 		end
@@ -203,9 +214,8 @@ function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings,
 		end
 	end
 	
-	%get rid of the data in the settings
-	settings = rmfield( settings, 'e_spc' );
-						
+	%close the guesses figure
+	if guess_fig close( guess_fig ); end
 end
 
 function fig = cc_find_global_fit_showguesses( settings, payload, fig )
@@ -221,7 +231,7 @@ function fig = cc_find_global_fit_showguesses( settings, payload, fig )
 	for ii=1:size( payload.gs, 1 )
 		gs = xb_multigaus_stack_alloc( payload.spc(1,:), 1 );
 		gaus = xb_multigaus_stack_exec( payload.gs(ii,:), gs );
-		plot( energy_spc(1,:), gaus, 'linewidth', 2 );
+		plot( payload.spc(1,:), gaus, 'linewidth', 2 );
 	end
 	hold off;
 	set( gca, 'linewidth', 2, 'fontsize', 24 );

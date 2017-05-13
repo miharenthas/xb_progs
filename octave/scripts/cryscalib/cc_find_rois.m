@@ -1,31 +1,36 @@
 %This function finds the cutoff of the crystal that is being examined
 %
 % [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info )
-% [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info, settings )
 %
 % -- energy_spc: contains the energy spectrum of the crystal
 %                energy_spc = [binZ;hst];
 % -- p_info: the ouptu of cc_find_peaks, stacked
 %            p_info = [p_val;p_idx]
+%
+%GLOBAL VARIABLES:
 % -- settings: a struct with at least the fields:
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
+% -- ccg_repeat: a flag to cause the current fitting process to be discarded
+%                and repeated from scratch.
 
-function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info, varargin )
+function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info )
+	global settings;
+
 	%parse the evtl. options
-	if isempty( varargin )
+	if isempty( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
-	elseif isstruct( varargin{1} )
-		settings.ax_lb = varargin{1}.ax_lb;
-		settings.ax_ub = varargin{1}.ax_ub;
-		settings.crys_nb = varargin{1}.crys_nb;
-	elseif isscalar( varargin{1} )
+	elseif isstruct( settings )
+		settings.ax_lb = settings.ax_lb;
+		settings.ax_ub = settings.ax_ub;
+		settings.crys_nb = settings.crys_nb;
+	elseif isscalar( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
-		settings.crys_nb = varargin{1};
+		settings.crys_nb = settings;
 	end
 
 	go_on = true;
@@ -88,6 +93,8 @@ end
 %this function's command line
 %TODO: some editing options for the ROI parameters might be useful here.
 function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_settings, payload )
+	global ccg_repeat;
+		
 	go_on = true;
 	gogo_on = true;
 	settings = old_settings;
@@ -180,6 +187,10 @@ function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_s
 						 num2str( settings.ax_ub ) ];
 					hgsave( fig, name );
 				end
+			case 'scrap'
+				ccg_repeat = true;
+				gogo_on = false;
+				go_on = false;
 			otherwise
 				disp( ['"', cmd, '" is not a valid command.'] );
 		end
