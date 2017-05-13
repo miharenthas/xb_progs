@@ -2,11 +2,11 @@
 %See the documentation of xb_multigaus_find for more details.
 %
 % [p_val, p_idx] = cc_find_peaks( energy_spc )
-% [p_val, p_idx] = cc_find_peaks( energy_spc, settings )
 %
 %
 % -- energy_spc: contains the energy spectrum of the crystal
 %                energy_spc = [binZ;hst];
+% GLOBAL VARIABLES:
 % -- settings: a struct with at least the fields:
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
@@ -16,10 +16,15 @@
 %              -- sg_len: the length of the Savitzky-Golay (sg) filter
 %              -- sg_smt: number of passes of the smoother
 %              -- sg_ord: order of the sg filter
+% -- ccg_repeat: a flag to cause the current fitting process to be discarded
+%                and repeated from scratch.
 
-function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
+function [p_val, p_idx] = cc_find_peaks( energy_spc )
+	global ccg_repeat;
+	global settings;
+
 	%parse the evtl. options
-	if isempty( varargin )
+	if isempty( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
@@ -29,19 +34,19 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
 		settings.sg_len = 3;
 		settings.sg_smt = 5;
 		settings.sg_ord = 2;
-	elseif isstruct( varargin{1} )
-		settings.ax_lb = varargin{1}.ax_lb;
-		settings.ax_ub = varargin{1}.ax_ub;
-		settings.crys_nb = varargin{1}.crys_nb;
-		if isfield( varargin{1}, 'trg' ) settings.trg = varargin{1}.trg;
+	elseif isstruct( settings )
+		settings.ax_lb = settings.ax_lb;
+		settings.ax_ub = settings.ax_ub;
+		settings.crys_nb = settings.crys_nb;
+		if isfield( settings, 'trg' ) settings.trg = settings.trg;
 		else settings.trg = 10; end
-		if isfield( varargin{1}, 'sg_len' ) settings.sg_len = varargin{1}.sg_len;
+		if isfield( settings, 'sg_len' ) settings.sg_len = settings.sg_len;
 		else settings.sg_len = 3; end
-		if isfield( varargin{1}, 'sg_smt' ) settings.sg_smt = varargin{1}.sg_smt;
+		if isfield( settings, 'sg_smt' ) settings.sg_smt = settings.sg_smt;
 		else settings.sg_smt = 5; end
-		if isfield( varargin{1}, 'sg_ord' ) settings.sg_ord = varargin{1}.sg_ord;
+		if isfield( settings, 'sg_ord' ) settings.sg_ord = settings.sg_ord;
 		else settings.sg_ord = 2; end
-	elseif isscalar( varargin{1} )
+	elseif isscalar( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		%these are the defaults fot xb_multigaus_find
@@ -50,7 +55,7 @@ function [p_val, p_idx] = cc_find_peaks( energy_spc, varargin )
 		settings.sg_len = 3;
 		settings.sg_smt = 5;
 		settings.sg_ord = 2;
-		settings.crys_nb = varargin{1};
+		settings.crys_nb = settings;
 	end
 
 	go_on = true; rcl = true;
@@ -181,6 +186,9 @@ function [go_on, rcl, settings, p_val, p_idx] = cc_find_peaks_prompt( fig, old_s
 				         num2str( settings.ax_ub ) ];
 				hgsave( fig, name );
 			end
+		case 'scrap'
+			ccg_repeat = true;
+			go_on = false;
 		otherwise
 			disp( ['"', cmd, '" is not a valid command.'] );
 	end

@@ -3,33 +3,36 @@
 %specified (TODO).
 %
 % [hst, binZ] = cc_do_spectrum( energy_data )
-% [hst, binZ] = cc_do_spectrum( energy_data, settings )
 %
 % -- energy_data: contains the energy deposits from a crystal
 %                 0-pruning will be repeated
+%
+%GLOBAL VARIABLES:
 % -- settings: a struct with at least the fields:
 %              -- bin: the width of the bin
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
 
-function [hst, binZ] = cc_do_spectrum( energy_data, varargin )
+function [hst, binZ] = cc_do_spectrum( energy_data )
+	global settings;
+
 	%parse the evtl. options
-	if isempty( varargin )
+	if isempty( settings )
 		settings.bin = 10;
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
-	elseif isstruct( varargin{1} )
-		settings.bin = varargin{1}.bin;
-		settings.ax_lb = varargin{1}.ax_lb;
-		settings.ax_ub = varargin{1}.ax_ub;
-		settings.crys_nb = varargin{1}.crys_nb;
-	elseif isscalar( varargin{1} )
+	elseif isstruct( settings )
+		settings.bin = settings.bin;
+		settings.ax_lb = settings.ax_lb;
+		settings.ax_ub = settings.ax_ub;
+		settings.crys_nb = settings.crys_nb;
+	elseif isscalar( settings )
 		settings.bin = 10;
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
-		settings.crys_nb = varargin{1};
+		settings.crys_nb = settings;
 	end
 
 	%do a spot of 0-pruning
