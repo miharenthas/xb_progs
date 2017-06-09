@@ -36,21 +36,26 @@ function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info 
 	go_on = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
 		
-	%run the roi partitioner
-	[roi_spans, roi_centroids] = xb_roi_partition( energy_spc, p_info(2,:) ); 
-	
-	%fit the rois
+	rcl = true; %A flag to (re)calculate.
 	guesses = [];
-	for ii=1:length( roi_centroids )
-		guesses = [guesses; xb_roi_eval( energy_spc, ...
-		                                 roi_spans(ii:ii+1), ...
-		                                 roi_centroids(ii) ) ];
-	end
-	
-	%a handy quantity
-	lin_hgt = max( energy_spc(2,:) );
-
 	while go_on
+		%fit the rois
+		if rcl
+			%run the roi partitioner
+			[roi_spans, roi_centroids] = xb_roi_partition( energy_spc, p_info(2,:) );
+
+			guesses = [];
+			for ii=1:length( roi_centroids )
+				guesses = [guesses; xb_roi_eval( energy_spc, ...
+						                 roi_spans(ii:ii+1), ...
+						                 roi_centroids(ii) ) ];
+			end
+		end
+	
+		%a handy quantity
+		lin_hgt = max( energy_spc(2,:) );
+
+	
 		%display
 		figure( fig );
 		stairs( energy_spc(1,:), energy_spc(2,:), 'linewidth', 2 );
@@ -85,18 +90,23 @@ function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info 
 		disp( "cc_find_rois: is this OK?" );
 		payload.gs = guesses;
 		payload.rois = roi_spans;
-		[go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, settings, payload );
+		payload.pinf = p_info;
+		[go_on, rcl, settings, payload] = cc_find_rois_prompt( fig, settings, payload );
+		guesses = payload.gs;
+		roi_spans = payload.rois;
+		p_info = payload.pinf;
 	end
 	close( fig );
 end
 
 %this function's command line
 %TODO: some editing options for the ROI parameters might be useful here.
-function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_settings, payload )
+function [go_on, rcl, settings, payload] = cc_find_rois_prompt( fig, old_settings, payload )
 	global ccg_repeat;
 		
 	go_on = true;
 	gogo_on = true;
+	rcl = false;
 	settings = old_settings;
 	
 	while gogo_on
@@ -177,6 +187,24 @@ function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_s
 				else
 					disp( 'command "mvroi" requires 2 arguments' );
 				end
+			case 'rmroi'
+				if numel( opts ) == 1
+					try
+						payload.pinf(1,str2num( opts{1} )) = -1;
+						idx = find( payload.pinf(1,:) ~= -1 );
+						payload.pinf = payload.pinf(:,idx);
+						payload.gs = payload.gs(idx,:);
+						rcl = true;
+					catch
+						disp( 'Out of range or not a number.' );
+					end
+				else
+					disp( 'command "rmroi" supports one argument.' );
+				end
+			case 'rcl'
+				rcl = true;
+				gogo_on = false;
+				go_on = false;
 			case 'save'
 				if ~isempty( opts )
 					name = opts{1};
@@ -203,6 +231,4 @@ function [go_on, settings, guesses, roi_spans] = cc_find_rois_prompt( fig, old_s
 			pees = [pees, payload.gs(ii,:)];
 		end
 	end
-	guesses = payload.gs;
-	roi_spans = payload.rois;
 end
