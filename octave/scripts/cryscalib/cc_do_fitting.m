@@ -11,6 +11,11 @@
 %returns:
 % -- g_fit_pees: the parameters of the miltigaussian fit
 %                just completed.
+%
+%GLOBAL VARIABLES:
+% -- ccg_repeat: it's a flag, set by the various (prompt) functions
+%                that causes the loop to repeat (and allows to scrap
+%                and redo the fitting procedure).
 
 function [g_fit_pees, g_fit_err] = cc_do_fitting( energy_spc )
 	global ccg_repeat;	
