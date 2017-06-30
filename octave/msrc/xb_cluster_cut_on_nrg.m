@@ -9,12 +9,7 @@
 function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 	%klz is a tructure representing the event
 	%this will be maintained
-	%first, check on the package
-	try
-		pkg load parallel;
-	catch
-		error( 'parallel package not installed!' );
-	end
+	
 
 	if ~is_function_handle( op_handle )
 		error( "Second argument **MUST** be a function handle!" );
@@ -53,7 +48,15 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 
 	%do the parallel execution
 	proc_handle = @( p ) _processor( p, op_handle, field_name );
-	[klz_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, klz_part, 'VerboseLevel', 0 );
+	try
+		pkg load parallel;
+		[klz_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
+		                                          klz_part, 'VerboseLevel', 0 );
+	catch
+		warning( 'Parallel package not available. This will take a while.' );
+		[klz_part, nb_removed_part] = cellfun( proc_handle, klz_part );
+	end
+	
 	
 	%stitch together the stuff
 	klz = reshape( klz_part, 1, [] );
