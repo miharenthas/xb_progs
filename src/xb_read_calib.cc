@@ -6,9 +6,10 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//allocation/deallocation utils
 	int calinf_alloc( calinf &given, int size ){
-		given.dE_E = (float*)calloc( size*sizeof(float) );
+		given.dE_E = (float*)calloc( 2*size*sizeof(float) );
 		if( !given.dE_E ) throw error( "Memory fail!", "XB::calinf_alloc" );
-		return size*sizeof(float);
+		given.size = size;
+		return 2*size*sizeof(float);
 	}
 	
 	void calinf_free( calinf &given ){
@@ -18,6 +19,9 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//the reader itself
 	int read_calib( calinf *cryscalib, FILE *stream ){
+		if( sizeof( cryscalib ) != 162 )
+			throw error( "Wrong buffer!", "XB::read_calib" );
+
 		char buf[1024], *b_end;
 		int current_idx = 0, crystal_read = 0;
 		
@@ -30,6 +34,8 @@ namespace XB{
 			if( b_end < buf+1024 ) *b_end = '\0'; //null terminate there.
 			
 			//so now parsing: get the crystal number
+			//TODO: by Hans, maybe checking on sscanf return
+			//      value might be useful.
 			if( strstr( buf, "Crystal number" ) )
 				sscanf( buf, "Crystal number %d", &current_idx );
 			

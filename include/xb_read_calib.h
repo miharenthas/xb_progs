@@ -17,6 +17,7 @@ namespace XB{
 		float _pees[2]; //linear calibration paramenters
 		float _perr[2]; //errors associated
 		float *dE_E; //a pointer to an array of resolution information
+		short int size; //the size of dE_E (2 bytes is enough)
 	} calinf;
 	
 	//associated allocation/deallocation utils
