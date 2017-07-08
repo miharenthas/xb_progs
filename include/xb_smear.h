@@ -4,16 +4,30 @@
 #ifndef XB_SMEAR__H
 #define XB_SMEAR__H
 
+#include <math.h>
 #include <vector>
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_interp.h>
 
 #include "xb_error.h"
 #include "xb_read_calib.h" //calinf structure
 #include "xb_data.h"
 
 namespace XB{
+	//A structure to hold the relevant bits for the
+	//interpolation
+	//NOTE: it's just a collection of pointers,
+	//      and the two doubles are NOT owned.
+	typedef struct _crystal_interpolation_gobbins{
+		gsl_interp *irp;
+		gsl_interp_accel *irp_acc;
+		double *x;
+		double *y;
+		int irp_sz;
+	} cirp_gobbins;
+
 	//----------------------------------------------------------------------------
 	//the main thing:
 	//NOTE: both XB::smear and Xb::calib are multithreaded if support for
@@ -42,7 +56,13 @@ namespace XB{
 	//Get the (interpolated/fitted) energy resolution at a certain energy
 	//NOTE: as for now, the interpolation/fit is recalculated every single
 	//      call. This might change in the future.
-	double get_dE_E_at( calinf &this_crystal_calib, double e );
+	double get_dE_E_at( cirp_gobbins *crystal_interp, const double e );
+	//Utilities to allocate (and init) and free the gobbins
+	cirp_gobbins *crystal_interp_alloc( const &this_crystal_calib );
+	void crystal_interp_free( cirp_gobbins *crystal_interp );
+	
+	//Get sigma from an energy resolution
+	double get_sigma( const double dE_E, const double e );
 }
 
 #endif
