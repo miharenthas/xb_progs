@@ -143,28 +143,28 @@ namespace XB{
 		                       e,
 		                       cirp->ipr_acc,
 		                       &dE_E ) != GSL_EDOM ) return dE_E;
-		 else
+		else {
 		 	//find the correct extremant
-		 	if( e < cirp->x[0] ){
-		 		ext_x = cirp->x[0];
-		 		ext_y = cirp->y[0];
-		 	} else {
-		 		ext_x = cirp->x[cirp->irp_sz-1];
-		 		ext_y = cirp->y[cirp->irp_sz-1];
-		 	}
-		 	
-		 	//do the derivatives
-		 	d1 = gsl_interp_eval_deriv( cirp->irp, cirp->x, cirp->y,
-		 	                            ext, cirp->irp_acc );
-		 	d2 = gsl_interp_eval_deriv2( cirp->irp, cirp->x, cirp->y,
-		 	                             ext, cirp->irp_acc );
-		 	
-		 	//find the intercept
-		 	q = ext_y - d1*ext_x - d2*pow( ext_x, 2 );
-		 	
-		 	//and return the polynomial prediction
-		 	return d1*e + d2*pow( e, 2 ) + q;
-		 }
+			if( e < cirp->x[0] ){
+				ext_x = cirp->x[0];
+				ext_y = cirp->y[0];
+			} else {
+				ext_x = cirp->x[cirp->irp_sz-1];
+				ext_y = cirp->y[cirp->irp_sz-1];
+			}
+			
+			//do the derivatives
+			d1 = gsl_interp_eval_deriv( cirp->irp, cirp->x, cirp->y,
+			                            ext, cirp->irp_acc );
+			d2 = gsl_interp_eval_deriv2( cirp->irp, cirp->x, cirp->y,
+			                             ext, cirp->irp_acc );
+			
+			//find the intercept
+			q = ext_y - d1*ext_x - d2*pow( ext_x, 2 );
+			
+			//and return the polynomial prediction
+			return d1*e + d2*pow( e, 2 ) + q;
+		}
 	}
 }
 	
