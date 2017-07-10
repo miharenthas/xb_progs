@@ -6,7 +6,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//allocation/deallocation utils
 	int calinf_alloc( calinf &given, int size ){
-		given.dE_E = (float*)calloc( 2*size*sizeof(float) );
+		given.dE_E = (float*)calloc( 1, 2*size*sizeof(float) );
 		if( !given.dE_E ) throw error( "Memory fail!", "XB::calinf_alloc" );
 		given.size = size;
 		return 2*size*sizeof(float);

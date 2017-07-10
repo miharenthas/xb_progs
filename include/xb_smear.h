@@ -58,7 +58,7 @@ namespace XB{
 	//      call. This might change in the future.
 	double get_dE_E_at( cirp_gobbins *crystal_interp, const double e );
 	//Utilities to allocate (and init) and free the gobbins
-	cirp_gobbins *crystal_interp_alloc( const &this_crystal_calib );
+	cirp_gobbins *crystal_interp_alloc( const calinf &this_crystal_calib );
 	void crystal_interp_free( cirp_gobbins *crystal_interp );
 	
 	//Get sigma from an energy resolution

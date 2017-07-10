@@ -12,11 +12,11 @@ GNUPLOT_I_HOME = /usr/local/gnuplot_i
 #define the targets
 PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut
 TESTS = xb_check_nn  xb_view_ball xb_view_cluster xb_energy_list xb_try_nn_cluster xb_try_nn_clusterZ xb_try_kmeans_cluster test_xb_cuts xb_draw_cutZ xb_try_parse xb_try_sim_reader
-OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file
+OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file xb_smear xb_read_calib
 GNUPLOT_OBJS = xb_draw_cluster_ball xb_draw_cut xb_draw_gsl_histogram
 OBJ_W_ROOT = xb_reader
 LIBRARIES = libxb_core libxb_viz libxb_root
-BINARIES = $(BIN)/xb_cluster.o $(BIN)/xb_error.o $(BIN)/xb_data.o $(BIN)/xb_io.o $(BIN)/xb_ball.o $(BIN)/xb_doppler_corr.o $(BIN)/xb_cut_typedefs.o $(BIN)/xb_cut.o $(BIN)/xb_apply_cut.o $(BIN)/xb_parse_cnf_file.o
+BINARIES = $(BIN)/xb_cluster.o $(BIN)/xb_error.o $(BIN)/xb_data.o $(BIN)/xb_io.o $(BIN)/xb_ball.o $(BIN)/xb_doppler_corr.o $(BIN)/xb_cut_typedefs.o $(BIN)/xb_cut.o $(BIN)/xb_apply_cut.o $(BIN)/xb_parse_cnf_file.o $(BIN)/xb_smear.o $(BIN)/xb_read_calib.o
 GNUPLOT_BINS = $(BIN)/xb_draw_cluster_ball.o $(BIN)/xb_draw_cut.o $(BIN)/xb_draw_gsl_histogram.o
 ROOT_BINS = $(BIN)/xb_reader.o
 GNUPLOT_I = $(GNUPLOT_I_HOME)/gnuplot_i.o
@@ -76,6 +76,12 @@ xb_parse_cnf_file :
 
 xb_draw_gsl_histogram :
 	$(CXX) $(SRC)/xb_draw_gsl_histogram.cc $(CXXFLAGS) $(GNUPLOT_FLAGS) -fPIC -c -o $(BIN)/xb_draw_gsl_histogram.o
+
+xb_smear :
+	$(CXX) $(SRC)/xb_smear.cc $(CXXFLAGS) -fPIC -c -o $(BIN)/xb_smear.o
+
+xb_read_calib :
+	$(CXX) $(SRC)/xb_read_calib.cc $(CXXFLAGS) -fPIC -c -o $(BIN)/xb_read_calib.o
 
 #----------------------------------------------------------------------
 #libraries

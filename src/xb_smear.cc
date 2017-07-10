@@ -24,34 +24,33 @@ namespace XB{
 		//5) save the event.
 		//NOTE: I'm not gonna stop using OpenMP because
 		//      clang is too stupid for it.
+		float dE_E, rnd_sample, sigma, *current_e;
 		#pragma omp parallel for shared( rng, cryscalib, cirps ) \
-		        schedule( 4096, dynamic )
-		{
-		double dE_E, rnd_sample, sigma, *current_e;
+		        schedule( dynamic, 1024 ) \
+		        private( dE_E, rnd_sample, sigma, current_e )
 		for( int i=0; i < xb_book.size(); ++i ){
 			//Get the energy (flexibly)
-			//By default, try to get it from sum_e
+			//By default, try to get it from e
 			//if that's empty, try it from e or he.
 			//NOTE: if the data have been read with
 			//      xb_reader, they are already pruned.
 			//      If for some reason you didn't prune,
 			//      this may screw up.
-			if( xb_book[i].empty_sum_e )
-				current_e = &xb_book[i].e;
-			else if( xb_book[i].empty_e )
-				current_e = &xb_book[i].he;
+			if( xb_book[i].empty_e )
+				current_e = xb_book[i].he;
 			else
-				current_e = &xb_book[i].sum_e;
+				current_e = xb_book[i].e;
 			
 			//do 1-3)
-			dE_E = get_dE_E_at( cirps[xb_book[i].i], *current_e );
-			sigma = get_sigma( dE_E, *current_e );
-			rnd_sample = gsl_ran_gaussian( rng, sigma );
+			for( int c=0; c < xb_book[i].n; ++c ){
+				dE_E = get_dE_E_at( cirps[xb_book[i].i[c]], current_e[c] );
+				sigma = get_sigma( dE_E, current_e[c] );
+				rnd_sample = gsl_ran_gaussian( rng, sigma );
 			
-			//attach the randomization to the energy
-			*current_e += rnd_sample;
+				//attach the randomization to the energy
+				current_e[c] += rnd_sample;
+			}
 		}
-		} //end of paralle pragma
 		
 		//cleanup
 		gsl_rng_free( rng );
@@ -70,24 +69,23 @@ namespace XB{
 		//a single fetch operation form RAM and enjoy multithreading
 		//at L1 cache level --which is per core.
 		int count = 0;
-		#pragma omp parallel for schedule( 1024, static ) shared( count )
-		{
-		double *current_e;
+		float *current_e;
+		#pragma omp parallel for schedule( static, 1024 ) shared( count ) \
+		        private( current_e )
 		for( int i=0; i < xb_book.size(); ++i ){
 			//same as above
-			if( xb_book[i].empty_sum_e )
-				current_e = &xb_book[i].e;
-			else if( xb_book[i].empty_e )
-				current_e = &xb_book[i].he;
+			if( xb_book[i].empty_e )
+				current_e = xb_book[i].he;
 			else
-				current_e = &xb_book[i].sum_e;
-				
-			*current_e = cryscalib[xb_book[i].i].pees[0]*(*current_e) +
-			             cryscalib[xb_book[i].i].pees[1];
+				current_e = xb_book[i].e;
 			
-			++count;
+			for( int c=0; c < xb_book[i].n; ++c ){	
+				current_e[c] = cryscalib[xb_book[i].i[c]].pees[0]*(current_e[c]) +
+				               cryscalib[xb_book[i].i[c]].pees[1];
+			
+				++count;
+			}
 		}
-		} //end of parallel pragma
 		
 		return count;
 	}
@@ -99,7 +97,7 @@ namespace XB{
 		//allocate the interpolator object
 		cirp_gobbins *cg = (cirp_gobbins*)malloc( sizeof(cirp_gobbins) );
 		cg->irp_sz = this_crystal_calib.size/2;
-		cg->irp = gsl_interp_alloc( gsl_interp_cspline, irp_sz );
+		cg->irp = gsl_interp_alloc( gsl_interp_cspline, cg->irp_sz );
 		cg->irp_acc = gsl_interp_accel_alloc();
 		//NOTE: since here it's the only place where I actually use the information
 		//      in the array dE_E, I shall define the format here.
@@ -107,8 +105,12 @@ namespace XB{
 		//      and then the energies at which they happen. And so I shall
 		//      assume it is.
 		//TODO: make sure that this is the way the thing is saved.
-		cg->x = this_crystal_calib.dE_E + irp_sz;
-		cg->y = this_crystal_calib.dE_E;
+		cg->x = (double*)malloc( cg->irp_sz*sizeof(double) );
+		cg->y = (double*)malloc( cg->irp_sz*sizeof(double) );
+		for( int i=0; i < cg->irp_sz; ++i ){
+			cg->x[i] = this_crystal_calib.dE_E[cg->irp_sz+i];
+			cg->y[i] = this_crystal_calib.dE_E[i];
+		}
 		
 		//initialize it.
 		gsl_interp_init( cg->irp, cg->x, cg->y, cg->irp_sz );
@@ -117,10 +119,12 @@ namespace XB{
 	}
 	
 	//and the free one
-	void crystal_interp_free( cirp_gobbins cg ){
-		gsl_interp_accel_free( cg->ipr_acc );
+	void crystal_interp_free( cirp_gobbins *cg ){
+		gsl_interp_accel_free( cg->irp_acc );
 		gsl_interp_free( cg->irp );
 		
+		free( cg->x );
+		free( cg->y );
 		free( cg );
 	}
 	
@@ -141,7 +145,7 @@ namespace XB{
 		if( gsl_interp_eval_e( cirp->irp,
 		                       cirp->x, cirp->y,
 		                       e,
-		                       cirp->ipr_acc,
+		                       cirp->irp_acc,
 		                       &dE_E ) != GSL_EDOM ) return dE_E;
 		else {
 		 	//find the correct extremant
@@ -155,9 +159,9 @@ namespace XB{
 			
 			//do the derivatives
 			d1 = gsl_interp_eval_deriv( cirp->irp, cirp->x, cirp->y,
-			                            ext, cirp->irp_acc );
+			                            ext_x, cirp->irp_acc );
 			d2 = gsl_interp_eval_deriv2( cirp->irp, cirp->x, cirp->y,
-			                             ext, cirp->irp_acc );
+			                             ext_x, cirp->irp_acc );
 			
 			//find the intercept
 			q = ext_y - d1*ext_x - d2*pow( ext_x, 2 );

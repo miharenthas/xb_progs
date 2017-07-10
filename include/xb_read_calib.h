@@ -7,6 +7,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <algorithm>
 
 #include "xb_error.h"
 
@@ -14,8 +17,8 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//the data structure
 	typedef struct _xb_crystal_calibration_info {
-		float _pees[2]; //linear calibration paramenters
-		float _perr[2]; //errors associated
+		float pees[2]; //linear calibration paramenters
+		float perr[2]; //errors associated
 		float *dE_E; //a pointer to an array of resolution information
 		short int size; //the size of dE_E (2 bytes is enough)
 	} calinf;
@@ -23,7 +26,7 @@ namespace XB{
 	//associated allocation/deallocation utils
 	int calinf_alloc( calinf &given, int size ); //size refers to how big
 	                                             //dE_E has to be.
-	void calinf_free( caling &given );
+	void calinf_free( calinf &given );
 	
 	//----------------------------------------------------------------------------
 	//reader function
