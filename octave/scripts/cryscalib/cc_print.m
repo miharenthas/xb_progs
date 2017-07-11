@@ -20,15 +20,15 @@ function cc_print( file, writing_mode, crystal_number, c_pees, cp_err, dE_E )
 	fprintf( file, 'Crystal number %d\n', crystal_number );
 	
 	fprintf( file, 'Calibration' );
-	fprintf( file, ' %lf', c_pees );
+	fprintf( file, ' %f', c_pees );
 	fprintf( file, '\n' );
 	
 	fprintf( file, 'Errors' );
-	fprintf( file, ' %lf', cp_err );
+	fprintf( file, ' %f', cp_err );
 	fprintf( file, '\n' );
 	
 	fprintf( file, 'dE_E' )
-	fprintf( file, ' %lf', dE_E );
+	fprintf( file, ' %f', dE_E );
 	fprintf( file, '\n' );
 	
 	fprintf( file, '\n######\n\n' );
