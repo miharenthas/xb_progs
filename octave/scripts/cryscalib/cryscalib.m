@@ -43,6 +43,25 @@ function cryscalib( varargin )
 		error( 'Inconsistent number of argument. Require two cells of strings.' );
 	end
 	
-	%open the files and
+	%open the files and load the data (s)
+	data = {};
+	source_profiles = {};
+	for ii=1:numel( cc_settings.rf_list )
+		data(ii) = xb_load_data( cc_settings.rf_list{ii} );
+		source_profiles(ii) = cctop_parse_sp( cc_settings.sp_list{ii} ); %TODO
+	end
+	
+	%organize runs by source profile
+	%so that runs with same source profile (and orientation)
+	%contribute to the same statistics pool
+	%NOTE: this means that you should feed this script
+	%      things that can be combined together, so you
+	%      should be sure that there's no drift.
+	[data, source_profiles] = cctop_combine_data( data, source_profile ); %TODO
+	
+	%BIG loop on the crystals
+	for rr=1:numel( data )
+		
+	
 	
 end
