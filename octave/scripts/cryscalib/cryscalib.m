@@ -57,11 +57,55 @@ function cryscalib( varargin )
 	%NOTE: this means that you should feed this script
 	%      things that can be combined together, so you
 	%      should be sure that there's no drift.
-	[data, source_profiles] = cctop_combine_data( data, source_profile ); %TODO
+	[data, source_profiles, nb_runZ] = cctop_combine_data( data, source_profile ); %TODO
 	
 	%BIG loop on the crystals
-	for rr=1:numel( data )
+	%collect the results
+	lore = struct( 'hst', cell( nb_runZ, 162 ), ...
+	               'binZ', cell( nb_runZ, 162 ), ...
+	               'gfit_p', cell( nb_runZ, 162 ), ...
+	               'gfit_e', cell( nb_runZ, 162 ) );
+	cutoff = cell( nb_runZ, 162 ); %collect the cutoffZ
+	global settings; %settings for the various functions, it's globbal.
+	for rr=1:nb_runZ
+		for cc=1:162
+			%do the energy spectrum from the data.
+			settings.crys_nb = cc;
+			settings.ax_lb = 0;
+			settings.ax_ub = 3e3;
+			settings.bin = 10;
+			[lore.hst(rr,cc), lore.binZ(rr,cc)] = cc_do_spectrum( data{rr} );
+			
+			%do the cutoff (no settings update necessary)
+			cutoff(rr,cc) = cc_do_cutoff( [lore.hst(rr,cc); lore.binZ(rr,cc)] );
+			
+			%do the fitting (big thing!)
+			[lore.gfit_p(rr,cc), lore.gfit_e(rr,cc)] = ...
+				cc_do_fitting( [lore.hst(rr,cc); lore.binZ(rr,cc)] );
+		end
+	end
+	
+	%now that we did the accounts for every run and every crystal
+	%we should use the whole data for every single crystal calibration.
+	calinf = cctop_merge_lores( lore, source_profiles ); %TODO
+	calfile = fopen( 'calinf.dat', 'a' );
+	for cc=1:162
+		%do the calibration
+		[calinf.cal_p(cc), calinf.cal_e(cc), calinf.cal(cc)] = ...
+			cc_do_calib( calinf.gfit_p(cc), calinf.gfit_e(cc), ...
+			             calinf.sp );
 		
+		%do the energy resolution
+		calinf.dE_E(cc) = ...
+			cc_do_eres( calinf.gfit_p(cc), calinf.gfit_e(cc), calinf.cal(cc) );
+		
+		%and print
+		cc_print( calfile, 'a', cc, calinf.cal_p(cc), ...
+		          calinf.cal_e(cc), calinf.dE_E(cc) );
+	end
 	
+	%save the data from this execution.
+	save( '-float-binary', 'datalore', 'lore', 'calinf' );
 	
+	%and that was it.
 end
