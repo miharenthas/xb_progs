@@ -48,8 +48,9 @@ function cryscalib( varargin )
 	source_profiles = {};
 	for ii=1:numel( cc_settings.rf_list )
 		data(ii) = xb_load_data( cc_settings.rf_list{ii} );
-		source_profiles(ii) = cctop_parse_sp( cc_settings.sp_list{ii} ); %TODO
+		source_profiles(ii) = cctop_parse_sp( cc_settings.sp_list{ii} );
 	end
+	data = cctop_split_leftright( data ); %TODO
 	
 	%organize runs by source profile
 	%so that runs with same source profile (and orientation)
@@ -57,31 +58,47 @@ function cryscalib( varargin )
 	%NOTE: this means that you should feed this script
 	%      things that can be combined together, so you
 	%      should be sure that there's no drift.
-	[data, source_profiles, nb_runZ] = cctop_combine_data( data, source_profile ); %TODO
+	[data, source_profiles, nb_runZ] = cctop_combine_data( data, source_profile );
 	
 	%BIG loop on the crystals
 	%collect the results
 	lore = struct( 'hst', cell( nb_runZ, 162 ), ...
 	               'binZ', cell( nb_runZ, 162 ), ...
 	               'gfit_p', cell( nb_runZ, 162 ), ...
-	               'gfit_e', cell( nb_runZ, 162 ) );
-	cutoff = cell( nb_runZ, 162 ); %collect the cutoffZ
+	               'gfit_e', cell( nb_runZ, 162 ), ...
+	               'cutoff', cell( nb_runZ, 162 ) );
 	global settings; %settings for the various functions, it's globbal.
-	for rr=1:nb_runZ
-		for cc=1:162
+	settings.ax_lb = 0;
+	settings.ax_ub = 3e3;
+	settings.bin = 10;
+	%left processing
+	for rr=1:2:nb_runZ
+		for cc=1:82
 			%do the energy spectrum from the data.
 			settings.crys_nb = cc;
-			settings.ax_lb = 0;
-			settings.ax_ub = 3e3;
-			settings.bin = 10;
 			[lore.hst(rr,cc), lore.binZ(rr,cc)] = cc_do_spectrum( data{rr} );
 			
 			%do the cutoff (no settings update necessary)
-			cutoff(rr,cc) = cc_do_cutoff( [lore.hst(rr,cc); lore.binZ(rr,cc)] );
+			lore.cutoff(rr,cc) = cc_do_cutoff( [lore.hst{rr,cc}; lore.binZ{rr,cc}] );
 			
 			%do the fitting (big thing!)
 			[lore.gfit_p(rr,cc), lore.gfit_e(rr,cc)] = ...
-				cc_do_fitting( [lore.hst(rr,cc); lore.binZ(rr,cc)] );
+				cc_do_fitting( [lore.hst{rr,cc}; lore.binZ{rr,cc}] );
+		end
+	end
+	%right processing
+	for rr=2:2:nb_runZ
+		for cc=83:162
+			%do the energy spectrum from the data.
+			settings.crys_nb = cc;
+			[lore.hst(rr,cc), lore.binZ(rr,cc)] = cc_do_spectrum( data{rr} );
+			
+			%do the cutoff (no settings update necessary)
+			lore.cutoff(rr,cc) = cc_do_cutoff( [lore.hst{rr,cc}; lore.binZ{rr,cc}] );
+			
+			%do the fitting (big thing!)
+			[lore.gfit_p(rr,cc), lore.gfit_e(rr,cc)] = ...
+				cc_do_fitting( [lore.hst{rr,cc}; lore.binZ{rr,cc}] );
 		end
 	end
 	
@@ -91,17 +108,17 @@ function cryscalib( varargin )
 	calfile = fopen( 'calinf.dat', 'a' );
 	for cc=1:162
 		%do the calibration
-		[calinf.cal_p(cc), calinf.cal_e(cc), calinf.cal(cc)] = ...
-			cc_do_calib( calinf.gfit_p(cc), calinf.gfit_e(cc), ...
+		[calinf.cal_p{cc}, calinf.cal_e{cc}, calinf.cal{cc}] = ...
+			cc_do_calib( calinf.gfit_p{cc}, calinf.gfit_e{cc}, ...
 			             calinf.sp );
 		
 		%do the energy resolution
 		calinf.dE_E(cc) = ...
-			cc_do_eres( calinf.gfit_p(cc), calinf.gfit_e(cc), calinf.cal(cc) );
+			cc_do_eres( calinf.gfit_p{cc}, calinf.gfit_e{cc}, calinf.cal{cc} );
 		
 		%and print
-		cc_print( calfile, 'a', cc, calinf.cal_p(cc), ...
-		          calinf.cal_e(cc), calinf.dE_E(cc) );
+		cc_print( calfile, 'a', cc, calinf.cutoff(cc), calinf.cal_p(cc), ...
+		          calinf.cal_e{cc}, calinf.dE_E{cc} );
 	end
 	
 	%save the data from this execution.
