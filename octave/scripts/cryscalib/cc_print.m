@@ -1,6 +1,6 @@
 %this function prints the calibration data into a hooman readable file
 %
-% cc_print( file{_name}, writin_mode, c_pees, cp_err, dE_E )
+% file = cc_print( file{_name}, writin_mode, c_pees, cp_err, dE_E )
 %
 % -- file{_name}: either a file pointer or a file name, the output's target
 % -- writing_mode: either "w", for overwrite, or "a", for append
@@ -13,7 +13,7 @@
 %returns nothing.
 %outputs a file.
 
-function cc_print( file, writing_mode, crystal_number, cutoff, c_pees, cp_err, dE_E )
+function file = cc_print( file, writing_mode, crystal_number, cutoff, c_pees, cp_err, dE_E )
 	if ischar( file )
 		file = fopen( file, writing_mode );
 	end
@@ -37,4 +37,6 @@ function cc_print( file, writing_mode, crystal_number, cutoff, c_pees, cp_err, d
 	fprintf( file, '\n' );
 	
 	fprintf( file, '\n######\n\n' );
+
+	fflush( file );
 end

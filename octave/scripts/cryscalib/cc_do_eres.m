@@ -14,7 +14,7 @@ function dE_E = cc_do_eres( g_fit_pees, g_fit_err, calib )
 	pks = calib( g_fit_pees(:,2) );
 	
 	%do the fwhm
-	fwhm = 2*sqrt(2*log(2))*g_fit_pees(:,3);
+	fwhm = 2*sqrt(2*log(2))*abs( calib( g_fit_pees(:,3) ) );
 	
 	%calc dE/E
 	dE_E = [fwhm./pks; pks(:)];
