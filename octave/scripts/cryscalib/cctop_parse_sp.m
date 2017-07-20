@@ -12,6 +12,8 @@ function source_profile = cctop_parse_sp( sp_name )
 	end
 
 	file = fopen( sp_name, 'r' );
+	if( file == -1 ) error( 'Source profile not found.' ); end
+
 	source_profile = [];
 	while ~feof( file )
 		ll = fgetl( file );
@@ -20,5 +22,6 @@ function source_profile = cctop_parse_sp( sp_name )
 		if strcmp( cmd, 'Lines' ) source_profile = cellfun( 'str2num', args )(:)';
 		else source_profile = [source_profile; cellfun( 'str2num', args )(:)']; end
 	end
+
 	fclose( file );
 end

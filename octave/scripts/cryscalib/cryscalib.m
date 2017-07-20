@@ -50,10 +50,13 @@ function cryscalib( varargin )
 	%open the files and load the data (s)
 	data = {};
 	source_profiles = {};
+	disp( 'cc: loading data...' );
 	for ii=1:numel( cc_settings.rf_list )
+		disp( [ '...', cc_settings.rf_list{ii}] );
 		data(ii) = xb_load_data( cc_settings.rf_list{ii}, 1e6 );
 		source_profiles(ii) = cctop_parse_sp( cc_settings.sp_list{ii} );
 	end
+	disp( 'cc: done.' );
 
 	%organize runs by source profile
 	%so that runs with same source profile (and orientation)
@@ -61,7 +64,9 @@ function cryscalib( varargin )
 	%NOTE: this means that you should feed this script
 	%      things that can be combined together, so you
 	%      should be sure that there's no drift.
+	disp( 'cc: combining runs...' );
 	[data, source_profiles] = cctop_combine_data( data, source_profiles );
+	disp( 'cc: done.' );
 	
 	%BIG loop on the crystals
 	%collect the results
@@ -80,11 +85,14 @@ function cryscalib( varargin )
 	settings.ax_ub = 3e3;
 	settings.bin = 10;
 	%left processinggit
+	disp( 'cc: fitting data...' );
 	for cc=target_crys
+		disp( ['...crystla #', num2str(cc), ': preparing data...'] );
 		%do the energy spectrum from the data.
 		settings.crys_nb = cc;
 		oh = @( p ) p == cc;
-		c_data = xb_data_cut_on_field( data, oh, 'i' );
+		c_data = xb_data_cut_on_field( data, oh, 'i' ); %TODO: speed up!!!
+		disp( 'cc: done.' );
 		[lore(cc).hst, lore(cc).binZ] = cc_do_spectrum( [c_data.e] );
 	
 		%do the cutoff (no settings update necessary)
@@ -97,9 +105,11 @@ function cryscalib( varargin )
 	
 	%now that we did the accounts for every run and every crystal
 	%we should use the whole data for every single crystal calibration.
-	calfile = fopen( 'lore.dat', 'a' );
+	disp( 'cc: calibraion.' );
+	calfile = fopen( 'calib.dat', 'a' );
 	for cc=target_crys
 		%do the calibration
+		disp( ['...crystal #', num2str( cc )] );
 		[lore(cc).cal_p, lore(cc).cal_e, lore(cc).calf, lore(cc).csp ] = ...
 			cc_do_calib( lore(cc).gfit_p, lore(cc).gfit_e, ...
 			             source_profiles );
@@ -111,11 +121,14 @@ function cryscalib( varargin )
 		%and print
 		f = cc_print( calfile, 'a', cc, lore(cc).cutoff, lore(cc).cal_p, ...
 		              lore(cc).cal_e, lore(cc).dE_E );
+		disp( 'cc: done' );
 	end
 	fclose( f );
 	
 	%save the data from this execution.
+	disp( 'cc: saving "lore"' );
 	save( '-float-binary', 'lore.ofb', 'lore' );
 	
 	%and that was it.
+	disp( 'cc: done, goodbye.' );
 end
