@@ -16,8 +16,9 @@ function source_profile = cctop_parse_sp( sp_name )
 	while ~feof( file )
 		ll = fgetl( file );
 		[cmd, args] = cc_parse_cmd( ll );
+		if isempty( cmd ) continue; end
 		if strcmp( cmd, 'Lines' ) source_profile = cellfun( 'str2num', args )(:)';
-		else source_profile = [source_profile; cellfun( 'str2num', args )(:)'];
+		else source_profile = [source_profile; cellfun( 'str2num', args )(:)']; end
 	end
 	fclose( file );
 end

@@ -23,13 +23,13 @@ function cryscalib( varargin )
 	
 	%make the settings for the program
 	%NOTE: probably, more stuff is gonna be into it
-	cc_settings = struct( 'rf_list', {}, 'sp_list', {} );
-	
 	if ~numel( varargin )
-		%use a prompt
-	elseif numel( varargin ) == 2
-		rf_list = varargin{1};
-		sp_list = varargin{2};
+		%use a prompt, TODO
+		warning( 'No prompt available yet.' );
+		return;
+	elseif numel( varargin ) >= 2
+		rf_list = varargin(1);
+		sp_list = varargin(2);
 		
 		%check in bulk
 		ck_str = @( p ) if ~ischar( p ) error( 'Not a string' ); end;
@@ -39,15 +39,19 @@ function cryscalib( varargin )
 		%save it into cc_settings.
 		cc_settings.rf_list = rf_list;
 		cc_settings.sp_list = sp_list;
+		if numel( varargin ) == 3
+			if isvector( varargin{3} ) target_crys = varargin{3};
+			else error( 'Target crystal must be an array of numbers' ); end
+		else target_crys = [1:162]; end
 	else
-		error( 'Inconsistent number of argument. Require two cells of strings.' );
+		error( 'Inconsistent number of argument.' );
 	end
 	
 	%open the files and load the data (s)
 	data = {};
 	source_profiles = {};
 	for ii=1:numel( cc_settings.rf_list )
-		data(ii) = xb_load_data( cc_settings.rf_list{ii} );
+		data(ii) = xb_load_data( cc_settings.rf_list{ii}, 1e6 );
 		source_profiles(ii) = cctop_parse_sp( cc_settings.sp_list{ii} );
 	end
 
@@ -57,7 +61,7 @@ function cryscalib( varargin )
 	%NOTE: this means that you should feed this script
 	%      things that can be combined together, so you
 	%      should be sure that there's no drift.
-	[data, source_profiles] = cctop_combine_data( data, source_profile );
+	[data, source_profiles] = cctop_combine_data( data, source_profiles );
 	
 	%BIG loop on the crystals
 	%collect the results
@@ -68,45 +72,50 @@ function cryscalib( varargin )
 	               'cutoff', cell( 1, 162 ), ...
 	               'cal_p', cell( 1, 162 ), ...
 	               'cal_e', cell( 1, 162 ), ...
+	               'calf', cell( 1, 162 ), ...
+	               'csp', cell( 1, 162 ), ...
 	               'dE_E', cell( 1, 162 ) );
 	global settings; %settings for the various functions, it's globbal.
 	settings.ax_lb = 0;
 	settings.ax_ub = 3e3;
 	settings.bin = 10;
-	%left processing
-	for cc=1:162
+	%left processinggit
+	for cc=target_crys
 		%do the energy spectrum from the data.
 		settings.crys_nb = cc;
-		[lore.hst(cc), lore.binZ(cc)] = cc_do_spectrum( data );
+		oh = @( p ) p == cc;
+		c_data = xb_data_cut_on_field( data, oh, 'i' );
+		[lore(cc).hst, lore(cc).binZ] = cc_do_spectrum( [c_data.e] );
 	
 		%do the cutoff (no settings update necessary)
-		lore.cutoff(cc) = cc_do_cutoff( [lore.hst{cc}; lore.binZ{cc}] );
+		lore(cc).cutoff = cc_do_cutoff( [lore(cc).binZ; lore(cc).hst] );
 	
 		%do the fitting (big thing!)
-		[lore.gfit_p(cc), lore.gfit_e(cc)] =
-			cc_do_fitting( [lore.hst{cc}; lore.binZ{cc}] );
+		[lore(cc).gfit_p, lore(cc).gfit_e] = ...
+			cc_do_fitting( [lore(cc).binZ; lore(cc).hst] );
 	end
 	
 	%now that we did the accounts for every run and every crystal
 	%we should use the whole data for every single crystal calibration.
 	calfile = fopen( 'lore.dat', 'a' );
-	for cc=1:162
+	for cc=target_crys
 		%do the calibration
-		[lore.cal_p{cc}, lore.cal_e{cc}, lore.cal{cc}] = ...
-			cc_do_calib( lore.gfit_p{cc}, lore.gfit_e{cc}, ...
-			             lore.sp );
+		[lore(cc).cal_p, lore(cc).cal_e, lore(cc).calf, lore(cc).csp ] = ...
+			cc_do_calib( lore(cc).gfit_p, lore(cc).gfit_e, ...
+			             source_profiles );
 		
 		%do the energy resolution
-		lore.dE_E(cc) = ...
-			cc_do_eres( lore.gfit_p{cc}, lore.gfit_e{cc}, lore.cal{cc} );
+		lore(cc).dE_E = ...
+			cc_do_eres( lore(cc).gfit_p, lore(cc).gfit_e, lore(cc).calf );
 		
 		%and print
-		cc_print( calfile, 'a', cc, lore.cutoff(cc), lore.cal_p(cc), ...
-		          lore.cal_e{cc}, lore.dE_E{cc} );
+		f = cc_print( calfile, 'a', cc, lore(cc).cutoff, lore(cc).cal_p, ...
+		              lore(cc).cal_e, lore(cc).dE_E );
 	end
+	fclose( f );
 	
 	%save the data from this execution.
-	save( '-float-binary', 'lore.oct', 'lore' );
+	save( '-float-binary', 'lore.ofb', 'lore' );
 	
 	%and that was it.
 end
