@@ -63,6 +63,7 @@ int main( int argc, char** argv ){
 	//input variables
 	//are now all held into the settings struct
 	struct translator_settings settings;
+	memset( &settings, 0, sizeof( struct translator_settings ) );
 	
 	//parse (and count) eventual free file names
 	//at the beginning of the input
