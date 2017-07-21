@@ -42,12 +42,12 @@ class is_event_id : public std::unary_function< XB::event_holder*, bool > {
 		//constructors
 		is_event_id(): evnt( 0 ) {}; //default
 		is_event_id( unsigned int the_evnt ): evnt( the_evnt ) {}; //from uint
-		is_event_id( XB::event_holder &given  ): evnt( given.evnt ) {}; //from XB::event_holder
-		is_event_id( is_event_id &given ): evnt( given.evnt ) {}; //copy
+		is_event_id( const XB::event_holder &given  ): evnt( given.evnt ) {}; //from XB::event_holder
+		is_event_id( const is_event_id &given ): evnt( given.evnt ) {}; //copy
 		
 		//the main thing
 		bool operator()( XB::event_holder *given ){ return given->evnt == evnt; };
-		bool operator()( XB::event_holder &given ){ return given.evnt == evnt; };
+		bool operator()( XB::event_holder const &given ){ return given.evnt == evnt; };
 		
 		//various type of assignement
 		is_event_id &operator=( const unsigned int given ){ evnt = given; return *this; };

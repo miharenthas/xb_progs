@@ -6,7 +6,9 @@ if [ -L /usr/local/lib/libxb_core.so ]; then
 else
 	ln -s $PWD/lib/libxb_core.so /usr/local/lib/
 	ln -s $PWD/lib/libxb_core.so /usr/lib/
-	ln -s $PWD/lib/libxb_core.so /usr/lib64/
+	if [ -d /usr/lib64/ ]; then
+		ln -s $PWD/lib/libxb_core.so /usr/lib64/
+	fi
 fi
 
 #visualizations
@@ -15,7 +17,9 @@ if [ -L /usr/local/lib/libxb_viz.so ]; then
 else
 	ln -s $PWD/lib/libxb_viz.so /usr/local/lib/
 	ln -s $PWD/lib/libxb_viz.so /usr/lib/
-	ln -s $PWD/lib/libxb_viz.so /usr/lib64/
+	if [ -d /usr/lib64/ ]; then
+		ln -s $PWD/lib/libxb_viz.so /usr/lib64/
+	fi
 fi
 
 #root
@@ -24,7 +28,9 @@ if [ -L /usr/local/lib/libxb_root.so ]; then
 else
 	ln -s $PWD/lib/libxb_root.so /usr/local/lib/
 	ln -s $PWD/lib/libxb_root.so /usr/lib/
-	ln -s $PWD/lib/libxb_root.so /usr/lib64/
+	if [ -d /usr/lib64/ ]; then
+		ln -s $PWD/lib/libxb_root.so /usr/lib64/
+	fi
 fi
 
 #programs

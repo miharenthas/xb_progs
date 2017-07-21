@@ -1,6 +1,6 @@
 %This function performs a calibration of the crystal, given a source profile.
 %
-% [c_pees, cp_err] = cc_do_calib( g_fit_pees, g_fit_err, source_profile )
+% [c_pees, cp_err, calib, source_profile] = cc_do_calib( g_fit_pees, g_fit_err, source_profile )
 %
 % -- g_fit_pees: the parameters of the global fit (all the peaks, their sigmas and amps)
 %                as they come out of cc_do_fitting.
@@ -11,15 +11,25 @@
 % --cp_err: the uncertainties on them
 % --calib: a calibration function (just comfort).
 
-function [c_pees, cp_err, calib] = cc_do_calib( g_fit_pees, g_fit_err, source_profile )
+function [c_pees, cp_err, calib, source_profile] = ...
+		cc_do_calib( g_fit_pees, g_fit_err, source_profile )
 	%first, do a linear regression
-	if size( g_fit_pees, 1 ) ~= size( source_profile(:), 1 )
-		error( 'Number of peaks fitted is different from number of peaks indicated.' );
+	
+	if size( g_fit_pees, 1 ) <= length( source_profile(1,:) ) %crop the source profile
+		                                                  %by intensity
+		[~, ii] = sort( source_profile(2,:), 'descend' );
+		source_profile = source_profile(:,ii(1:size( g_fit_pees, 1 )));
+		[~, ii] = sort( source_profile(1,:) );
+		source_profile = source_profile(:,ii);
+	elseif size( g_fit_pees, 1 ) >= length( source_profile(1,:) ) %freak out
+		error( 'More peaks than source lines.' );
+		%NOTE: this should be done manually with a command line
+		%TODO: command line.
 	end
 	
 	pks = g_fit_pees(:,2); %extract the peak info
-	calib = @( p ) sum( (p(1)*pks + p(2) - source_profile(:) ).^2 );
-	
+	calib = @( p ) sum( (p(1)*pks + p(2) - source_profile(1,:)(:) ).^2 );
+
 	%do the minimisation
 	opt = optimset( 'MaxIter', 1e6, 'TolX', 1e-5 );
 	[c_pees, ~, ~, ~, ~, hessian] = fminunc( calib, [1, 0], opt ); 
