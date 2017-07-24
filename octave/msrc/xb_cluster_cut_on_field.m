@@ -88,3 +88,4 @@ function [klz, nb_removed] = _processor( klz, op_handle, field_name )
 		end
 	end
 	nb_removed = nb_removed - sum( [klz.n] );
+end
