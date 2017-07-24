@@ -63,7 +63,7 @@ function [evt, nb_removed] = xb_data_cut_on_field( evt, op_handle, field_name )
 	
 	%stitch together the stuff
 	evt = reshape( evt_part, [], 1 );
-	if ~isempty( evt_rest ) evt = [evt, evt_rest]; end
+	if ~isempty( evt_rest ) evt = [evt(:); evt_rest(:)]; end
 	nb_removed = sum( nb_removed_part ) + nbr_rest; 
 end
 
