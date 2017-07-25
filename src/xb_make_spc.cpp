@@ -1,6 +1,7 @@
 //this program does a spectrum based on the clusters
 
 #include <unistd.h>
+#include <getopt.h> //getopt long
 #include <stdio.h>
 #include <string.h>
 #include <omp.h>
@@ -18,25 +19,17 @@ extern "C"{
 #include "xb_cluster.h"
 #include "xb_io.h"
 
+#include "xb_make_spc/cmd_line.h"
+#include "xb_make_spc/selectors.h"
+
 //------------------------------------------------------------------------------------
-//a functional to test for_multiplicity
-//this functional returns TRUE whenever the_multiplicity is NOT the one
-//with which is constructed. This is because std::remove_if removes on TRUE.
-typedef class is_not_multiplicity : public std::unary_function< XB::clusterZ, bool > {
-	public:
-		//constructors
-		is_not_multiplicity(): _mul( 1 ) {};
-		is_not_multiplicity( unsigned int mult ): _mul( mult ) {};
-	
-		//the operator()
-		bool operator()( XB::clusterZ &klZ ){ return klZ.n != _mul; }
-		
-		//assignment operator?
-		is_not_multiplicity operator=( is_not_multiplicity given ){
-			this->_mul = given._mul; return *this; };
-	private:
-		unsigned int _mul;
-} isntm;
+//drone info structure
+typedef struct _drone_settings{
+	char instream[256];
+	char outstream[256];
+	FILE *in;
+	FILE *out;
+} d_opts;
 
 //------------------------------------------------------------------------------------
 //the program's setting container
@@ -44,16 +37,23 @@ typedef struct _program_settings{
 	//input variables
 	char in_fname[64][256]; //input file names
 	char out_fname[256]; //output file name
-	bool in_flag; //if true, read from file.
-	bool out_flag; //if true, save to file.
-	bool verbose; //if true, print verbose output.
-	bool interactive; //if true, display prompt.
+	int drone_flag; //if true, the program works in drone mode.
+	int in_flag; //if true, read from file (2 for pipe).
+	int out_flag; //if true, save to file (2 for pipe).
+	int draw_flag; //if true, draw (also to file).
+	int verbose; //if true, print verbose output.
+	int interactive; //if true, display prompt.
 	unsigned int in_f_count; //number of input files.
 	unsigned int num_bins; //number of bins with which to create the histogram
-	unsigned int target_mul; //taget_multiplicity -- 0 indicates "sum all"
+	unsigned int target_mul; //target multiplicity -- 0 indicates "sum all"
+	unsigned int target_ctr; //target centroid -- 0 indicates "all"
+	unsigned int target_alt; //target altitude -- 0 indicates "all"
+	unsigned int target_azi; //target azimuth -- 0 indicates "all"
+	unsigned int target_nrg; //target energy
 	float range[2]; //the range of the histogram
 	XB::gp_options gp_opt; //gnuplot options
 	XB::histogram_mode histo_mode; //the histogram population mode.
+	d_opts drone; //the drone stuff.
 } p_opts;
 		
 
@@ -61,6 +61,11 @@ typedef struct _program_settings{
 //the program's class
 class xb_make_spc{
 	public:
+		typedef enum more_or_less{
+			MORE,
+			LESS
+		} moreorless;
+	
 		//ctors, dtor
 		xb_make_spc( p_opts &settings ); //custom constructor
 		~xb_make_spc(); //death maker
@@ -68,17 +73,18 @@ class xb_make_spc{
 		//methods
 		void populate_histogram(); //populate the histogram
 		void draw_histogram(); //draw the histogram (with gnuplot)
-		//TODO: void save_histogram(); //save the histogram to file.
+		void save_histogram(); //save the histogram to file.
+		void select( XB::selsel selector_type, moreorless m ); //select inside the cluster structure
 		
 		void reset( p_opts &settings ); //update the settings
 	private:
 		xb_make_spc(); //default constructor. This class cannot be instantiated without valid settings.
 		
 		void load_files(); //file loader
+		void unload_files(); //file unloader
 		void target_multiplicity(); //set the target_multiplicity
 		
 		std::vector<XB::clusterZ> event_klZ[64]; //the clusters
-		std::vector<XB::clusterZ>::iterator last[64]; //its tail iterator
 		gnuplot_ctrl *gp_h; //the handle to the gnuplot session
 		gsl_histogram *histo[64]; //the histograms
 		p_opts settings; //the settings
@@ -89,14 +95,20 @@ class xb_make_spc{
 int main( int argc, char **argv ){
 	//default settings
 	p_opts settings;
+	settings.drone_flag = false;
 	settings.in_flag = false;
 	settings.out_flag = false;
+	settings.draw_flag = false;
 	settings.verbose = false;
 	settings.interactive = false;
 	settings.histo_mode = XB::JOIN;
 	settings.in_f_count = 0;
 	settings.num_bins = 500;
 	settings.target_mul = 0;
+	settings.target_ctr = 0;
+	settings.target_alt = 0;
+	settings.target_azi = 0;
+	settings.target_nrg = 0;
 	settings.range[0] = 0;
 	settings.range[1] = 8000;
 	settings.gp_opt.term = XB::QT;
@@ -119,9 +131,27 @@ int main( int argc, char **argv ){
 		                                      //are too long.
 	}
 
+	//long options
+	struct option opts[] = {
+		{ "input", argument_required, NULL, 'i' },
+		{ "output", argument_required, NULL, 'o' },
+		{ "nb-bins", argument_required, NULL, 'b' },
+		{ "range", argument_requires, NULL, 'R' },
+		{ "verbose", no_argument, NULL, 'v' },
+		{ "interactive", no_argument, NULL, 'I' },
+		{ "gnuplot-term", argument_required, NULL, 's' },
+		{ "y-scale", argument_required, NULL, 'l' },
+		{ "title", argument_required, NULL, 't' },
+		{ "histogram-mode", argument_required, NULL, 'H' },
+		{ "select-multiplicity", argument_required, NULL, 'm' },
+		{ "select-centroid", argument_required, NULL, 'c' },
+		{ "drone", argument_required, NULL, 'D' },
+		{ NULL, NULL, NULL, NULL }
+	};
+
 	//input parsing
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:b:R:vIs:l:t:m:H:" )) != -1 ){
+	while( (iota = getopt( argc, argv, "i:o:b:R:vIs:l:t:m:H:c:" )) != -1 ){
 		switch( iota ){
 			case 'i':
 				if( strlen( optarg ) < 256 ){
@@ -178,14 +208,20 @@ int main( int argc, char **argv ){
 					exit( 1 );
 				}
 				break;
-			case 'm':
-				settings.target_mul = atoi( optarg );
-				break;
 			case 'H':
 				if( !strcmp( optarg, "compare" ) ) settings.histo_mode = XB::COMPARE;
 				else if( !strcmp( optarg, "subtract" ) ) settings.histo_mode = XB::SUBTRACT;
 				else settings.histo_mode = XB::JOIN;
 				break;
+			case 'm':
+				settings.target_mul = atoi( optarg );
+				break;
+			case 'c' :
+				settings.target_ctr = atoi( optarg );
+				break;
+			case 'D' :
+				settings.drone_flag = true;
+				sscanf( optarg, "%s::%s", settings.drone.insrean, settings.drone.outstream );
 			default :
 				exit( 1 );
 				//help note will come later
@@ -194,7 +230,7 @@ int main( int argc, char **argv ){
 	
 	//consistency checks
 	if( settings.interactive && !settings.in_flag ){
-		printf( "Cannot be interactive and read from a pipe...\n" );
+		fprintf( stderr, "Cannot be interactive and read from a pipe...\n" );
 		exit( 1 );
 	}
 
@@ -308,6 +344,7 @@ xb_make_spc::xb_make_spc() {}; //default constructor, do nothing
 
 xb_make_spc::xb_make_spc( p_opts &sts ){
 	//copy the stuff
+	settings.drone_flag = sts.drone_flag;
 	settings.in_flag = sts.in_flag;
 	settings.out_flag = sts.out_flag;
 	settings.verbose = sts.verbose;
@@ -315,10 +352,20 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	settings.in_f_count = sts.in_f_count;
 	settings.num_bins = sts.num_bins;
 	settings.target_mul = sts.target_mul;
+	settings.target_alt = sts.target_alt;
+	settings.target_azi = sts.target_azi;
+	settings.target_nrg = sts.target_nrg;
 	settings.gp_opt.term = sts.gp_opt.term;
 	settings.gp_opt.is_log = sts.gp_opt.is_log;
 	strcpy( settings.gp_opt.x_label, sts.gp_opt.x_label );
 	settings.histo_mode = sts.histo_mode;
+	
+	if( settings.drone_flag ){
+		strcpy( settings.drone.instream, sts.drone.instream );
+		strcpy( settings.drone.outstream, sts.drone.outstream );
+		settings.in = sts.in;
+		settings.out. sts.out;
+	}
 	
 	//copy the strings
 	for( int i=0; i < settings.in_f_count; ++i )
@@ -334,7 +381,6 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	if( settings.in_f_count <= 1 ) settings.histo_mode = XB::JOIN;
 	
 	load_files(); //and issues the file loading.
-	target_multiplicity(); //target the set_multiplicity
 }
 
 xb_make_spc::~xb_make_spc(){
@@ -363,18 +409,75 @@ void xb_make_spc::load_files(){
 }
 
 //------------------------------------------------------------------------------------
+//file unloader
+void xb_make_spc::unload_files(){
+	if( settings.verbose ) puts( "Unloading files." );
+	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i )
+		event_klZ[i].clear();
+}
+		
+
+//------------------------------------------------------------------------------------
 //_multiplicity pruner
 void xb_make_spc::target_multiplicity(){
 	if( settings.target_mul != 0 ){
 		//create a comparison functional 
 		isntm isnt_mul( settings.target_mul );
+		std::vector<XB::cluster>::iterator last;
+		
 		//find all the non interesting multiplicities
 		for( int i=0; i < settings.in_f_count; ++i ){
-			last[i] = std::remove_if( event_klZ[i].begin(), event_klZ[i].end(), isnt_mul );
+			last = std::remove_if( event_klZ[i].begin(), event_klZ[i].end(), isnt_mul );
+			
+			event_klZ[i].erase( last, even_klZ[i].end() );
 		}
-	} else for( int i=0; i < settings.in_f_count; ++i ){
-		last[i] = event_klZ[i].end(); //if not target_multiplicity is specified
-		                              //get the whole thing
+	}
+}
+
+//------------------------------------------------------------------------------------
+//more advanced data cutter
+void xb_make_spc::select( XB::selsel selector_type, xb_make_spc::moreorless m ){
+	//in order to make good use of polymorphism
+	std::unary_function< XB::cluster > *in_kl_selector;
+	
+	switch( selector_type ){
+		case XB::IS_NOT_MULTIPLICITY : //just do the old stuff
+			target_multiplicity();
+			return;
+		case XB::IS_CENTROID :
+			in_kl_selector = new XB::is_centroid( settings.target_ctr );
+			break;
+		case XB::IS_MORE_CRYSTALS :	
+			in_kl_selector = new XB::is_more_crystal( settings.target_nb_cry );
+			break;
+		case XB::IS_MORE_ALTITUDE :
+			in_kl_selector = new XB::is_more_altitude( settings.target_alt );
+			break;
+		case XB::IS_MORE_AZIMUTH :
+			in_kl_selector = new XB::is_more_azimuth( setting.target_azi );
+			break;
+		case XB::IS_MORE_NRG :
+			in_kl_selector = new XB::is_more_nrg( settings.target_nrg );
+			break;
+		default :
+			throw XB::error( "Wrong selector type!", "xb_make_spc::select" );
+			break;
+	}
+	
+	std::vector<XB::cluster>::iterator k_last;
+	std::vector<XB::cluster> *kl;
+	
+	//remove the unwanted data (yes, the policy has changed)
+	for( int f=0; f < settings.in_f_count; ++f ){
+		for( int k=0; k < event_klZ[f].size(); ++k ){
+			kl = &event_klZ[f][k].clusters; //useful aliasing
+			
+			k_last = std::remove_if( kl->begin(), kl->end(), *in_kl_selector );
+			
+			if( k_last == kl->end() ) continue;
+			if( m == MORE ) kl->erase( kl->begin(), k_last );
+			else if( m == LESS ) kl->erase( k_last, kl->end() );
+		}
 	}
 }
 
@@ -487,7 +590,7 @@ void xb_make_spc::populate_histogram(){
 			//populate the histogram
 			for( int i=0; i < settings.in_f_count; ++i ){
 				for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[i].begin();
-					 klZ != last[i]; ++klZ ){
+					 klZ != event_klZ[i].end(); ++klZ ){
 					for( int k=0;
 					     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 					     ++k ){
@@ -512,7 +615,7 @@ void xb_make_spc::populate_histogram(){
 				
 				//populate the histograms
 				for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[i].begin();
-					 klZ != last[i]; ++klZ ){
+					 klZ != event_klZ[i].end(); ++klZ ){
 					for( int k=0;
 					     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 					     ++k ){
@@ -548,7 +651,7 @@ void xb_make_spc::populate_histogram(){
 			//subtract the consequents:
 			for( int i=1; i < settings.in_f_count; ++i ){
 				for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[i].begin();
-					 klZ != last[i]; ++klZ ){
+					 klZ != event_klZ[i].end(); ++klZ ){
 				for( int k=0;
 				     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 				     ++k ){
