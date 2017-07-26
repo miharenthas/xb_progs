@@ -153,3 +153,5 @@ namespace XB{
 			unsigned int _nrg;
 	};
 }
+
+#endif
