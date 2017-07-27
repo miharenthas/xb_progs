@@ -49,6 +49,10 @@ int main( int argc, char **argv ){
 	settings.gp_opt.is_log = true;
 	strcpy( settings.gp_opt.x_label, "KeV" );
 	strcpy( settings.gp_opt.title, "XB_spectrum" );
+	strcpy( settings.drone.instream, "stdin" );
+	strcpy( settings.drone.outstream, "stdout" );
+	settings.drone.in = stdin;
+	settings.drone.out = stdout;
 	
 	//some strings...
 	char command[512], comm[512];
@@ -155,7 +159,15 @@ int main( int argc, char **argv ){
 				break;
 			case 'D' :
 				settings.drone_flag = true;
-				sscanf( optarg, "%s::%s", settings.drone.insrean, settings.drone.outstream );
+				sscanf( optarg, "%c:%s::%c:%s", &settings.drone.in_pof,
+				        &settings.drone.insream, &settings.drone.out_pof,
+				        &settings.drone.outstream );
+				settings.drone.in = ( settings.drone.in_pof == 'p' )?
+				                    popen( settings.drone.instream, "r" ) :
+				                    fopen( settings.drone.instream, "r" );
+				settings.drone.out = ( settings.drone.out_pof == 'p' )?
+				                     popen( settings.drone.outstream, "w" ) :
+				                     fopen( settings.drone.outstream, "w" );
 			default :
 				exit( 1 );
 				//help note will come later
@@ -170,99 +182,8 @@ int main( int argc, char **argv ){
 
 	if( settings.verbose ) printf( "*** Welcome in the spectrum making program! ***\n" );
 	
-	//major function calls
-	xb_make_spc the_prog( settings );	
-	the_prog.populate_histogram();
-	the_prog.draw_histogram();
-
-	//ask what to do
-	while( settings.interactive ){
-		//get the input
-		printf( "xb_make_spc> " );
-		fgets( command, 512, stdin ); //hack allert!
-		
-		//parse it
-		//it's largely the same as the launch options
-		//except for:
-		//E -- exit the program
-		//G -- execute again with the new options
-		switch( command[0] ){
-			//NOTE: this will be reimplemented later.
-			/*case 'i':
-				sscanf( &command[1], "%s", comm );
-				if( strlen( comm ) < 256 ){
-					strcpy( in_fname, comm );
-					in_flag = true;
-				}else{
-					printf( "File name too long!\n" );
-					exit( 1 );
-				}
-				break;*/
-			case 'o':
-				sscanf( &command[1], "%s", comm );
-				if( strlen( comm ) < 256 ){
-					strcpy( settings.out_fname, comm );
-					settings.out_flag = true;
-				}else{
-					printf( "File name too long.\n" );
-				}
-				break;
-			case 'b':
-				sscanf( &command[1], "%s", comm );
-				settings.num_bins = atoi( comm );
-				break;
-			case 'R':
-				sscanf( &command[1], "%s", comm );
-				sscanf( comm, "%f:%f", &settings.range[0], &settings.range[1] );
-				break;
-			case 's':
-				sscanf( &command[1], "%s", comm );
-				if( !strcmp( comm, "qt" ) ) settings.gp_opt.term = XB::QT;
-				else if( !strcmp( comm, "png" ) ) settings.gp_opt.term = XB::PNG;
-				else{
-					printf( "Invalid gnuplot terminal.\n" );
-				}
-				break;
-			case 'l':
-				sscanf( &command[1], "%s", comm );
-				if( !strcmp( comm, "yes" ) ) settings.gp_opt.is_log = true;
-				else if( !strcmp( comm, "no" ) ) settings.gp_opt.is_log = false;
-				else{
-					printf( "Invalid plot scale.\n" );
-				}
-				break;
-			case 't':
-				sscanf( &command[1], "%s", comm );
-				if( strlen( comm ) < 256 ) strcpy( settings.gp_opt.title, comm );
-				else{
-					printf( "Title is too long.\n" );
-				}
-				break;
-			case 'm':
-				sscanf( &command[1], "%s", comm );
-				settings.target_mul = atoi( comm );
-				break;
-			case 'H':
-				sscanf( &command[1], "%s", comm );
-				if( !strcmp( comm, "compare" ) ) settings.histo_mode = XB::COMPARE;
-				else if( !strcmp( comm, "subtract" ) ) settings.histo_mode = XB::SUBTRACT;
-				else settings.histo_mode = XB::JOIN;
-				break;
-			case 'E':
-				goto __THE_END__;
-				break;
-			case 'G':
-				//update the program settings
-				the_prog.reset( settings );
-				the_prog.draw_histogram();
-				break;
-			default :
-				printf( "Sorry, I don't know %s", command );
-				break;
-		}
-	}
-	
-	__THE_END__:
+	//command line and program object fingering
+	//...
 	
 	//final ops
 	if( settings.verbose ) printf( "Exiting...\n" );
@@ -289,6 +210,9 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	settings.target_alt = sts.target_alt;
 	settings.target_azi = sts.target_azi;
 	settings.target_nrg = sts.target_nrg;
+	settings.mol_alt = sts.mol_alt;
+	settings.mol_azi = sts.mol_azi;
+	settings.mol_nrg = sts.mol_nrg;
 	settings.gp_opt.term = sts.gp_opt.term;
 	settings.gp_opt.is_log = sts.gp_opt.is_log;
 	strcpy( settings.gp_opt.x_label, sts.gp_opt.x_label );
@@ -353,7 +277,7 @@ void xb_make_spc::unload_files(){
 
 //------------------------------------------------------------------------------------
 //_multiplicity pruner
-void xb_make_spc::target_multiplicity(){
+void xb_make_spc::target_multiplicity( moreorless m ){
 	if( settings.target_mul != 0 ){
 		//create a comparison functional 
 		isntm isnt_mul( settings.target_mul );
@@ -363,14 +287,16 @@ void xb_make_spc::target_multiplicity(){
 		for( int i=0; i < settings.in_f_count; ++i ){
 			last = std::remove_if( event_klZ[i].begin(), event_klZ[i].end(), isnt_mul );
 			
-			event_klZ[i].erase( last, even_klZ[i].end() );
+			if( last == event_klZ[i].end() ) continue;
+			if( m == MORE ) event_klZ[i].erase( last, even_klZ[i].end() );
+			else if( m == LESS ) event_klZ[i].erase( event_klZ[i].begin(), last );
 		}
 	}
 }
 
 //------------------------------------------------------------------------------------
 //more advanced data cutter
-void xb_make_spc::select( XB::selsel selector_type, xb_make_spc::moreorless m ){
+void xb_make_spc::select( XB::selsel selector_type, moreorless m ){
 	//in order to make good use of polymorphism
 	std::unary_function< XB::cluster > *in_kl_selector;
 	
