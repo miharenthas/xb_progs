@@ -43,6 +43,11 @@ int main( int argc, char **argv ){
 	settings.target_alt = 180;
 	settings.target_azi = 180;
 	settings.target_nrg = 0;
+	settings.mol_mul = MORE;
+	settings.mol_ctr = MORE;
+	settings.mol_alt = MORE;
+	settings.mol_azi = MORE;
+	settings.mol_nrg = MORE;
 	settings.range[0] = 0;
 	settings.range[1] = 8000;
 	settings.gp_opt.term = XB::QT;
@@ -207,9 +212,12 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	settings.in_f_count = sts.in_f_count;
 	settings.num_bins = sts.num_bins;
 	settings.target_mul = sts.target_mul;
+	settings.target_ctr = sts.target_ctr;
 	settings.target_alt = sts.target_alt;
 	settings.target_azi = sts.target_azi;
 	settings.target_nrg = sts.target_nrg;
+	settings.mol_mul = sts.mol_mul;
+	settings.mol_ctr = sts.mol_ctr;
 	settings.mol_alt = sts.mol_alt;
 	settings.mol_azi = sts.mol_azi;
 	settings.mol_nrg = sts.mol_nrg;
@@ -221,8 +229,10 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	if( settings.drone_flag ){
 		strcpy( settings.drone.instream, sts.drone.instream );
 		strcpy( settings.drone.outstream, sts.drone.outstream );
+		settings.in_pof = sts.in_pof;
+		settings.out_pof = sts.out_pof;
 		settings.in = sts.in;
-		settings.out. sts.out;
+		settings.out = sts.out;
 	}
 	
 	//copy the strings
@@ -237,6 +247,9 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	
 	//can't compare or subtract less than two histograms
 	if( settings.in_f_count <= 1 ) settings.histo_mode = XB::JOIN;
+	
+	//set the do stuff switches
+	_do_hitst = 1; _do_files = 1; _do_data = 1;
 	
 	load_files(); //and issues the file loading.
 }
@@ -254,6 +267,8 @@ xb_make_spc::~xb_make_spc(){
 //------------------------------------------------------------------------------------
 //file loader
 void xb_make_spc::load_files(){
+	if( !_do_files ) return; //do nothing if there's nothing to do.
+	
 	if( settings.verbose && !settings.in_flag ) printf( "Reading from STDIN...\n" );
 	
 	//get the clusters from somewhere
@@ -264,12 +279,13 @@ void xb_make_spc::load_files(){
 	}
 	
 	if( !settings.in_flag ) XB::load( stdin, event_klZ[0] );
+	_do_files = 0; //work done.
 }
 
 //------------------------------------------------------------------------------------
 //file unloader
-void xb_make_spc::unload_files(){
-	if( settings.verbose ) puts( "Unloading files." );
+void xb_make_spc::clear_data(){
+	if( settings.verbose ) puts( "Clearing data." );
 	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i )
 		event_klZ[i].clear();
 }
@@ -344,71 +360,88 @@ void xb_make_spc::select( XB::selsel selector_type, moreorless m ){
 //------------------------------------------------------------------------------------
 //reset the object
 void xb_make_spc::reset( p_opts &sts ){
-	//some internal flags
-	bool redo_files = false;
-	bool redo_hists = false;
+	_do_hists = 0;
+	_do_file = 0;
+	_do_data = 0;
+
+	//smart copy the stuff
+	//don't toch the drone, if so: die.
+	if( settings.drone_flag != sts.drone_flag ){
+		fprintf( stderr, "Can't touch drone!\n" );
+		exit( 42 );
+	}
 	
-	//copy
-	settings.in_flag = sts.in_flag; 
+	//nothing to think about here
+	settings.in_flag = sts.in_flag;
 	settings.out_flag = sts.out_flag;
 	settings.verbose = sts.verbose;
 	settings.interactive = sts.interactive;
 	
+	//if the number of files has changed, redo everything
 	if( settings.in_f_count != sts.in_f_count ){
-		redo_files = true;
+		++_do_files; ++_do_hists;
 		settings.in_f_count = sts.in_f_count;
 	}
 	
+	//if the number of bins has changed, redo the histogram
 	if( settings.num_bins != sts.num_bins ){
+		++_do_hists;
 		settings.num_bins = sts.num_bins;
-		redo_hists = true;
 	}
 	
-	if( settings.target_mul != sts.target_mul ){
+	if( !memcmp( &settings.target_mul, &sts.target_mul,
+	             6*( sizeof(moreorless) + sizeof(unsigned int) ) ){
+		++_do_data;
 		settings.target_mul = sts.target_mul;
-		redo_hists = true;
+		settings.target_cry = sts.target_cry;
+		settings.target_ctr = sts.target_ctr;
+		settings.target_alt = sts.target_alt;
+		settings.target_azi = sts.target_azi;
+		settings.target_nrg = sts.target_nrg;
+		settings.mol_mul = sts.mol_mul;
+		settings.mol_cry = sts.mol_cry;
+		settings.mol_ctr = sts.mol_ctr;
+		settings.mol_alt = sts.mol_alt;
+		settings.mol_azi = sts.mol_azi;
+		settings.mol_nrg = sts.mol_nrg;
 	}
 	
 	settings.gp_opt.term = sts.gp_opt.term;
 	settings.gp_opt.is_log = sts.gp_opt.is_log;
+
+	strcpy( settings.gp_opt.x_label, sts.gp_opt.x_label );
+	strcpy( settings.gp_opt.title, sts.gp_opt.title );
 	
 	if( settings.histo_mode != sts.histo_mode ){
+		++_do_hists;
 		settings.histo_mode = sts.histo_mode;
-		redo_hists = true;
+	}
+	
+	if( settings.drone_flag ){
+		strcpy( settings.drone.instream, sts.drone.instream );
+		strcpy( settings.drone.outstream, sts.drone.outstream );
+		settings.in_pof = sts.in_pof;
+		settings.out_pof = sts.out_pof;
+		settings.in = sts.in;
+		settings.out = sts.out;
 	}
 	
 	//copy the strings
 	for( int i=0; i < settings.in_f_count; ++i ){
-		if( strcmp( settings.in_fname[i], sts.in_fname[i] ) ){
+		if( !strcmp( settings.in_fname[i], sts.in_fname[i] ){
+			++_do_files;
 			strcpy( settings.in_fname[i], sts.in_fname[i] );
-			redo_files = true;
 		}
 	}
 	
 	strcpy( settings.out_fname, sts.out_fname );
-	strcpy( settings.gp_opt.title, sts.gp_opt.title );
 	
-	if( settings.range[0] != sts.range[0] ||
-	    settings.range[1] != sts.range[1] ){
-		settings.range[0] = sts.range[0];
-		settings.range[1] = sts.range[1];
-		redo_hists = true;
-	}
+	settings.range[0] = sts.range[0];
+	settings.range[1] = sts.range[1];
 	
-	//consistency checks
-	//can't compare or subtract less than two histograms
-	if( settings.in_f_count <= 1 ){
-		settings.histo_mode = XB::JOIN;
-		redo_hists = true;
-	}
-	
-	//trigger the mods
-	if( redo_files ){
-		this->load_files();
-		redo_hists = true;
-	}
-	
-	if( redo_hists ) this->populate_histogram();
+	if( _do_files ){ unload_files(); load_files(); }
+	hack_data();
+	populate_histogram();
 }
 
 //------------------------------------------------------------------------------------
@@ -433,6 +466,8 @@ void xb_make_spc::draw_histogram(){
 //------------------------------------------------------------------------------------
 //implementation of the histogram population
 void xb_make_spc::populate_histogram(){
+	if( !_do_hists ) return; //do nothing if there's nothing to do.
+
 	switch( settings.histo_mode ){
 		case XB::JOIN:
 			if( settings.verbose ){ //produce one sum histogram
@@ -523,5 +558,90 @@ void xb_make_spc::populate_histogram(){
 			break;
 	}
 	
+	_do_hists = 0; //work done.
 	if( settings.verbose ) printf( "Done.\n" );
 }
+
+//------------------------------------------------------------------------------------
+//A function to apply the cut to the data (in sequence, not clever right now)
+void xb_make_spc::hack_data(){
+	if( !_do_data ) return; //do nothing if nothing to do
+	
+	if( settings.target_mul ) select( XB::IS_NOT_MULTIPLICITY, settings.mol_mul );
+	if( settings.tarteg_cry ) select( XB::IS_MORE_CRYSTALS, settings.mol_cry );
+	if( settings.target_ctr ) select( XB::IS_CENTROID, settings.mol_ctr );
+	if( settings.target_alt < 180 ) select( XB::IS_MORE_ALTITUDE, settings.mol_alt ); //?
+	if( fabs( settings.target_azi ) < 180 ) select( XB::IS_MORE_AZIMUTH, settings.mol_azi ); //?
+	if( settings.target_nrg  ) select( XB::IS_MORE_NRG, settings.mol_nrg );
+	
+	_do_data = 0; //job done
+}
+
+//------------------------------------------------------------------------------------
+//reload the data
+void xb_make_spc::reload_data(){
+	clear_data();
+	_do_files = 1;
+	load_files();
+}
+
+//------------------------------------------------------------------------------------
+//save the histogram
+void xb_make_spc::save_histogram(){
+	FILE *out;
+	if( settings.out_flag ) out = fopen( settings.out_fname, "w" );
+	else out = stdout;
+	
+	for( int i=0; i < settings.in_f_count; ++i ){
+		if( !histo[i] ) continue;
+		fwrite( out, histo[i]->n, sizeof(size_t) );
+		fwrite( out, histo[i]->range, (histo[i]->n+1)*sizeof(double) );
+		fwrite( out, histo[i]->bin, histo[i]->n*sizeof(double) );
+	}
+	
+	if( settings.out_flag ) fclose( out );
+}
+
+//------------------------------------------------------------------------------------
+//save the data
+void xb_make_spc::save_data(){
+	FILE *out;
+	char command[310];
+	
+	if( settings.out_flag ){
+		strcpy( command, "bzip2 -z > " );
+		strcat( command, settings.out_fname );
+		out = popen( command, "w" );
+	}	else out = stdout;
+	
+	for( int i=0; i < settings.in_f_count; ++i ){
+		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
+	}
+
+}
+
+//------------------------------------------------------------------------------------
+//put the histogram on the drone output
+void xb_make_spc::put_histogram(){
+	FILE *out = settings.drone.out;
+	
+	for( int i=0; i < settings.in_f_count; ++i ){
+		if( !histo[i] ) continue;
+		for( int b=0; b < histo[i]->n; ++i )
+			fprintf( out, "%f %f\n",
+			         (histo[i]->range[b] + histo[i]->range[b+1])/2,
+			         histo[i]->bin[b] );
+		}
+		fprintf( out, "\n" );
+	}
+}
+
+//--------------------------------------------------------------------------------------
+void xb_make_spc::put_data(){
+	FILE *out = settings.drone.out;
+	
+	for( int i=0; i < settings.in_f_count; ++i ){
+		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
+	}
+}
+		

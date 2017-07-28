@@ -53,12 +53,14 @@ void XB::free_header( XB::io_header *hdr ){
 
 //-------------------------------------------------------------------------------
 //The writer bit implementation
-void XB::write( FILE* f_out, std::vector<XB::data> &xb_book ){
+void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 	//write the the header
-	XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_DATA );
-	XB::write_header( f_out, *hdr );
-	XB::free_header( hdr );
-	
+	if( header ){
+		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_DATA );
+		XB::write_header( f_out, *hdr );
+		XB::free_header( hdr );
+	}
+
 	//begin writing:
 	//the format is:
 	//header:
@@ -104,7 +106,7 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book ){
 }
 
 //char* interface
-void XB::write( char* f_name, std::vector<XB::data> &xb_book ){
+void XB::write( char* f_name, std::vector<XB::data> &xb_book, int header ){
 	//build the command for the pipe
 	char command[310];
 	strcpy( command, "bzip2 -z > " );
@@ -115,15 +117,15 @@ void XB::write( char* f_name, std::vector<XB::data> &xb_book ){
 	if( f_out == NULL ) throw( XB::error( "I/O Error!", "XB::Write" ) );
 
 	//write
-	XB::write( f_out, xb_book );
+	XB::write( f_out, xb_book, header );
 	
 	//close
 	pclose( f_out );
 }
 
 //std::string interface
-void XB::write( std::string f_name, std::vector<XB::data> &xb_book ){
-	XB::write( f_name.c_str(), xb_book );
+void XB::write( std::string f_name, std::vector<XB::data> &xb_book, int header ){
+	XB::write( f_name.c_str(), xb_book, header );
 }
 
 //--------------------------------------------------------------------------------
@@ -212,11 +214,13 @@ void XB::load( std::string f_name, std::vector<XB::data> &xb_book ){
 
 //-------------------------------------------------------------------------------
 //The writer bit implementation for the tracker info
-void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book ){
+void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 	//write the the header
-	XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_TRACK );
-	XB::write_header( f_out, *hdr );
-	XB::free_header( hdr );
+	if( header ){
+		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_TRACK );
+		XB::write_header( f_out, *hdr );
+		XB::free_header( hdr );
+	}
 
 	//begin writing:
 	//the format is:
@@ -251,7 +255,7 @@ void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book ){
 }
 
 //char* interface
-void XB::write( char* f_name, std::vector<XB::track_info> &xb_book ){
+void XB::write( char* f_name, std::vector<XB::track_info> &xb_book, int header ){
 	//build the command for the pipe
 	char command[310];
 	strcpy( command, "bzip2 -z > " );
@@ -262,15 +266,15 @@ void XB::write( char* f_name, std::vector<XB::track_info> &xb_book ){
 	if( f_out == NULL ) throw( XB::error( "I/O Error!", "XB::Write" ) );
 
 	//write
-	XB::write( f_out, xb_book );
+	XB::write( f_out, xb_book, header );
 	
 	//close
 	pclose( f_out );
 }
 
 //std::string interface
-void XB::write( std::string f_name, std::vector<XB::track_info> &xb_book ){
-	return XB::write( f_name.c_str(), xb_book );
+void XB::write( std::string f_name, std::vector<XB::track_info> &xb_book, int header ){
+	return XB::write( f_name.c_str(), xb_book, header );
 }
 
 //--------------------------------------------------------------------------------
@@ -360,11 +364,13 @@ void XB::load( std::string f_name, std::vector<XB::track_info> &xb_book ){
 //NOTE: in what follows, for now, cluster.dists is NOT wirtten
 //      because it's not filled. The code is there, though:
 //      just uncomment it when ready.
-void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ ){
+void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header ){
 	//write the the header
-	XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_CLUSTERS );
-	XB::write_header( f_out, *hdr );
-	XB::free_header( hdr );
+	if( header ){
+		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_CLUSTERS );
+		XB::write_header( f_out, *hdr );
+		XB::free_header( hdr );
+	}
 
 	//the format is:
 	//header:
@@ -411,7 +417,7 @@ void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ ){
 }
 			
 //char* interface
-void XB::write( char* f_name, std::vector<XB::clusterZ> &event_klZ ){
+void XB::write( char* f_name, std::vector<XB::clusterZ> &event_klZ, int header ){
 	//build the command for the pipe
 	char command[310];
 	strcpy( command, "bzip2 -z > " );
@@ -422,15 +428,15 @@ void XB::write( char* f_name, std::vector<XB::clusterZ> &event_klZ ){
 	if( f_out == NULL ) throw( XB::error( "I/O Error!", "XB::Write" ) );
 
 	//write
-	XB::write( f_out, event_klZ );
+	XB::write( f_out, event_klZ, header );
 	
 	//close
 	pclose( f_out );
 }
 
 //std::string interface
-void XB::write( std::string f_name, std::vector<XB::clusterZ> &event_klZ ){
-	return XB::write( f_name.c_str(), event_klZ );
+void XB::write( std::string f_name, std::vector<XB::clusterZ> &event_klZ, int header ){
+	return XB::write( f_name.c_str(), event_klZ, header );
 }
 
 //-------------------------------------------------------------------------------------------

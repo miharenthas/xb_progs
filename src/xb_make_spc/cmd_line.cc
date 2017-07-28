@@ -167,6 +167,12 @@ namespace XB{
 				settings.target_mul = atoi( token_bf );
 				if( isnan( settings.target_mul ) )
 					throw error( "Multiplicity is NaN!", "XB::cml_parse" );
+			} else if( !strcmp( token_bf, "cry" ) ){
+				PREP_TK_BF
+				CK_MOL( settings.mol_cry )
+				settings.target_ctr = atoi( token_bf );
+				if( isnan( settings.target_cry ) )
+					throw error( "Crystal is NaN!", "XB::cml_parse" );
 			} else if( !strcmp( token_bf, "ctr" ) ){
 				PREP_TK_BF
 				CK_MOL( settings.mol_ctr )

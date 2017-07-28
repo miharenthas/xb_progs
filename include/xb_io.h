@@ -39,19 +39,19 @@ namespace XB{
 	//to save space, this uses a pipe to bzip2 and saves compressed.
 	
 	//this block of functions work with XB::data kind of data
-	void write( FILE* f_out, std::vector<XB::data> &xb_book );
-	void write( std::string f_name, std::vector<XB::data> &xb_book );
-	void write( char* f_name, std::vector<XB::data> &xb_book );
+	void write( FILE* f_out, std::vector<XB::data> &xb_book, int header=1 );
+	void write( std::string f_name, std::vector<XB::data> &xb_book, int header=1 );
+	void write( char* f_name, std::vector<XB::data> &xb_book, int header=1 );
 	
 	//this block of functions work with XB::data kind of data
-	void write( FILE* f_out, std::vector<XB::track_info> &xb_book );
-	void write( std::string f_name, std::vector<XB::track_info> &xb_book );
-	void write( char* f_name, std::vector<XB::track_info> &xb_book );
+	void write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header=1 );
+	void write( std::string f_name, std::vector<XB::track_info> &xb_book, int header=1 );
+	void write( char* f_name, std::vector<XB::track_info> &xb_book, int header=1 );
 
 	//this block of functions work wiht XB::clusterZ kind of data
-	void write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ );
-	void write( std::string f_name, std::vector<XB::clusterZ> &event_klZ );
-	void write( char* f_name, std::vector<XB::clusterZ> &event_klZ );
+	void write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header=1 );
+	void write( std::string f_name, std::vector<XB::clusterZ> &event_klZ, int header=1 );
+	void write( char* f_name, std::vector<XB::clusterZ> &event_klZ, int header=1 );
 	
 	//-----------------------------------------------------------------------
 	//load from file

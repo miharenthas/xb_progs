@@ -47,10 +47,12 @@ typedef struct _program_settings{
 	unsigned int num_bins; //number of bins with which to create the histogram
 	unsigned int target_mul; //target multiplicity -- 0 indicates "sum all"
 	unsigned int target_ctr; //target centroid -- 0 indicates "all"
+	unsigned int target_cty; //target nb of crystals -- 0 indicates "all"
 	unsigned int target_alt; //target altitude -- 180? indicates "all"
 	unsigned int target_azi; //target azimuth -- 180? indicates "all"
 	unsigned int target_nrg; //target energy
 	moreorless mol_mul; //target multiplicity this/all others
+	moreorless mol_cry; //target crystals direction
 	moreorless mol_ctr; //target centroid this/all others
 	moreorless mol_alt; //target altitude direction
 	moreorless mol_azi; //target azimut direction
@@ -70,11 +72,15 @@ class xb_make_spc{
 		~xb_make_spc(); //death maker
 		
 		//methods
-		void hack_data(); //apply the cut to the data. TODO
+		void hack_data(); //apply the cut to the data.
+		void reload_data(); //re-read the files, without the cuts!
+		
 		void populate_histogram(); //populate the histogram
 		void draw_histogram(); //draw the histogram (with gnuplot)
-		void save_histogram(); //save the histogram to file.
-		void save_data(); //save the data onto a file. TODO
+		
+		void save_histogram(); //save the histogram to file. TODO
+		void save_data(); //save the data onto a file.
+		
 		void put_histogram(); //output the histogram on the set stream (drone.out) TODO
 		void put_data(); //output the data onto the set stream (drone.out) TODO
 		
@@ -83,10 +89,10 @@ class xb_make_spc{
 		xb_make_spc(); //default constructor. This class cannot be instantiated without valid settings.
 		
 		void load_files(); //file loader
-		void unload_files(); //file unloader
 		void select( XB::selsel selector_type, moreorless m ); //select inside the cluster structure
 		void target_multiplicity( moreorless m ); //set the target_multiplicity
 		
+		int _do_files, _do_hists, _do_data;//useful switches
 		std::vector<XB::clusterZ> event_klZ[64]; //the clusters
 		gnuplot_ctrl *gp_h; //the handle to the gnuplot session
 		gsl_histogram *histo[64]; //the histograms
