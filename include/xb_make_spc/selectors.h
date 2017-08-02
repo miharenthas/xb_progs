@@ -11,10 +11,10 @@
 namespace XB{
 	//------------------------------------------------------------------------------------
 	//selector enumerator -- used to select selector
-	typedef enum _select_selector{
+	typedef enum _select_selector {
 		IS_NOT_MULTIPLICITY = 0, //for historical reasons, it works this way...
 		IS_CENTROID,
-		IS_MORE_CRYSTALS
+		IS_MORE_CRYSTALS,
 		IS_MORE_ALTITUDE,
 		IS_MORE_AZIMUTH,
 		IS_MORE_NRG
@@ -64,7 +64,7 @@ namespace XB{
 			};
 		private:
 			unsigned int _ctr;
-	}
+	};
 	
 	//------------------------------------------------------------------------------------
 	//check on the number of crystals in the cluster
@@ -73,11 +73,11 @@ namespace XB{
 		public:
 			is_more_crystals(): _nb_cry( 1 ) {};
 			is_more_crystals( unsigned int nb_cry ): _nb_cry( nb_cry ) {};
-			is_more_crystals( cosnt is_more_crystals &given ):
+			is_more_crystals( const is_more_crystals &given ):
 				_nb_cry( given._nb_cry ) {};
 				
 			bool operator()( const XB::cluster &given ) {
-				return kl.n > _nb_cry;
+				return given.n > _nb_cry;
 			};
 			
 			is_more_crystals &operator=( is_more_crystals &given ){
@@ -95,11 +95,11 @@ namespace XB{
 		public:
 			is_more_altitude(): _alt( 1 ) {};
 			is_more_altitude( unsigned int alt ): _alt( alt ) {};
-			is_more_altitude( cosnt is_more_altitude &given ):
+			is_more_altitude( const is_more_altitude &given ):
 				_alt( given._alt ) {};
 				
 			bool operator()( const XB::cluster &given ) {
-				return kl.c_altitude > _alt;
+				return given.c_altitude > _alt;
 			};
 			
 			is_more_altitude &operator=( is_more_altitude &given ){
@@ -117,11 +117,11 @@ namespace XB{
 		public:
 			is_more_azimuth(): _azi( 1 ) {};
 			is_more_azimuth( unsigned int azi ): _azi( azi ) {};
-			is_more_azimuth( cosnt is_more_azimuth &given ):
+			is_more_azimuth( const is_more_azimuth &given ):
 				_azi( given._azi ) {};
 				
 			bool operator()( const XB::cluster &given ) {
-				return kl.c_azimuth > _azi;
+				return given.c_azimuth > _azi;
 			};
 			
 			is_more_azimuth &operator=( is_more_azimuth &given ){
@@ -139,11 +139,11 @@ namespace XB{
 		public:
 			is_more_energy(): _nrg( 1 ) {};
 			is_more_energy( unsigned int nrg ): _nrg( nrg ) {};
-			is_more_energy( cosnt is_more_energy &given ):
+			is_more_energy( const is_more_energy &given ):
 				_nrg( given._nrg ) {};
 				
 			bool operator()( const XB::cluster &given ) {
-				return kl.sum_e > _nrg;
+				return given.sum_e > _nrg;
 			};
 			
 			is_more_energy &operator=( is_more_energy &given ){

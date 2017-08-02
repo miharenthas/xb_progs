@@ -14,7 +14,8 @@
 
 #include "xb_error.h"
 #include "xb_draw_gsl_histogram.h"
-#include "include/xb_make_spc.h"
+#include "xb_make_spc.h"
+#include "xb_make_spc/selectors.h"
 
 #define MAX_INPUT_LENGTH 4096 //number of bytes readable per line of input
 #define DO_EXIT 100
@@ -31,7 +32,7 @@ namespace XB{
 	//parse a string into a command and its arguments, and apply to settings
 	//NOTE: comments beginning with # are supported!
 	//NOTE: also, scripting (and live scripting) is supported!
-	void cml_parse( std::string cmd, p_opts& settings, int &breaker );
+	std::string cml_parse( std::string cmd, p_opts& settings, int &breaker );
 	//loop apply the settings.
 	int cml_loop( FILE* user_input, p_opts &settings );
 	int cml_loop_prompt( FILE* user_input, p_opts &settings );
@@ -50,6 +51,10 @@ namespace XB{
 	void cml_parse__gp_opts( p_opts &settings, std::string &rcmd );
 	void cml_parse__histo_mode( p_opts &settings, std::string &rcmd );
 	void cml_parse__drone( p_opts &settings, std::string &rcmd );
+
+	//----------------------------------------------------------------------------
+	//an utility
+	char *get_c_str( const std::string &str );
 }
 
 #endif

@@ -4,8 +4,16 @@
 
 namespace XB{
 	//----------------------------------------------------------------------------
+	//get the string buffer out of a string in a non constant string
+	char *get_c_str( const std::string &str ){
+		char *strbuf = (char*)malloc( str.length()+1 );
+		strcpy( strbuf, str.c_str() );
+		return strbuf;
+	}
+
+	//----------------------------------------------------------------------------
 	//run strtok until the line run out.
-	std::vector<std::string> cml_segment_statements( FILE *user_input, in &breaker ){
+	std::vector<std::string> cml_segment_statements( FILE *user_input ){
 		char buf[MAX_INPUT_LENGTH];
 		
 		//get one line out of the stream
@@ -26,9 +34,11 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//run strtok on the single statement and make the command undertandable
 	//and set the breaker switch if "exit" is found
-	std::string cml_parse( std::string cmd, p_opts &settings int &breaker ){
-		std::string command = std::string( strtok( cmd.c_str(), " " ) ); //that's iffy
+	std::string cml_parse( std::string cmd, p_opts &settings, int &breaker ){
+		char *rcmd = get_c_str( cmd );
+		std::string command = std::string( strtok( rcmd, " " ) ); //that's iffy
 		cmd.erase( 0, command.length() ); //remove the leading command
+		free( rcmd ); //cleanup
 		
 		if( command[0] == '#' ); //it's a comment, do nothing.
 		else if( command == "exit" || command == "quit" ) breaker = DO_EXIT;
@@ -52,11 +62,13 @@ namespace XB{
 	//NOTE: this is essentially recursive, a "script" command in a script will
 	//      open a script and so on until explosion or successfull execution.
 	void cml_parse__script( p_opts &settings, std::string &rcmd, int &breaker ){
-		char *token_bf = strtok( rcmd.c_str(), " " );
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
 		while( *token_bf == ' ' ) ++token_bf;
 		
 		FILE *script = fopen( token_bf, "r" );
 		breaker = cml_loop( script, settings );
+		free( cmd );
 	}
 	
 	//----------------------------------------------------------------------------
@@ -71,7 +83,8 @@ namespace XB{
 		//separate the various arguments
 		//NOTE: rcmd does not begin with a white space because we stripped
 		//      the string before, in cml_segment_statements!
-		char *token_bf = strtok( rcmd.c_str(); " " );
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
 		f = 0;
 		while( token_bf != NULL ){
 			while( *token_bf == ' ' ) token_bf++;
@@ -82,14 +95,16 @@ namespace XB{
 			token_bf = strtok( NULL, " " );
 		}
 		settings.in_f_count = f;
+		free( cmd );
 	}
 	
 	//----------------------------------------------------------------------------
 	//set the output name
 	void cml_parse__out_fname( p_opts &settings, std::string &rcmd ){
 		//very simply, take the first string in the bunch
-		char *token_bf = strtok( rcmd.c_str(), " " );
-		if( !token_bf || !strcmp( token_bf, "stdout" ){
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
+		if( !token_bf || !strcmp( token_bf, "stdout" ) ){
 			memset( settings.out_fname, 0, 256 );
 			settings.out_flag = false;
 		} else {
@@ -97,12 +112,14 @@ namespace XB{
 			strcpy( settings.out_fname, token_bf );
 			settings.out_flag = true;
 		}
+		free( cmd );
 	}
 	
 	//----------------------------------------------------------------------------
 	//parse the flags
 	void cml_parse__flags( p_opts &settings, std::string &rcmd ){
-		char *token_bf = strtok( rcmd.c_str(), " " );
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
 		while( *token_bf == ' ' ) token_bf++;
 		if( *token_bf == '#' ) return;
 		
@@ -119,7 +136,7 @@ namespace XB{
 			} else if( !strcmp( token_bf, "out" ) ){
 				PREP_TK_BF
 				settings.out_flag = atoi( token_bf );
-			} else if( !strcmp( token_bf, "draw" ) )}
+			} else if( !strcmp( token_bf, "draw" ) ) {
 				PREP_TK_BF
 				settings.draw_flag = atoi( token_bf );
 			} else if( !strcmp( token_bf, "verbose" ) ||
@@ -136,12 +153,14 @@ namespace XB{
 		}
 		
 		#undef PREP_TK_BF
+		free( cmd );
 	}
 	
 	//----------------------------------------------------------------------------
 	//parse the cuts
 	void cml_parse__cuts( p_opts &settings, std::string &rcmd ){
-		char *token_bf = strtok( rcmd.c_str(), " " );
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
 		while( *token_bf == ' ' ) token_bf++;
 		if( *token_bf == '#' ) return;
 		
@@ -208,13 +227,15 @@ namespace XB{
 			PREP_TK_BF
 		}
 		#undef PREP_TK_BF
-		#undef CK_MOL		
+		#undef CK_MOL
+		free( cmd );		
 	}
 	
 	//----------------------------------------------------------------------------
 	//parse the terminal options (boring)
 	void cml_parse__gp_opts( p_opts &settings, std::string &rcmd ){
-		char *token_bf = strtok( rcmd.c_str(), " " );
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
 		while( *token_bf == ' ' ) token_bf++;
 		if( *token_bf == '#' ) return;
 		
@@ -226,7 +247,7 @@ namespace XB{
 			if( !strcmp( token_bf, "term" ) ){
 				PREP_TK_BF
 				if( !strcmp( token_bf, "qt" ) ) settings.gp_opt.term = QT;
-				if( !strcmp( token_bf, "png" ) ) setting.gp_opt.term = PNG;
+				if( !strcmp( token_bf, "png" ) ) settings.gp_opt.term = PNG;
 			} else if( !strcmp( token_bf, "log" ) ) settings.gp_opt.is_log = true;
 			else if( !strcmp( token_bf, "lin" ) ) settings.gp_opt.is_log = false;
 			else if( !strcmp( token_bf, "title" ) ){
@@ -254,6 +275,7 @@ namespace XB{
 			PREP_TK_BF
 		}
 		#undef PREP_TK_BF
+		free( cmd );
 	}
 	
 	//----------------------------------------------------------------------------
@@ -269,6 +291,14 @@ namespace XB{
 		        &settings.drone.in,
 		        &settings.drone.out_pof,
 		        &settings.drone.out );
+		if( settings.drone.in )
+			( settings.drone.in_pof == 'p' )?
+				pclose( settings.drone.in ) :
+				fclose( settings.drone.in );
+		if( settings.drone.out )
+			( settings.drone.out_pof == 'p' )?
+				pclose( settings.drone.out ) :
+				fclose( settings.drone.out );
 		settings.drone.in = ( settings.drone.in_pof == 'p' )?
 		                    popen( settings.drone.instream, "r" ) :
 		                    fopen( settings.drone.instream, "r" );
@@ -278,7 +308,7 @@ namespace XB{
 		                     
 		//if the drone is in some way broken, die immediately with the correct answer.
 		if( settings.drone.in == NULL || settings.drone.out == NULL ){
-			fprintf( "stderr", "FATAL: drone throughtput is broken.\n" );
+			fprintf( stderr, "FATAL: drone throughtput is broken.\n" );
 			exit( 42 );
 		}
 	}
@@ -291,7 +321,7 @@ namespace XB{
 		while( !breaker ){
 			commands = cml_segment_statements( user_input );
 			for( int c=0; c < commands.size(); ++c )
-				cml_parse_settings( commands[c], settings, breaker );
+				cml_parse( commands[c], settings, breaker );
 		}
 		
 		return breaker;
@@ -304,10 +334,10 @@ namespace XB{
 			if( user_input == stdin ) printf( "xb> " );
 			commands = cml_segment_statements( user_input );
 			for( int c=0; c < commands.size(); ++c )
-				cml_parse_settings( commands[c], settings, breaker );
+				cml_parse( commands[c], settings, breaker );
 		}
 		
 		return breaker;
-	}	
+	}
 				
 }
