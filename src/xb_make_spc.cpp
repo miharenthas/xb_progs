@@ -165,9 +165,9 @@ int main( int argc, char **argv ){
 				break;
 			case 'D' :
 				settings.drone_flag = true;
-				sscanf( optarg, "%c:%s::%c:%s", &settings.drone.in_pof,
-				        &settings.drone.insream, &settings.drone.out_pof,
-				        &settings.drone.outstream );
+				sscanf( optarg, "%1s %s %1s %s", &settings.drone.in_pof,
+				        settings.drone.insream, &settings.drone.out_pof,
+				        settings.drone.outstream );
 				settings.drone.in = ( settings.drone.in_pof == 'p' )?
 				                    popen( settings.drone.instream, "r" ) :
 				                    fopen( settings.drone.instream, "r" );

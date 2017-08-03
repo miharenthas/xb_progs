@@ -6,7 +6,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//get the string buffer out of a string in a non constant string
 	char *get_c_str( const std::string &str ){
-		char *strbuf = (char*)malloc( str.length()+1 );
+		char *strbuf = (char*)calloc( 1, str.length()+1 );
 		strcpy( strbuf, str.c_str() );
 		return strbuf;
 	}
@@ -36,13 +36,13 @@ namespace XB{
 	//and set the breaker switch if "exit" is found
 	std::string cml_parse( std::string cmd, p_opts &settings, int &breaker ){
 		char *rcmd = get_c_str( cmd );
-		std::string command = std::string( strtok( rcmd, " " ) ); //that's iffy
+		std::string command( strtok( rcmd, " " ) ); //that's iffy
 		cmd.erase( 0, command.length() ); //remove the leading command
 		free( rcmd ); //cleanup
-		
+
 		if( command[0] == '#' ); //it's a comment, do nothing.
-		else if( command == "exit" || command == "quit" ) breaker = DO_EXIT;
-		else if( command == "exec" || command == "go" ) breaker = DO_EXECUTE;
+		else if( command == "exit" || command == "exit\n" ) breaker = DO_EXIT;
+		else if( command == "go" || command == "go\n" ) breaker = DO_EXECUTE;
 		else if( command == "return" ) breaker = DO_RETURN;
 		else if( command == "script" ) cml_parse__script( settings, cmd, breaker ); 
 		else if( command == "load" ) cml_parse__in_fname( settings, cmd );
@@ -51,8 +51,9 @@ namespace XB{
 		else if( command == "bin" ) cml_parse__bin( settings, cmd );
 		else if( command == "cut" ) cml_parse__cuts( settings, cmd );
 		else if( command == "hmode" ) cml_parse__histo_mode( settings, cmd );
+		else if( command == "gp" ) cml_parse__gp_opts( settings, cmd );
 		else if( command == "drone" ) cml_parse__drone( settings, cmd );
-		else return cmd;
+		else return command + cmd;
 		
 		return std::string();
 	}
@@ -65,9 +66,12 @@ namespace XB{
 		char *cmd = get_c_str( rcmd );
 		char *token_bf = strtok( cmd, " " );
 		while( *token_bf == ' ' ) ++token_bf;
+		token_bf[strlen(token_bf)-1] = '\0'; //remove a bloody repeated new line at the end
 		
 		FILE *script = fopen( token_bf, "r" );
+		if( script == NULL ) throw error( "Script not found!", "XB::cml_parse" );
 		breaker = cml_loop( script, settings );
+		fclose( script );
 		free( cmd );
 	}
 	
@@ -124,6 +128,7 @@ namespace XB{
 		if( *token_bf == '#' ) return;
 		
 		#define PREP_TK_BF token_bf = strtok( NULL, " " );\
+		                   if( token_bf == NULL ) break;\
 		                   while( *token_bf == ' ' ) token_bf++;\
 		                   if( *token_bf == '#' ) return;
 		
@@ -165,6 +170,7 @@ namespace XB{
 		if( *token_bf == '#' ) return;
 		
 		#define PREP_TK_BF token_bf = strtok( NULL, " " );\
+		                   if( token_bf == NULL ) break;\
 		                   while( *token_bf == ' ' ) token_bf++;\
 		                   if( *token_bf == '#' ) return;
 		#define CK_MOL( settage ) if( token_bf[0] == '<' ){\
@@ -240,16 +246,17 @@ namespace XB{
 		if( *token_bf == '#' ) return;
 		
 		#define PREP_TK_BF token_bf = strtok( NULL, " " );\
+		                   if( token_bf == NULL ) break;\
 		                   while( *token_bf == ' ' ) token_bf++;\
 		                   if( *token_bf == '#' ) return;
 		
 		while( token_bf != NULL ){
 			if( !strcmp( token_bf, "term" ) ){
 				PREP_TK_BF
-				if( !strcmp( token_bf, "qt" ) ) settings.gp_opt.term = QT;
-				if( !strcmp( token_bf, "png" ) ) settings.gp_opt.term = PNG;
-			} else if( !strcmp( token_bf, "log" ) ) settings.gp_opt.is_log = true;
-			else if( !strcmp( token_bf, "lin" ) ) settings.gp_opt.is_log = false;
+				if( strstr( token_bf, "qt" ) ) settings.gp_opt.term = QT;
+				if( strstr( token_bf, "png" ) ) settings.gp_opt.term = PNG;
+			} else if( strstr( token_bf, "log" ) ) settings.gp_opt.is_log = true;
+			else if( strstr( token_bf, "lin" ) ) settings.gp_opt.is_log = false;
 			else if( !strcmp( token_bf, "title" ) ){
 				PREP_TK_BF
 				if( strlen( token_bf ) < 128 )
@@ -270,7 +277,7 @@ namespace XB{
 				if( strlen( token_bf ) < 256 )
 					strcpy( settings.gp_opt.out_fname, token_bf );
 				else throw error( "File name too long!", "XB::cml_parse" );
-			} else throw error( "Invalid hmode!", "XB::cml_parse" );
+			} else throw error( "Invalid gnuplot option!", "XB::cml_parse" );
 			
 			PREP_TK_BF
 		}
@@ -283,14 +290,16 @@ namespace XB{
 	//NOTE: this is vulnerable to overflow attacks
 	//      but ideally nobody should care.
 	void cml_parse__drone( p_opts &settings, std::string &rcmd ){
-		if( settings.drone_flag == false ) return;
+		if( !settings.drone_flag ) return;
 		
-		rcmd.erase( rcmd.find( '#' ), rcmd.length() ); //do away with comments.
-		sscanf( rcmd.c_str(), "%c:%s::%c:%s",
+		size_t _pos; 
+		if( (_pos = rcmd.find( '#' )) != std::string::npos )
+			rcmd.erase( _pos, rcmd.length() ); //do away with comments.
+		sscanf( rcmd.c_str(), "%1s %s %1s %s",
 		        &settings.drone.in_pof,
-		        &settings.drone.in,
+		        settings.drone.instream,
 		        &settings.drone.out_pof,
-		        &settings.drone.out );
+		        settings.drone.outstream );
 		if( settings.drone.in )
 			( settings.drone.in_pof == 'p' )?
 				pclose( settings.drone.in ) :
@@ -314,6 +323,29 @@ namespace XB{
 	}
 	
 	//----------------------------------------------------------------------------
+	//parse the bin content
+	void cml_parse__bin( p_opts &settings, std::string &rcmd ){
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
+		while( *token_bf == ' ' ) ++token_bf;
+		
+		settings.num_bins = atoi( token_bf );
+	}
+	
+	//----------------------------------------------------------------------------
+	//parse the histogram mode
+	void cml_parse__histo_mode( p_opts &settings, std::string &rcmd ){
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, " " );
+		while( *token_bf == ' ' ) ++token_bf;
+		
+		if( strstr( token_bf, "add" ) ) settings.histo_mode = JOIN;
+		else if( strstr( token_bf, "sub" ) ) settings.histo_mode = SUBTRACT;
+		else if( strstr( token_bf, "cmp" ) ) settings.histo_mode = COMPARE;
+		else throw error( "Invalid histogram mode!", "XB::cml_parse" );
+	}
+	
+	//----------------------------------------------------------------------------
 	//the command loop
 	int cml_loop( FILE *user_input, p_opts &settings ){
 		int breaker = 0;
@@ -334,7 +366,7 @@ namespace XB{
 			if( user_input == stdin ) printf( "xb> " );
 			commands = cml_segment_statements( user_input );
 			for( int c=0; c < commands.size(); ++c )
-				cml_parse( commands[c], settings, breaker );
+				cml_parse( commands[c], settings, breaker ).c_str();
 		}
 		
 		return breaker;
