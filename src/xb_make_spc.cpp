@@ -27,7 +27,7 @@ extern "C"{
 //------------------------------------------------------------------------------------
 //the main
 int main( int argc, char **argv ){
-/*
+
 	//default settings
 	p_opts settings;
 	settings.drone_flag = false;
@@ -60,6 +60,9 @@ int main( int argc, char **argv ){
 	settings.drone.in = stdin;
 	settings.drone.out = stdout;
 	
+	//the program's program
+	unsigned short breaker = DO_LOAD | DO_HACK_DATA | DO_POP_HISTO | DO_SAVE_HISTO | DO_EXIT;
+	
 	//some strings...
 	char command[512], comm[512];
 
@@ -77,26 +80,28 @@ int main( int argc, char **argv ){
 
 	//long options
 	struct option opts[] = {
-		{ "input", argument_required, NULL, 'i' },
-		{ "output", argument_required, NULL, 'o' },
-		{ "nb-bins", argument_required, NULL, 'b' },
-		{ "range", argument_requires, NULL, 'R' },
+		{ "input", required_argument, NULL, 'i' },
+		{ "output", required_argument, NULL, 'o' },
+		{ "save-data-instead", no_argument, NULL, 'S' },
+		{ "nb-bins", required_argument, NULL, 'b' },
+		{ "range", required_argument, NULL, 'R' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "interactive", no_argument, NULL, 'I' },
-		{ "gnuplot-term", argument_required, NULL, 's' },
-		{ "y-scale", argument_required, NULL, 'l' },
-		{ "title", argument_required, NULL, 't' },
-		{ "histogram-mode", argument_required, NULL, 'H' },
-		{ "select-multiplicity", argument_required, NULL, 'm' },
-		{ "select-centroid", argument_required, NULL, 'c' },
-		{ "drone", argument_required, NULL, 'D' },
-		{ NULL, NULL, NULL, NULL }
+		{ "gnuplot-term", required_argument, NULL, 's' },
+		{ "y-scale", required_argument, NULL, 'l' },
+		{ "title", required_argument, NULL, 't' },
+		{ "histogram-mode", required_argument, NULL, 'H' },
+		{ "select-multiplicity", required_argument, NULL, 'm' },
+		{ "select-centroid", required_argument, NULL, 'c' },
+		{ "drone", required_argument, NULL, 'D' },
+		{ NULL, no_argument, NULL, 0 }
 	};
 
 	//input parsing
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:b:R:vIs:l:t:m:H:c:" )) != -1 ){
+	while( (iota = getopt( argc, argv, "i:o:Sb:R:vIs:l:t:m:H:c:" )) != -1 ){
 		switch( iota ){
+			char *token_bf;
 			case 'i':
 				if( strlen( optarg ) < 256 ){
 					strcpy( settings.in_fname[0], optarg );
@@ -115,6 +120,10 @@ int main( int argc, char **argv ){
 					printf( "File name too long!\n" );
 					exit( 1 );
 				}
+				break;
+			case 'S':
+				breaker = breaker ^ DO_SAVE_HISTO;
+				breaker = breaker | DO_SAVE_DATA;
 				break;
 			case 'b':
 				settings.num_bins = atoi( optarg );
@@ -163,19 +172,41 @@ int main( int argc, char **argv ){
 			case 'c' :
 				settings.target_ctr = atoi( optarg );
 				break;
-			case 'D' :
+			case 'D' : //drone setup
 				settings.drone_flag = true;
-				sscanf( optarg, "%1s %s %1s %s", &settings.drone.in_pof,
-				        settings.drone.insream, &settings.drone.out_pof,
-				        settings.drone.outstream );
-				settings.drone.in = ( settings.drone.in_pof == 'p' )?
-				                    popen( settings.drone.instream, "r" ) :
-				                    fopen( settings.drone.instream, "r" );
-				settings.drone.out = ( settings.drone.out_pof == 'p' )?
-				                     popen( settings.drone.outstream, "w" ) :
-				                     fopen( settings.drone.outstream, "w" );
+				#define PREP_TK_BF token_bf = strtok( NULL, ":" );\
+				                   if( token_bf == NULL ) exit( 7 );\
+				                   while( *token_bf == ' ' ) token_bf++;\
+				
+				//parse the drone
+				token_bf = strtok( optarg, ":" );
+				if( token_bf == NULL ) exit( 7 );
+				while( *token_bf == ' ' ) ++token_bf;
+	
+				sscanf( token_bf, "%1s", &settings.drone.in_pof ); PREP_TK_BF
+				strcpy( settings.drone.instream, token_bf ); PREP_TK_BF
+				sscanf( token_bf, "%1s", &settings.drone.out_pof ); PREP_TK_BF
+				strcpy( settings.drone.outstream, token_bf );
+				#undef PREP_TK_BF
+				
+				//open the drone
+				if( !strcmp( settings.drone.instream, "stdin" ) ) settings.drone.in = stdin;
+				else settings.drone.in = ( settings.drone.in_pof == 'p' )?
+				                         popen( settings.drone.instream, "r" ) :
+				                         fopen( settings.drone.instream, "r" );
+				if( !strcmp( settings.drone.outstream, "stdout" ) ) settings.drone.out = stdout;
+				else settings.drone.out = ( settings.drone.out_pof == 'p' )?
+				                          popen( settings.drone.outstream, "w" ) :
+				                          fopen( settings.drone.outstream, "w" );
+				                          
+				//if the drone is in some way broken, die immediately with the correct answer.
+				if( settings.drone.in == NULL || settings.drone.out == NULL ){
+					fprintf( stderr, "FATAL: drone throughtput is broken.\n" );
+					exit( 42 );
+				}
+				break;
 			default :
-				exit( 1 );
+				exit( 0 );
 				//help note will come later
 		}
 	}
@@ -188,16 +219,23 @@ int main( int argc, char **argv ){
 
 	if( settings.verbose ) printf( "*** Welcome in the spectrum making program! ***\n" );
 	
-	xb_make_spc da_prog();
+	xb_make_spc da_prog;
 	
 	//command line and program object fingering
-	int breaker = DO_EXECUTE;
-	while( breaker != DO_EXIT && ( settings.interactive || settings.drone_flag ) ){
+	if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
+	else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
+	else{
 		da_prog.reset( settings );
+		da_prog.exec( breaker );
+	}
+	if( settings.draw_flag ) da_prog.draw_histogram();
+	while( !( breaker & DO_EXIT ) && ( settings.interactive || settings.drone_flag ) ){
+		da_prog.reset( settings );
+		da_prog.exec( breaker );
 		if( settings.draw_flag ) da_prog.draw_histogram();
 	
-		if( settings.interactive ) XB::cml_loop_prompt( stdin, settings );
-		else if( settings.drone_flag ) XB::cml_loop( settings.drone.in, settings );
+		if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
+		else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
 	}
 	
 	//final ops
@@ -206,7 +244,6 @@ int main( int argc, char **argv ){
 		( settings.drone.in_pof == 'p' )? pclose( settings.drone.in ) : fclose( settings.drone.in );
 		( settings.drone.out_pof == 'p' )? pclose( settings.drone.out ) : fclose( settings.drone.out );
 	}
-*/
 	return 0;
 }
 
@@ -270,7 +307,7 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	
 	load_files(); //and issues the file loading.
 }
-/*
+
 xb_make_spc::~xb_make_spc(){
 	for( int i=0; i < settings.in_f_count; ++i ){
 		event_klZ[i].clear();
@@ -279,6 +316,19 @@ xb_make_spc::~xb_make_spc(){
 	
 	//and very importantly, close gnuplot
 	if( gp_h != NULL ) gnuplot_close( gp_h );
+}
+
+//------------------------------------------------------------------------------------
+//the program's processor
+void xb_make_spc::exec( short unsigned prog ){
+	if( prog & DO_UNLOAD ) unload_files();
+	if( prog & DO_LOAD ) load_files();
+	if( prog & DO_HACK_DATA ) hack_data();
+	if( prog & DO_POP_HISTO ) populate_histogram();
+	if( prog & DO_PUT_HISTO ) put_histogram();
+	if( prog & DO_PUT_DATA ) put_data();
+	if( prog & DO_SAVE_HISTO ) save_histogram();
+	if( prog & DO_SAVE_DATA ) save_data();
 }
 
 //------------------------------------------------------------------------------------
@@ -301,7 +351,7 @@ void xb_make_spc::load_files(){
 
 //------------------------------------------------------------------------------------
 //file unloader
-void xb_make_spc::clear_data(){
+void xb_make_spc::unload_files(){
 	if( settings.verbose ) puts( "Clearing data." );
 	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i )
 		event_klZ[i].clear();
@@ -313,15 +363,15 @@ void xb_make_spc::clear_data(){
 void xb_make_spc::target_multiplicity( moreorless m ){
 	if( settings.target_mul != 0 ){
 		//create a comparison functional 
-		isntm isnt_mul( settings.target_mul );
-		std::vector<XB::cluster>::iterator last;
+		XB::isntm isnt_mul( settings.target_mul );
+		std::vector<XB::clusterZ>::iterator last;
 		
 		//find all the non interesting multiplicities
 		for( int i=0; i < settings.in_f_count; ++i ){
 			last = std::remove_if( event_klZ[i].begin(), event_klZ[i].end(), isnt_mul );
 			
 			if( last == event_klZ[i].end() ) continue;
-			if( m == MORE ) event_klZ[i].erase( last, even_klZ[i].end() );
+			if( m == MORE ) event_klZ[i].erase( last, event_klZ[i].end() );
 			else if( m == LESS ) event_klZ[i].erase( event_klZ[i].begin(), last );
 		}
 	}
@@ -331,26 +381,26 @@ void xb_make_spc::target_multiplicity( moreorless m ){
 //more advanced data cutter
 void xb_make_spc::select( XB::selsel selector_type, moreorless m ){
 	//in order to make good use of polymorphism
-	std::unary_function< XB::cluster > *in_kl_selector;
+	XB::xb_selector *in_kl_selector;
 	
 	switch( selector_type ){
 		case XB::IS_NOT_MULTIPLICITY : //just do the old stuff
-			target_multiplicity();
+			target_multiplicity( m );
 			return;
 		case XB::IS_CENTROID :
 			in_kl_selector = new XB::is_centroid( settings.target_ctr );
 			break;
 		case XB::IS_MORE_CRYSTALS :	
-			in_kl_selector = new XB::is_more_crystal( settings.target_nb_cry );
+			in_kl_selector = new XB::is_more_crystals( settings.target_cry );
 			break;
 		case XB::IS_MORE_ALTITUDE :
 			in_kl_selector = new XB::is_more_altitude( settings.target_alt );
 			break;
 		case XB::IS_MORE_AZIMUTH :
-			in_kl_selector = new XB::is_more_azimuth( setting.target_azi );
+			in_kl_selector = new XB::is_more_azimuth( settings.target_azi );
 			break;
 		case XB::IS_MORE_NRG :
-			in_kl_selector = new XB::is_more_nrg( settings.target_nrg );
+			in_kl_selector = new XB::is_more_energy( settings.target_nrg );
 			break;
 		default :
 			throw XB::error( "Wrong selector type!", "xb_make_spc::select" );
@@ -372,13 +422,15 @@ void xb_make_spc::select( XB::selsel selector_type, moreorless m ){
 			else if( m == LESS ) kl->erase( k_last, kl->end() );
 		}
 	}
+	
+	delete in_kl_selector;
 }
 
 //------------------------------------------------------------------------------------
 //reset the object
 void xb_make_spc::reset( p_opts &sts ){
 	_do_hists = 0;
-	_do_file = 0;
+	_do_files = 0;
 	_do_data = 0;
 
 	//smart copy the stuff
@@ -407,7 +459,7 @@ void xb_make_spc::reset( p_opts &sts ){
 	}
 	
 	if( !memcmp( &settings.target_mul, &sts.target_mul,
-	             6*( sizeof(moreorless) + sizeof(unsigned int) ) ){
+	             6*( sizeof(moreorless) + sizeof(unsigned int) ) ) ){
 		++_do_data;
 		settings.target_mul = sts.target_mul;
 		settings.target_cry = sts.target_cry;
@@ -437,15 +489,15 @@ void xb_make_spc::reset( p_opts &sts ){
 	if( settings.drone_flag ){
 		strcpy( settings.drone.instream, sts.drone.instream );
 		strcpy( settings.drone.outstream, sts.drone.outstream );
-		settings.in_pof = sts.in_pof;
-		settings.out_pof = sts.out_pof;
-		settings.in = sts.in;
-		settings.out = sts.out;
+		settings.drone.in_pof = sts.drone.in_pof;
+		settings.drone.out_pof = sts.drone.out_pof;
+		settings.drone.in = sts.drone.in;
+		settings.drone.out = sts.drone.out;
 	}
 	
 	//copy the strings
 	for( int i=0; i < settings.in_f_count; ++i ){
-		if( !strcmp( settings.in_fname[i], sts.in_fname[i] ){
+		if( !strcmp( settings.in_fname[i], sts.in_fname[i] ) ){
 			++_do_files;
 			strcpy( settings.in_fname[i], sts.in_fname[i] );
 		}
@@ -455,10 +507,6 @@ void xb_make_spc::reset( p_opts &sts ){
 	
 	settings.range[0] = sts.range[0];
 	settings.range[1] = sts.range[1];
-	
-	if( _do_files ){ unload_files(); load_files(); }
-	hack_data();
-	populate_histogram();
 }
 
 //------------------------------------------------------------------------------------
@@ -552,7 +600,7 @@ void xb_make_spc::populate_histogram(){
 			//populate the histogram:
 			//add the values of the first files
 			for( std::vector<XB::clusterZ>::iterator klZ = event_klZ[0].begin();
-				 klZ != last[0]; ++klZ ){
+				 klZ != event_klZ[0].end(); ++klZ ){
 				for( int k=0;
 				     k < ( settings.target_mul ? settings.target_mul : klZ->n );
 				     ++k ){
@@ -585,7 +633,7 @@ void xb_make_spc::hack_data(){
 	if( !_do_data ) return; //do nothing if nothing to do
 	
 	if( settings.target_mul ) select( XB::IS_NOT_MULTIPLICITY, settings.mol_mul );
-	if( settings.tarteg_cry ) select( XB::IS_MORE_CRYSTALS, settings.mol_cry );
+	if( settings.target_cry ) select( XB::IS_MORE_CRYSTALS, settings.mol_cry );
 	if( settings.target_ctr ) select( XB::IS_CENTROID, settings.mol_ctr );
 	if( settings.target_alt < 180 ) select( XB::IS_MORE_ALTITUDE, settings.mol_alt ); //?
 	if( fabs( settings.target_azi ) < 180 ) select( XB::IS_MORE_AZIMUTH, settings.mol_azi ); //?
@@ -595,15 +643,7 @@ void xb_make_spc::hack_data(){
 }
 
 //------------------------------------------------------------------------------------
-//reload the data
-void xb_make_spc::reload_data(){
-	clear_data();
-	_do_files = 1;
-	load_files();
-}
-
-//------------------------------------------------------------------------------------
-//save the histogram
+//save the histogram (either to file or to stdout)
 void xb_make_spc::save_histogram(){
 	FILE *out;
 	if( settings.out_flag ) out = fopen( settings.out_fname, "w" );
@@ -611,16 +651,16 @@ void xb_make_spc::save_histogram(){
 	
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( !histo[i] ) continue;
-		fwrite( out, histo[i]->n, sizeof(size_t) );
-		fwrite( out, histo[i]->range, (histo[i]->n+1)*sizeof(double) );
-		fwrite( out, histo[i]->bin, histo[i]->n*sizeof(double) );
+		fwrite( &histo[i]->n, 1, sizeof(size_t), out );
+		fwrite( &histo[i]->range, 1, (histo[i]->n+1)*sizeof(double), out );
+		fwrite( &histo[i]->bin, 1, histo[i]->n*sizeof(double), out );
 	}
 	
 	if( settings.out_flag ) fclose( out );
 }
 
 //------------------------------------------------------------------------------------
-//save the data
+//save the data (either to file or stdout)
 void xb_make_spc::save_data(){
 	FILE *out;
 	char command[310];
@@ -629,7 +669,7 @@ void xb_make_spc::save_data(){
 		strcpy( command, "bzip2 -z > " );
 		strcat( command, settings.out_fname );
 		out = popen( command, "w" );
-	}	else out = stdout;
+	} else out = stdout;
 	
 	for( int i=0; i < settings.in_f_count; ++i ){
 		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
@@ -644,7 +684,7 @@ void xb_make_spc::put_histogram(){
 	
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( !histo[i] ) continue;
-		for( int b=0; b < histo[i]->n; ++i )
+		for( int b=0; b < histo[i]->n; ++i ){
 			fprintf( out, "%f %f\n",
 			         (histo[i]->range[b] + histo[i]->range[b+1])/2,
 			         histo[i]->bin[b] );
@@ -661,4 +701,3 @@ void xb_make_spc::put_data(){
 		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
 	}
 }
-*/	

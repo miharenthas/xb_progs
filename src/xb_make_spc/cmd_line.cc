@@ -18,6 +18,8 @@ namespace XB{
 		
 		//get one line out of the stream
 		fgets( buf, MAX_INPUT_LENGTH, user_input );
+		int last = strlen( buf )-1;
+		if( buf[last] == '\n' ) buf[last] = '\0'; //crop the tail if it's there
 		
 		//run strtok with ";" separator.
 		std::vector<std::string> statements;
@@ -34,16 +36,23 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//run strtok on the single statement and make the command undertandable
 	//and set the breaker switch if "exit" is found
-	std::string cml_parse( std::string cmd, p_opts &settings, int &breaker ){
+	std::string cml_parse( std::string cmd, p_opts &settings, short unsigned int &breaker ){
 		char *rcmd = get_c_str( cmd );
 		std::string command( strtok( rcmd, " " ) ); //that's iffy
 		cmd.erase( 0, command.length() ); //remove the leading command
 		free( rcmd ); //cleanup
 
 		if( command[0] == '#' ); //it's a comment, do nothing.
-		else if( command == "exit" || command == "exit\n" ) breaker = DO_EXIT;
-		else if( command == "go" || command == "go\n" ) breaker = DO_EXECUTE;
-		else if( command == "return" ) breaker = DO_RETURN;
+		//program part of the parsing
+		else if( command == "exit" || command == "quit" ) breaker = breaker | DO_EXIT;
+		else if( command == "go" || command == "exec" ) breaker = breaker | DO_EXECUTE;
+		else if( command == "return" ) breaker = breaker | DO_RETURN;
+		else if( command == "hist" ) breaker = breaker | DO_POP_HISTO;
+		else if( command == "load" ) breaker = breaker | DO_LOAD;
+		else if( command == "unload" ) breaker = breaker | DO_UNLOAD;
+		else if( command == "hack" ) breaker = breaker | DO_HACK_DATA;
+		else if( command == "save" ) cml_parse__save( breaker, cmd );
+		else if( command == "put" ) cml_parse__put( breaker, cmd );
 		else if( command == "script" ) cml_parse__script( settings, cmd, breaker ); 
 		else if( command == "load" ) cml_parse__in_fname( settings, cmd );
 		else if( command == "write" ) cml_parse__out_fname( settings, cmd );
@@ -59,14 +68,31 @@ namespace XB{
 	}
 	
 	//----------------------------------------------------------------------------
+	//parse "save"
+	void cml_parse__save( unsigned short int &breaker, std::string &rcmd ){
+		while( rcmd[0] == ' ' ) rcmd.erase( rcmd.begin() );
+		if( rcmd == "hist" ) breaker = breaker | DO_SAVE_HISTO;
+		else if( rcmd == "data" ) breaker = breaker | DO_SAVE_DATA;
+		else throw error( "Invalid save argument!", "XB::cml_parse" );
+	}
+	
+	//----------------------------------------------------------------------------
+	//parse "put"
+	void cml_parse__put( unsigned short int &breaker, std::string &rcmd ){
+		while( rcmd[0] == ' ' ) rcmd.erase( rcmd.begin() );
+		if( rcmd == "hist" ) breaker = breaker | DO_PUT_HISTO;
+		else if( rcmd == "data" ) breaker = breaker | DO_PUT_DATA;
+		else throw error( "Invalid put argument!", "XB::cml_parse" );
+	}
+	
+	//----------------------------------------------------------------------------
 	//parse a script
 	//NOTE: this is essentially recursive, a "script" command in a script will
 	//      open a script and so on until explosion or successfull execution.
-	void cml_parse__script( p_opts &settings, std::string &rcmd, int &breaker ){
+	void cml_parse__script( p_opts &settings, std::string &rcmd, unsigned short &breaker ){
 		char *cmd = get_c_str( rcmd );
 		char *token_bf = strtok( cmd, " " );
 		while( *token_bf == ' ' ) ++token_bf;
-		token_bf[strlen(token_bf)-1] = '\0'; //remove a bloody repeated new line at the end
 		
 		FILE *script = fopen( token_bf, "r" );
 		if( script == NULL ) throw error( "Script not found!", "XB::cml_parse" );
@@ -253,10 +279,10 @@ namespace XB{
 		while( token_bf != NULL ){
 			if( !strcmp( token_bf, "term" ) ){
 				PREP_TK_BF
-				if( strstr( token_bf, "qt" ) ) settings.gp_opt.term = QT;
-				if( strstr( token_bf, "png" ) ) settings.gp_opt.term = PNG;
-			} else if( strstr( token_bf, "log" ) ) settings.gp_opt.is_log = true;
-			else if( strstr( token_bf, "lin" ) ) settings.gp_opt.is_log = false;
+				if( !strcmp( token_bf, "qt" ) ) settings.gp_opt.term = QT;
+				if( !strcmp( token_bf, "png" ) ) settings.gp_opt.term = PNG;
+			} else if( !strcmp( token_bf, "log" ) ) settings.gp_opt.is_log = true;
+			else if( !strcmp( token_bf, "lin" ) ) settings.gp_opt.is_log = false;
 			else if( !strcmp( token_bf, "title" ) ){
 				PREP_TK_BF
 				if( strlen( token_bf ) < 128 )
@@ -292,34 +318,49 @@ namespace XB{
 	void cml_parse__drone( p_opts &settings, std::string &rcmd ){
 		if( !settings.drone_flag ) return;
 		
+		#define PREP_TK_BF token_bf = strtok( NULL, ":" );\
+		                   if( token_bf == NULL ) throw( "Drone spec too short!",\
+		                                                 "XB::cml_parse" );\
+		                   while( *token_bf == ' ' ) token_bf++;\
+		
 		size_t _pos; 
 		if( (_pos = rcmd.find( '#' )) != std::string::npos )
 			rcmd.erase( _pos, rcmd.length() ); //do away with comments.
-		sscanf( rcmd.c_str(), "%1s %s %1s %s",
-		        &settings.drone.in_pof,
-		        settings.drone.instream,
-		        &settings.drone.out_pof,
-		        settings.drone.outstream );
+		
+		char *cmd = get_c_str( rcmd );
+		char *token_bf = strtok( cmd, ":" );
+		if( token_bf == NULL ) throw( "Empty drone spec!", "XB::cml_parse" );
+		while( *token_bf == ' ' ) ++token_bf;
+		
+		sscanf( token_bf, "%1s", &settings.drone.in_pof ); PREP_TK_BF
+		strcpy( settings.drone.instream, token_bf ); PREP_TK_BF
+		sscanf( token_bf, "%1s", &settings.drone.out_pof ); PREP_TK_BF
+		strcpy( settings.drone.outstream, token_bf );
+		
 		if( settings.drone.in )
 			( settings.drone.in_pof == 'p' )?
-				pclose( settings.drone.in ) :
-				fclose( settings.drone.in );
+			pclose( settings.drone.in ) :
+			fclose( settings.drone.in );
 		if( settings.drone.out )
 			( settings.drone.out_pof == 'p' )?
-				pclose( settings.drone.out ) :
-				fclose( settings.drone.out );
-		settings.drone.in = ( settings.drone.in_pof == 'p' )?
-		                    popen( settings.drone.instream, "r" ) :
-		                    fopen( settings.drone.instream, "r" );
-		settings.drone.out = ( settings.drone.out_pof == 'p' )?
-		                     popen( settings.drone.outstream, "w" ) :
-		                     fopen( settings.drone.outstream, "w" );
+			pclose( settings.drone.out ) :
+			fclose( settings.drone.out );
+		if( !strcmp( settings.drone.instream, "stdin" ) ) settings.drone.in = stdin;
+		else settings.drone.in = ( settings.drone.in_pof == 'p' )?
+		                         popen( settings.drone.instream, "r" ) :
+		                         fopen( settings.drone.instream, "r" );
+		if( !strcmp( settings.drone.outstream, "stdout" ) ) settings.drone.out = stdout;
+		else settings.drone.out = ( settings.drone.out_pof == 'p' )?
+		                          popen( settings.drone.outstream, "w" ) :
+		                          fopen( settings.drone.outstream, "w" );
 		                     
 		//if the drone is in some way broken, die immediately with the correct answer.
 		if( settings.drone.in == NULL || settings.drone.out == NULL ){
 			fprintf( stderr, "FATAL: drone throughtput is broken.\n" );
 			exit( 42 );
 		}
+		
+		#undef PREP_TK_BF
 	}
 	
 	//----------------------------------------------------------------------------
@@ -347,10 +388,10 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//the command loop
-	int cml_loop( FILE *user_input, p_opts &settings ){
-		int breaker = 0;
+	short unsigned int cml_loop( FILE *user_input, p_opts &settings ){
+		short unsigned int breaker = 0;
 		std::vector<std::string> commands;
-		while( !breaker ){
+		while( !(breaker & ( DO_EXIT | DO_EXECUTE | DO_RETURN )) ){
 			commands = cml_segment_statements( user_input );
 			for( int c=0; c < commands.size(); ++c )
 				cml_parse( commands[c], settings, breaker );
@@ -359,10 +400,10 @@ namespace XB{
 		return breaker;
 	}
 	
-	int cml_loop_prompt( FILE *user_input, p_opts &settings ){
-		int breaker = 0;
+	short unsigned int cml_loop_prompt( FILE *user_input, p_opts &settings ){
+		short unsigned int breaker = 0;
 		std::vector<std::string> commands;
-		while( !breaker ){
+		while( !(breaker & ( DO_EXIT | DO_EXECUTE | DO_RETURN )) ){
 			if( user_input == stdin ) printf( "xb> " );
 			commands = cml_segment_statements( user_input );
 			for( int c=0; c < commands.size(); ++c )

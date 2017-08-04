@@ -19,7 +19,14 @@ namespace XB{
 		IS_MORE_AZIMUTH,
 		IS_MORE_NRG
 	} selsel;
-		
+	
+	//------------------------------------------------------------------------------------
+	//a (morally) vitual class to allow for polymorphism
+	class xb_selector : public std::unary_function< cluster, bool > {
+		public:
+			virtual bool operator()( const cluster &kl ) { return 0; };
+	};
+	
 	//------------------------------------------------------------------------------------
 	//a functional to test for multiplicity
 	//this functional returns TRUE whenever the_multiplicity is NOT the one
@@ -33,7 +40,7 @@ namespace XB{
 				_mul( given._mul ) {};
 	
 			//the operator()
-			bool operator()( const XB::clusterZ &klZ ){ return klZ.n != _mul; };
+			bool operator()( const clusterZ &klZ ){ return klZ.n != _mul; };
 		
 			//assignment operator?
 			is_not_multiplicity &operator=( const is_not_multiplicity &given ){
@@ -46,7 +53,7 @@ namespace XB{
 	//------------------------------------------------------------------------------------
 	//select on a particular number of crystals
 	//returns true if a particular cluster has the target centroid
-	class is_centroid : public std::unary_function< cluster, bool > {
+	class is_centroid : public xb_selector {
 		public:
 			//ctors
 			is_centroid(): _ctr( 42 ) {}; //by default, select the right answer
@@ -56,7 +63,7 @@ namespace XB{
 			is_centroid( const is_centroid &given ): _ctr( given._ctr ) {};
 			
 			//the operator()
-			bool operator()( const XB::cluster &kl ){ return kl.centroid_id == _ctr; }
+			bool operator()( const cluster &kl ){ return kl.centroid_id == _ctr; }
 			
 			//assignmet operator
 			is_centroid &operator=( const is_centroid &given ){
@@ -69,14 +76,14 @@ namespace XB{
 	//------------------------------------------------------------------------------------
 	//check on the number of crystals in the cluster
 	//true if the number of crystals is strictly more than _nb_cry
-	class is_more_crystals : public std::unary_function< cluster, bool > {
+	class is_more_crystals : public xb_selector {
 		public:
 			is_more_crystals(): _nb_cry( 1 ) {};
 			is_more_crystals( unsigned int nb_cry ): _nb_cry( nb_cry ) {};
 			is_more_crystals( const is_more_crystals &given ):
 				_nb_cry( given._nb_cry ) {};
 				
-			bool operator()( const XB::cluster &given ) {
+			bool operator()( const cluster &given ) {
 				return given.n > _nb_cry;
 			};
 			
@@ -91,14 +98,14 @@ namespace XB{
 	//check on the altitude
 	//returns true if the centroid's altitude is strictly more
 	//than _alt
-	class is_more_altitude : public std::unary_function< cluster, bool > {
+	class is_more_altitude : public xb_selector {
 		public:
 			is_more_altitude(): _alt( 1 ) {};
 			is_more_altitude( unsigned int alt ): _alt( alt ) {};
 			is_more_altitude( const is_more_altitude &given ):
 				_alt( given._alt ) {};
 				
-			bool operator()( const XB::cluster &given ) {
+			bool operator()( const cluster &given ) {
 				return given.c_altitude > _alt;
 			};
 			
@@ -113,14 +120,14 @@ namespace XB{
 	//check on the azimuth
 	//returns true if the centroid's azimuth is strictly more
 	//than _azi
-	class is_more_azimuth : public std::unary_function< cluster, bool > {
+	class is_more_azimuth : public xb_selector {
 		public:
 			is_more_azimuth(): _azi( 1 ) {};
 			is_more_azimuth( unsigned int azi ): _azi( azi ) {};
 			is_more_azimuth( const is_more_azimuth &given ):
 				_azi( given._azi ) {};
 				
-			bool operator()( const XB::cluster &given ) {
+			bool operator()( const cluster &given ) {
 				return given.c_azimuth > _azi;
 			};
 			
@@ -135,14 +142,14 @@ namespace XB{
 	//check on the energy
 	//returns true if the cluster's sum energy is strictly more
 	//than _nrg
-	class is_more_energy : public std::unary_function< cluster, bool > {
+	class is_more_energy : public xb_selector {
 		public:
 			is_more_energy(): _nrg( 1 ) {};
 			is_more_energy( unsigned int nrg ): _nrg( nrg ) {};
 			is_more_energy( const is_more_energy &given ):
 				_nrg( given._nrg ) {};
 				
-			bool operator()( const XB::cluster &given ) {
+			bool operator()( const cluster &given ) {
 				return given.sum_e > _nrg;
 			};
 			

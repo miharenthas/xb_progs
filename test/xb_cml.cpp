@@ -17,8 +17,9 @@ int main( int argc, char **argv ){
 	puts( "Command line test program. Knock yourself out." );
 	
 	int breaker = DO_EXECUTE;
-	while( breaker != DO_EXIT ){
+	while( !(breaker & DO_EXIT) ){
 		print_settings( stdout, settings );
+		fprintf( stdout, "%0000hx\n", breaker );
 		__HERE__:
 		try{
 			breaker = XB::cml_loop_prompt( stdin, settings );

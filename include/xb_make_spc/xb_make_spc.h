@@ -14,6 +14,40 @@ extern "C"{
 #include "xb_io.h"
 #include "xb_make_spc/selectors.h"
 
+//some useful defines: they will also be used by the command line
+//to instruct the program's execution. This because the command line
+//and the program have been suboptimally designed and thus can
+//interact in weird ways such as this. This is not portable.
+//We'll use a 16 bit (unsigned) integer to carry the execution flags
+// bbbb bbbb bbbb bbbb
+// the 4 most significant bits are the flags to control the command line exectuion:
+// 0x8000 -- exit the command line
+// 0x4000 -- execute and reenter
+// 0x2000 -- return
+// (0x1000 -- nothing yet)
+// the 4 secont-to-most significant bits are unassigned yet
+// the 4 second-to-least significant bits control the data hacking
+// 0x0080 -- call hack_data(), apply the cuts
+// 0x0040 -- call unload_files()
+// 0x0020 -- call load_files()
+// 0x0010 -- call populate_histogram()
+// the 4 least significant bits control the output operations
+// 0x0008 -- call save_histogram()
+// 0x0004 -- call save_data()
+// 0x0002 -- call put_histogram()
+// 0x0001 -- call put_data()
+#define DO_EXIT 0x8000
+#define DO_EXECUTE 0x4000
+#define DO_RETURN 0x2000
+#define DO_HACK_DATA 0x0080
+#define DO_UNLOAD 0x0040
+#define DO_LOAD 0x0020
+#define DO_POP_HISTO 0x0010
+#define DO_SAVE_HISTO 0x0008
+#define DO_SAVE_DATA 0x0004
+#define DO_PUT_HISTO 0x0002
+#define DO_PUT_DATA 0x0001
+
 //------------------------------------------------------------------------------------
 //drone info structure
 typedef struct _drone_settings{
@@ -74,21 +108,22 @@ class xb_make_spc{
 		~xb_make_spc(); //death maker
 		
 		//methods
-		void hack_data(); //apply the cut to the data.
-		void reload_data(); //re-read the files, without the cuts!
-		
-		void populate_histogram(); //populate the histogram
 		void draw_histogram(); //draw the histogram (with gnuplot)
+		void reset( p_opts &settings ); //update the settings
+		void exec( unsigned short int prog ); //execute the program
+	private:
+		void load_files(); //file loader
+		void unload_files(); //file unloader
+		
+		void hack_data(); //apply the cut to the data.
+		void populate_histogram(); //populate the histogram
 		
 		void save_histogram(); //save the histogram to file.
 		void save_data(); //save the data onto a file.
 		
 		void put_histogram(); //output the histogram on the set stream (drone.out)
 		void put_data(); //output the data onto the set stream (drone.out)
-		
-		void reset( p_opts &settings ); //update the settings
-	private:
-		void load_files(); //file loader
+
 		void select( XB::selsel selector_type, moreorless m ); //select inside the cluster structure
 		void target_multiplicity( moreorless m ); //set the target_multiplicity
 		
