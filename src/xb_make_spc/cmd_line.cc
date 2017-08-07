@@ -53,6 +53,8 @@ namespace XB{
 		else if( command == "hack" ) breaker = breaker | DO_HACK_DATA;
 		else if( command == "save" ) cml_parse__save( breaker, cmd );
 		else if( command == "put" ) cml_parse__put( breaker, cmd );
+		else if( command == "draw" ) settings.draw_flag = true;
+		else if( command == "undraw" ) settings.draw_flag = false;
 		else if( command == "script" ) cml_parse__script( settings, cmd, breaker ); 
 		else if( command == "load" ) cml_parse__in_fname( settings, cmd );
 		else if( command == "write" ) cml_parse__out_fname( settings, cmd );

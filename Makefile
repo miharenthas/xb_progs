@@ -176,5 +176,5 @@ uninstall :
 
 .PHONY: clean
 clean:
-	rm -f $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
+	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
 

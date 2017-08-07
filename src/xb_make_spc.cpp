@@ -94,12 +94,13 @@ int main( int argc, char **argv ){
 		{ "select-multiplicity", required_argument, NULL, 'm' },
 		{ "select-centroid", required_argument, NULL, 'c' },
 		{ "drone", required_argument, NULL, 'D' },
+		{ "draw", no_argument, NULL, 'd' },
 		{ NULL, no_argument, NULL, 0 }
 	};
 
 	//input parsing
 	char iota = 0; int mute;
-	while( (iota = getopt_long( argc, argv, "i:o:Sb:R:vIs:l:t:m:H:c:", opts, &mute )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:Sb:R:vIs:l:t:m:H:c:Dd", opts, &mute )) != -1 ){
 		switch( iota ){
 			char *token_bf;
 			case 'i':
@@ -205,6 +206,9 @@ int main( int argc, char **argv ){
 					exit( 42 );
 				}
 				break;
+			case 'd':
+				settings.draw_flag = true;
+				break;
 			default :
 				exit( 0 );
 				//help note will come later
@@ -220,22 +224,39 @@ int main( int argc, char **argv ){
 	if( settings.verbose ) printf( "*** Welcome in the spectrum making program! ***\n" );
 	
 	xb_make_spc da_prog;
+	char *msg = (char*)calloc( 128, 1 );
 	
 	//command line and program object fingering
-	if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
-	else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
-	else{
-		da_prog.reset( settings );
-		da_prog.exec( breaker );
+	try{
+		if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
+		else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
+		else{
+			da_prog.reset( settings );
+			da_prog.exec( breaker );
+		}
+	} catch( XB::error e ){
+		strcpy( msg, e.what() );
+		msg = strtok( msg, "!" );
+		fprintf( stderr, "YOU made a mistake: %s\n", msg );
+		goto __FROM_HERE__;
 	}
 	if( settings.draw_flag ) da_prog.draw_histogram();
+	
 	while( !( breaker & DO_EXIT ) && ( settings.interactive || settings.drone_flag ) ){
 		da_prog.reset( settings );
 		da_prog.exec( breaker );
 		if( settings.draw_flag ) da_prog.draw_histogram();
-	
-		if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
-		else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
+		
+		__FROM_HERE__:
+		try{
+			if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
+			else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
+		} catch( XB::error e ){
+			strcpy( msg, e.what() );
+			msg = strtok( msg, "!" );
+			fprintf( stderr, "YOU made a mistake: %s\n", msg );
+			goto __FROM_HERE__;
+		}
 	}
 	
 	//final ops
