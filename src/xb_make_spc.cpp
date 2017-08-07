@@ -98,8 +98,8 @@ int main( int argc, char **argv ){
 	};
 
 	//input parsing
-	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:Sb:R:vIs:l:t:m:H:c:" )) != -1 ){
+	char iota = 0; int mute;
+	while( (iota = getopt_long( argc, argv, "i:o:Sb:R:vIs:l:t:m:H:c:", opts, &mute )) != -1 ){
 		switch( iota ){
 			char *token_bf;
 			case 'i':
@@ -418,8 +418,9 @@ void xb_make_spc::select( XB::selsel selector_type, moreorless m ){
 			k_last = std::remove_if( kl->begin(), kl->end(), *in_kl_selector );
 			
 			if( k_last == kl->end() ) continue;
-			if( m == MORE ) kl->erase( kl->begin(), k_last );
-			else if( m == LESS ) kl->erase( k_last, kl->end() );
+			if( m == MORE ){ kl->erase( k_last, kl->end() ); puts( "pip" ); }
+			else if( m == LESS ) kl->erase( kl->begin(), k_last );
+			event_klZ[f][k].n = kl->size();
 		}
 	}
 	
@@ -458,8 +459,8 @@ void xb_make_spc::reset( p_opts &sts ){
 		settings.num_bins = sts.num_bins;
 	}
 	
-	if( !memcmp( &settings.target_mul, &sts.target_mul,
-	             6*( sizeof(moreorless) + sizeof(unsigned int) ) ) ){
+	if( memcmp( &settings.target_mul, &sts.target_mul,
+	            6*( sizeof(moreorless) + sizeof(unsigned int) ) ) ){
 		++_do_data;
 		settings.target_mul = sts.target_mul;
 		settings.target_cry = sts.target_cry;
@@ -497,7 +498,7 @@ void xb_make_spc::reset( p_opts &sts ){
 	
 	//copy the strings
 	for( int i=0; i < settings.in_f_count; ++i ){
-		if( !strcmp( settings.in_fname[i], sts.in_fname[i] ) ){
+		if( strcmp( settings.in_fname[i], sts.in_fname[i] ) ){
 			++_do_files;
 			strcpy( settings.in_fname[i], sts.in_fname[i] );
 		}
@@ -631,6 +632,7 @@ void xb_make_spc::populate_histogram(){
 //A function to apply the cut to the data (in sequence, not clever right now)
 void xb_make_spc::hack_data(){
 	if( !_do_data ) return; //do nothing if nothing to do
+	if( settings.verbose ) puts( "Hacking data." );
 	
 	if( settings.target_mul ) select( XB::IS_NOT_MULTIPLICITY, settings.mol_mul );
 	if( settings.target_cry ) select( XB::IS_MORE_CRYSTALS, settings.mol_cry );
@@ -648,6 +650,8 @@ void xb_make_spc::save_histogram(){
 	FILE *out;
 	if( settings.out_flag ) out = fopen( settings.out_fname, "w" );
 	else out = stdout;
+	if( settings.verbose && settings.out_flag)
+		printf( "Saving histogram in %s...\n", settings.out_fname );
 	
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( !histo[i] ) continue;
@@ -664,6 +668,8 @@ void xb_make_spc::save_histogram(){
 void xb_make_spc::save_data(){
 	FILE *out;
 	char command[310];
+	if( settings.verbose && settings.out_flag )
+		printf( "Saving data in %s...\n", settings.out_fname );
 	
 	if( settings.out_flag ){
 		strcpy( command, "bzip2 -z > " );
@@ -675,12 +681,15 @@ void xb_make_spc::save_data(){
 		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
 	}
 
+	if( settings.out_flag ) fclose( out );
+
 }
 
 //------------------------------------------------------------------------------------
 //put the histogram on the drone output
 void xb_make_spc::put_histogram(){
 	FILE *out = settings.drone.out;
+	if( settings.verbose ) printf( "Putting histogram into DRONE out.\n" );
 	
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( !histo[i] ) continue;
@@ -696,7 +705,8 @@ void xb_make_spc::put_histogram(){
 //--------------------------------------------------------------------------------------
 void xb_make_spc::put_data(){
 	FILE *out = settings.drone.out;
-	
+	if( settings.verbose ) printf( "Putting histogram into DRONE out.\n" );
+
 	for( int i=0; i < settings.in_f_count; ++i ){
 		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
 	}
