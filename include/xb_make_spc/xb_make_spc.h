@@ -62,7 +62,7 @@ typedef struct _drone_settings{
 //------------------------------------------------------------------------------------
 //a switcher structure
 typedef enum more_or_less{
-	MORE,
+	MORE = 0,
 	LESS
 } moreorless;
 
@@ -123,11 +123,13 @@ class xb_make_spc{
 		
 		void put_histogram(); //output the histogram on the set stream (drone.out)
 		void put_data(); //output the data onto the set stream (drone.out)
-
-		void select( XB::selsel selector_type, moreorless m ); //select inside the cluster structure
-		void target_multiplicity( moreorless m ); //set the target_multiplicity
 		
-		int _do_files, _do_hists, _do_data;//useful switches
+		void select( XB::selsel selector_type, moreorless m ); //select inside the cluster structure
+		void target_multiplicity( moreorless m ); //select the target_multiplicity
+		//and select the rest
+		template< class the_selector >
+		void target_field( const the_selector &in_kl_selector );
+		
 		std::vector<XB::clusterZ> event_klZ[64]; //the clusters
 		gnuplot_ctrl *gp_h; //the handle to the gnuplot session
 		gsl_histogram *histo[64]; //the histograms

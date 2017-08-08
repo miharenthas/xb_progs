@@ -12,7 +12,7 @@ namespace XB{
 	//------------------------------------------------------------------------------------
 	//selector enumerator -- used to select selector
 	typedef enum _select_selector {
-		IS_NOT_MULTIPLICITY = 0, //for historical reasons, it works this way...
+		IS_MULTIPLICITY = 'A',
 		IS_CENTROID,
 		IS_MORE_CRYSTALS,
 		IS_MORE_ALTITUDE,
@@ -31,24 +31,27 @@ namespace XB{
 	//a functional to test for multiplicity
 	//this functional returns TRUE whenever the_multiplicity is NOT the one
 	//with which is constructed. This is because std::remove_if removes on TRUE.
-	typedef class is_not_multiplicity : public std::unary_function< clusterZ, bool > {
+	class is_multiplicity : public std::unary_function< clusterZ, bool > {
 		public:
 			//constructors
-			is_not_multiplicity(): _mul( 1 ) {};
-			is_not_multiplicity( unsigned int mult ): _mul( mult ) {};
-			is_not_multiplicity( const is_not_multiplicity &given ):
-				_mul( given._mul ) {};
+			is_multiplicity(): _mul( 1 ), _r_val( 0 ) {};
+			is_multiplicity( unsigned int mult, bool r_val=0 ):
+				_mul( mult ), _r_val( r_val ) {};
+			is_multiplicity( const is_multiplicity &given ):
+				_mul( given._mul ), _r_val( given._r_val ) {};
 	
 			//the operator()
-			bool operator()( const clusterZ &klZ ){ return klZ.n != _mul; };
+			bool operator()( const clusterZ &klZ ){
+				return ( klZ.n == _mul )? _r_val : !_r_val ; };
 		
 			//assignment operator?
-			is_not_multiplicity &operator=( const is_not_multiplicity &given ){
-				this->_mul = given._mul; return *this;
+			is_multiplicity &operator=( const is_multiplicity &given ){
+				_mul = given._mul; _r_val = given._r_val; return *this;
 			};
 		private:
 			unsigned int _mul;
-	} isntm;
+			bool _r_val;
+	};
 	
 	//------------------------------------------------------------------------------------
 	//select on a particular number of crystals
@@ -56,21 +59,24 @@ namespace XB{
 	class is_centroid : public xb_selector {
 		public:
 			//ctors
-			is_centroid(): _ctr( 42 ) {}; //by default, select the right answer
-			is_centroid( unsigned int ctr ): _ctr( ctr ) {
+			is_centroid(): _ctr( 42 ), _r_val( 0 ) {};
+			is_centroid( unsigned int ctr, bool rv ): _ctr( ctr ), _r_val( rv ) {
 				if( _ctr > 162 ) _ctr = _ctr%162;
 			};
-			is_centroid( const is_centroid &given ): _ctr( given._ctr ) {};
+			is_centroid( const is_centroid &given, bool rv=0 ):
+				_ctr( given._ctr ), _r_val( rv ) {};
 			
 			//the operator()
-			bool operator()( const cluster &kl ){ return kl.centroid_id == _ctr; }
+			bool operator()( const cluster &kl ){
+				return ( kl.centroid_id == _ctr )? _r_val : !_r_val; }
 			
 			//assignmet operator
 			is_centroid &operator=( const is_centroid &given ){
-				this->_ctr = given._ctr; return *this;
+				_ctr = given._ctr; _r_val = given._r_val; return *this;
 			};
 		private:
 			unsigned int _ctr;
+			bool _r_val;
 	};
 	
 	//------------------------------------------------------------------------------------
@@ -78,20 +84,22 @@ namespace XB{
 	//true if the number of crystals is strictly more than _nb_cry
 	class is_more_crystals : public xb_selector {
 		public:
-			is_more_crystals(): _nb_cry( 1 ) {};
-			is_more_crystals( unsigned int nb_cry ): _nb_cry( nb_cry ) {};
+			is_more_crystals(): _nb_cry( 1 ), _r_val( 0 ) {};
+			is_more_crystals( unsigned int nb_cry, bool rv=0 ):
+				_nb_cry( nb_cry ), _r_val( rv ) {};
 			is_more_crystals( const is_more_crystals &given ):
-				_nb_cry( given._nb_cry ) {};
+				_nb_cry( given._nb_cry ), _r_val( given._r_val ) {};
 				
 			bool operator()( const cluster &given ) {
-				return given.n > _nb_cry;
+				return ( given.n > _nb_cry ) ? _r_val : !_r_val;
 			};
 			
 			is_more_crystals &operator=( is_more_crystals &given ){
-				this->_nb_cry = given._nb_cry; return *this;
+				_nb_cry = given._nb_cry; _r_val = given._r_val; return *this;
 			};
 		private:
 			unsigned int _nb_cry;
+			bool _r_val;
 	};
 	
 	//------------------------------------------------------------------------------------
@@ -100,20 +108,22 @@ namespace XB{
 	//than _alt
 	class is_more_altitude : public xb_selector {
 		public:
-			is_more_altitude(): _alt( 1 ) {};
-			is_more_altitude( unsigned int alt ): _alt( alt ) {};
+			is_more_altitude(): _alt( 1 ), _r_val( 0 ) {};
+			is_more_altitude( unsigned int alt, bool rv=0 ):
+				_alt( alt ), _r_val( rv ) {};
 			is_more_altitude( const is_more_altitude &given ):
-				_alt( given._alt ) {};
+				_alt( given._alt ), _r_val( given._r_val ) {};
 				
 			bool operator()( const cluster &given ) {
 				return given.c_altitude > _alt;
 			};
 			
 			is_more_altitude &operator=( is_more_altitude &given ){
-				this->_alt = given._alt; return *this;
+				_alt = given._alt, _r_val = given._r_val; return *this;
 			};
 		private:
 			unsigned int _alt;
+			bool _r_val;
 	};
 	
 	//------------------------------------------------------------------------------------
@@ -122,20 +132,22 @@ namespace XB{
 	//than _azi
 	class is_more_azimuth : public xb_selector {
 		public:
-			is_more_azimuth(): _azi( 1 ) {};
-			is_more_azimuth( unsigned int azi ): _azi( azi ) {};
+			is_more_azimuth(): _azi( 1 ), _r_val( 0 ) {};
+			is_more_azimuth( unsigned int azi, bool rv=0 ):
+				_azi( azi ), _r_val( rv ) {};
 			is_more_azimuth( const is_more_azimuth &given ):
-				_azi( given._azi ) {};
+				_azi( given._azi ), _r_val( given._r_val ) {};
 				
 			bool operator()( const cluster &given ) {
-				return given.c_azimuth > _azi;
+				return ( given.c_azimuth > _azi )? _r_val : !_r_val;
 			};
 			
 			is_more_azimuth &operator=( is_more_azimuth &given ){
-				this->_azi = given._azi; return *this;
+				_azi = given._azi; _r_val = given._r_val; return *this;
 			};
 		private:
 			unsigned int _azi;
+			bool _r_val;
 	};
 	
 	//------------------------------------------------------------------------------------
@@ -144,20 +156,22 @@ namespace XB{
 	//than _nrg
 	class is_more_energy : public xb_selector {
 		public:
-			is_more_energy(): _nrg( 1 ) {};
-			is_more_energy( unsigned int nrg ): _nrg( nrg ) {};
+			is_more_energy(): _nrg( 1 ), _r_val( 0 ) {};
+			is_more_energy( unsigned int nrg, bool rv=0 ):
+				_nrg( nrg ), _r_val( rv ) {};
 			is_more_energy( const is_more_energy &given ):
-				_nrg( given._nrg ) {};
+				_nrg( given._nrg ), _r_val( given._r_val ) {};
 				
 			bool operator()( const cluster &given ) {
-				return given.sum_e > _nrg;
+				return ( given.sum_e > _nrg )? _r_val : !_r_val;
 			};
 			
 			is_more_energy &operator=( is_more_energy &given ){
-				this->_nrg = given._nrg; return *this;
+				_nrg = given._nrg; _r_val = given._r_val; return *this;
 			};
 		private:
 			unsigned int _nrg;
+			bool _r_val;
 	};
 }
 

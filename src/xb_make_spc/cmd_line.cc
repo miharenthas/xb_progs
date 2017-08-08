@@ -223,7 +223,7 @@ namespace XB{
 			} else if( !strcmp( token_bf, "cry" ) ){
 				PREP_TK_BF
 				CK_MOL( settings.mol_cry )
-				settings.target_ctr = atoi( token_bf );
+				settings.target_cry = atoi( token_bf );
 				if( isnan( settings.target_cry ) )
 					throw error( "Crystal is NaN!", "XB::cml_parse" );
 			} else if( !strcmp( token_bf, "ctr" ) ){
