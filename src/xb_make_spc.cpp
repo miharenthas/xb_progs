@@ -205,6 +205,8 @@ int main( int argc, char **argv ){
 				//if the drone is in some way broken, die immediately with the correct answer.
 				if( settings.drone.in == NULL || settings.drone.out == NULL ){
 					fprintf( stderr, "FATAL: drone throughtput is broken.\n" );
+					if( settings.drone.in == NULL ) fprintf( stderr, "NULL on input\n" );
+					if( settings.drone.out == NULL ) fprintf( stderr, "NULL on output\n" );
 					exit( 42 );
 				}
 				break;
@@ -227,28 +229,7 @@ int main( int argc, char **argv ){
 	
 	xb_make_spc da_prog;
 	char *msg = (char*)calloc( 128, 1 );
-	
-	//command line and program object fingering
-	try{
-		if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
-		else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
-		else{
-			da_prog.reset( settings );
-			da_prog.exec( breaker );
-		}
-	} catch( XB::error e ){
-		strcpy( msg, e.what() );
-		msg = strtok( msg, "!" );
-		fprintf( stderr, "YOU made a mistake: %s\n", msg );
-		goto __FROM_HERE__;
-	}
-	if( settings.draw_flag ) da_prog.draw_histogram();
-	
-	while( !( breaker & DO_EXIT ) && ( settings.interactive || settings.drone_flag ) ){
-		da_prog.reset( settings );
-		da_prog.exec( breaker );
-		if( settings.draw_flag ) da_prog.draw_histogram();
-		
+	do{
 		__FROM_HERE__:
 		try{
 			if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
@@ -259,7 +240,12 @@ int main( int argc, char **argv ){
 			fprintf( stderr, "YOU made a mistake: %s\n", msg );
 			goto __FROM_HERE__;
 		}
-	}
+		
+		da_prog.reset( settings );
+		da_prog.exec( breaker );
+		if( settings.draw_flag ) da_prog.draw_histogram();
+		breaker = breaker & 0xf000; //erase the program except the loop control
+	}while( !( breaker & DO_EXIT ) && ( settings.interactive || settings.drone_flag ) );
 	
 	//final ops
 	if( settings.verbose ) printf( "Exiting...\n" );
@@ -476,11 +462,11 @@ void xb_make_spc::target_field( const the_selector &in_kl_selector ){
 //reset the object
 void xb_make_spc::reset( p_opts &sts ){
 	//smart copy the stuff
-	//don't toch the drone, if so: die.
-	if( settings.drone_flag != sts.drone_flag ){
-		fprintf( stderr, "Can't touch drone!\n" );
-		exit( 42 );
-	}
+	//drone
+	strcpy( settings.drone.instream, sts.drone.instream );
+	strcpy( settings.drone.outstream, sts.drone.outstream );
+	settings.drone.in = sts.drone.in;
+	settings.drone.out = sts.drone.out;
 	
 	//nothing to think about here
 	settings.in_flag = sts.in_flag;
@@ -728,21 +714,25 @@ void xb_make_spc::put_histogram(){
 	
 	for( int i=0; i < settings.in_f_count; ++i ){
 		if( !histo[i] ) continue;
-		for( int b=0; b < histo[i]->n; ++i ){
+		for( int b=0; b < histo[i]->n; ++b ){
 			fprintf( out, "%f %f\n",
-			         (histo[i]->range[b] + histo[i]->range[b+1])/2,
+			         (histo[i]->range[b] + histo[i]->range[b+1])/2.,
 			         histo[i]->bin[b] );
 		}
 		fprintf( out, "\n" );
 	}
+	
+	fflush( out );
 }
 
 //--------------------------------------------------------------------------------------
 void xb_make_spc::put_data(){
 	FILE *out = settings.drone.out;
-	if( settings.verbose ) printf( "Putting histogram into DRONE out.\n" );
+	if( settings.verbose ) printf( "Putting data into DRONE out.\n" );
 
 	for( int i=0; i < settings.in_f_count; ++i ){
 		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
 	}
+	
+	fflush( out );
 }
