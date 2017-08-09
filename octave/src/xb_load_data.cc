@@ -68,6 +68,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	//loop-load the files
 	std::vector<XB::data> data, data_buf;
 	char in_fname[256];
+	bool compression_flag = true;
 	for( int f=0; f < nargin; ++f ){
 		if( args(f).is_string() ){ //if the argument is a string
 		                           //attempt to load the file
@@ -75,13 +76,20 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 			if( fs.exists() ){
 				strcpy( in_fname, args(f).string_value().c_str() );
 				try{
-					XB::load( in_fname, data_buf );
+					if( compression_flag ) XB::load( in_fname, data_buf );
+					else {
+						FILE *input_source = fopen( args(f).string_value().c_str(), "r" );
+						XB::load( input_source, data_buf );
+						fclose( input_source );
+					}
 				} catch( XB::error e ){
 					error( e.what() );
 				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
 				data_buf.clear();
-			} else {
+			} else if( args(f).string_value() == "no-compression" ) compression_flag = false;
+			else if( args(f).string_value() == "compression" ) compression_flag = true;
+			else {
 				octave_stdout << "xb_data_load: warning: file \""
 				              << args(f).string_value() << "\" doesn't exist.\n";
 				continue;
