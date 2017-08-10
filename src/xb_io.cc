@@ -69,7 +69,7 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 	//4*n*sizeof(float) + n*sizeof(unsigned int)
 	
 	//a handy buffer for the single data)
-	void *buf = malloc( 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) );
+	void *buf = malloc( XB_DATA_SZ );
 	bool *flag_buf; 
 	unsigned int *u_buf, n;
 	float *f_buf;
@@ -95,7 +95,7 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 		f_buf[1] = xb_book[i].in_beta;
 		
 		//write it all down
-		fwrite( buf, 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float), 1, f_out );
+		fwrite( buf, XB_DATA_SZ, 1, f_out );
 		
 		//copy the actual data buffer
 		//the array "t" is the beginning of the class' data buffer
@@ -130,7 +130,7 @@ void XB::write( std::string f_name, std::vector<XB::data> &xb_book, int header )
 
 //--------------------------------------------------------------------------------
 //loader
-void XB::load( FILE* f_in, std::vector<XB::data> &xb_book ){
+void XB::load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt ){
 	//check if the vector is empty. If it's not, raise an exception.
 	if( !xb_book.empty() ) throw XB::error( "Vector not empty!", "XB::load" );
 
@@ -140,7 +140,7 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book ){
 	if( !strstr( &hdr.d, "DATA" ) ) throw XB::error( "Wrong data file!", "XB::load" );
 
 	//prepare the buffers
-	void *buf = malloc( 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float) ), *data_buf;
+	void *buf = malloc( XB_DATA_SZ ), *data_buf;
 	bool *flag_buf; 
 	unsigned int *u_buf, n;
 	float *f_buf;
@@ -148,10 +148,12 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book ){
 	u_buf = (unsigned int*)buf;
 	flag_buf = (bool*)(u_buf + 2);
 	f_buf = (float*)(flag_buf + 6);	
+	
 	//read
-	while( !feof( f_in ) ){
+	long unsigned count = 0;
+	while( true ){
 		//get the number of elemets in the current event
-		fread( buf, 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float), 1, f_in );
+		if( fread( buf, XB_DATA_SZ, 1, f_in ) != 1 ) break;
 		
 		//construct the class in the back of the vector
 		xb_book.push_back( XB::data( u_buf[0], u_buf[1] ) );
@@ -178,11 +180,12 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book ){
 		
 		//cleanup
 		free( data_buf );
+		++count; if( count == cnt ) break;
 	}
 }
 
 //char* interface for the loader
-void XB::load( char* f_name, std::vector<XB::data> &xb_book ){
+void XB::load( char* f_name, std::vector<XB::data> &xb_book, long unsigned cnt ){
 	//build the command for the pipe
 	char command[310];
 	
@@ -201,15 +204,15 @@ void XB::load( char* f_name, std::vector<XB::data> &xb_book ){
 	if( f_in == NULL ) throw( XB::error( "I/O Error!", "XB::load" ) );
 
 	//write
-	XB::load( f_in, xb_book );
+	XB::load( f_in, xb_book, cnt );
 	
 	//close
 	pclose( f_in );
 }
 
 //std::string interface for the loader.
-void XB::load( std::string f_name, std::vector<XB::data> &xb_book ){
-	XB::load( f_name.c_str(), xb_book );
+void XB::load( std::string f_name, std::vector<XB::data> &xb_book, long unsigned cnt ){
+	XB::load( f_name.c_str(), xb_book, cnt );
 }
 
 //-------------------------------------------------------------------------------
@@ -233,7 +236,7 @@ void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 	//a handy buffer for the various data
 	unsigned int *u_buf, n;
 	float *f_buf;
-	void *buf = malloc( 2*sizeof(unsigned int) + 4*sizeof(float) ); //allocate the buffer
+	void *buf = malloc( XB_TRACK_SZ ); //allocate the buffer
 	u_buf = (unsigned int*)buf; //link the uint pointer
 	f_buf = (float*)(u_buf + 2); //link the float pointer
 	for( int i=0; i < xb_book.size(); ++i ){
@@ -244,7 +247,7 @@ void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 		f_buf[1] = xb_book[i].beta_0;
 		f_buf[2] = xb_book[i].in_Z;
 		f_buf[3] = xb_book[i].in_A_on_Z;
-		fwrite( buf, 2*sizeof(unsigned int) + 4*sizeof(float), 1, f_out );
+		fwrite( buf, XB_TRACK_SZ, 1, f_out );
 		
 		//copy the actual data buffer
 		//the array "fragment_A" is the beginning of the class' data buffer
@@ -279,7 +282,7 @@ void XB::write( std::string f_name, std::vector<XB::track_info> &xb_book, int he
 
 //--------------------------------------------------------------------------------
 //loader
-void XB::load( FILE* f_in, std::vector<XB::track_info> &xb_book ){
+void XB::load( FILE* f_in, std::vector<XB::track_info> &xb_book, long unsigned cnt ){
 	//check if the vector is empty. If it's not, raise an exception.
 	if( !xb_book.empty() ) throw XB::error( "Vector not empty!", "XB::load" );
 
@@ -292,17 +295,17 @@ void XB::load( FILE* f_in, std::vector<XB::track_info> &xb_book ){
 	void *data_buf; //allocated time by time
 	unsigned int *u_buf, n;
 	float *f_buf;
-	void *buf = malloc( 2*sizeof(unsigned int) + 4*sizeof(float) ); //header buffer
+	void *buf = malloc( XB_TRACK_SZ ); //header buffer
 	
 	//link the pointers
 	u_buf = (unsigned int*)buf;
 	f_buf = (float*)(u_buf + 2);
 	
 	//read
-	int count = 0;
-	while( !feof( f_in ) ){
+	long unsigned count = 0;
+	while( true ){
 		//get the number of elemets in the current event
-		fread( buf, 2*sizeof(unsigned int) + 4*sizeof(float), 1, f_in );
+		if( fread( buf, XB_TRACK_SZ, 1, f_in ) != 1 ) break;
 
 		//construct the class in the back of the vector
 		xb_book.push_back( XB::track_info( u_buf[0], u_buf[1] ) );
@@ -324,12 +327,12 @@ void XB::load( FILE* f_in, std::vector<XB::track_info> &xb_book ){
 
 		//cleanup
 		free( data_buf );
-		++count;
+		++count; if( count == cnt ) break;
 	}
 }
 
 //char* interface for the loader
-void XB::load( char* f_name, std::vector<XB::track_info> &xb_book ){
+void XB::load( char* f_name, std::vector<XB::track_info> &xb_book, long unsigned cnt ){
 	//build the command for the pipe
 	char command[310];
 	
@@ -348,15 +351,15 @@ void XB::load( char* f_name, std::vector<XB::track_info> &xb_book ){
 	if( f_in == NULL ) throw( XB::error( "I/O Error!", "XB::load" ) );
 
 	//write
-	XB::load( f_in, xb_book );
+	XB::load( f_in, xb_book, cnt );
 	
 	//close
 	pclose( f_in );
 }
 
 //std::string interface for the loader.
-void XB::load( std::string f_name, std::vector<XB::track_info> &xb_book ){
-	XB::load( f_name.c_str(), xb_book );
+void XB::load( std::string f_name, std::vector<XB::track_info> &xb_book, long unsigned cnt ){
+	XB::load( f_name.c_str(), xb_book, cnt );
 }
 
 //--------------------------------------------------------------------------------
@@ -384,14 +387,14 @@ void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header ){
 	
 	//allocate some buffer
 	//this will make the life of the writer a bit better
-	void *uf_buf = malloc( 2*sizeof(unsigned int) + 3*sizeof(float) );
+	void *uf_buf = malloc( XB_KLZ_SZ );
 	unsigned int *u_buf = (unsigned int*)uf_buf;
 	float *f_buf = (float*)((unsigned int*)uf_buf + 2);
 	
 	//loop on the events
 	for( int i=0; i < event_klZ.size(); ++i ){
 		//write the header( 2 uints and 1 float )
-		fwrite( &event_klZ[i].n, 2*sizeof(unsigned int) + sizeof(float), 1, f_out );
+		fwrite( &event_klZ[i].n, XB_KLZHDR_SZ, 1, f_out );
 		
 		//loop on the clusters
 		for( int k=0; k < event_klZ[i].n; ++k ){
@@ -402,7 +405,7 @@ void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header ){
 			f_buf[1] = event_klZ[i].clusters[k].c_azimuth;
 			f_buf[2] = event_klZ[i].clusters[k].sum_e;
 			//write
-			fwrite( uf_buf, 2*sizeof(unsigned int) + 3*sizeof(float), 1, f_out );
+			fwrite( uf_buf, XB_KLZ_SZ, 1, f_out );
 			fwrite( &event_klZ[i].clusters[k].crys_e[0],
 			        event_klZ[i].clusters[k].n*sizeof(float),
 			        1, f_out );
@@ -441,7 +444,7 @@ void XB::write( std::string f_name, std::vector<XB::clusterZ> &event_klZ, int he
 
 //-------------------------------------------------------------------------------------------
 //the loader for the clusters
-void XB::load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ ){
+void XB::load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ, long unsigned cnt ){
 	if( !event_klZ.empty() )
 		throw XB::error( "Vector not empty!", "XB::load" );
 	
@@ -450,18 +453,19 @@ void XB::load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ ){
 	XB::load_header( f_in, hdr );
 	if( !strstr( &hdr.d, "KLZ" ) ) throw XB::error( "Wrong cluster file!", "XB::load" );
 	
-	void *uf_buf = malloc( 2*sizeof(unsigned int) + 3*sizeof(float) );
+	void *uf_buf = malloc( XB_KLZ_SZ );
 	unsigned int *u_buf = (unsigned int*)uf_buf;
 	float *f_buf = (float*)((unsigned int*)uf_buf + 2);
 	clusterZ klZ;
 	void *klZ_begin = &klZ.n; //point of entry for the structures
 	
-	while( !feof( f_in ) ){
-		fread( klZ_begin, 2*sizeof(unsigned int)+sizeof(float), 1, f_in );
+	long unsigned count = 0;
+	while( true ){
+		if( fread( klZ_begin, XB_KLZHDR_SZ, 1, f_in ) != 1 ) break;
 		
 		klZ.clusters = std::vector<cluster>( klZ.n );
 		for( int k=0; k < klZ.n; ++k ){
-			fread( uf_buf, 2*sizeof(unsigned int) + 3*sizeof(float), 1, f_in );
+			fread( uf_buf, XB_KLZ_SZ, 1, f_in );
 			
 			klZ.clusters[k].n = u_buf[0];
 			klZ.clusters[k].centroid_id = u_buf[1];
@@ -481,13 +485,13 @@ void XB::load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ ){
 		}
 		
 		event_klZ.push_back( klZ );
+		++count; if( cnt == count ) break;
 	}
-	
 	free( uf_buf );
 }
 	
 //char* interface for the loader
-void XB::load( char* f_name, std::vector<XB::clusterZ> &event_klZ ){
+void XB::load( char* f_name, std::vector<XB::clusterZ> &event_klZ, long unsigned cnt ){
 	//build the command for the pipe
 	char command[310];
 	
@@ -506,13 +510,13 @@ void XB::load( char* f_name, std::vector<XB::clusterZ> &event_klZ ){
 	if( f_in == NULL ) throw( XB::error( "I/O Error!", "XB::load" ) );
 
 	//write
-	XB::load( f_in, event_klZ );
+	XB::load( f_in, event_klZ, cnt );
 	
 	//close
 	pclose( f_in );
 }
 
 //std::string interface for the loader.
-void XB::load( std::string f_name, std::vector<XB::clusterZ> &event_klZ ){
-	XB::load( f_name.c_str(), event_klZ );
+void XB::load( std::string f_name, std::vector<XB::clusterZ> &event_klZ, long unsigned cnt ){
+	XB::load( f_name.c_str(), event_klZ, cnt );
 }

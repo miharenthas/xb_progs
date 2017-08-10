@@ -115,7 +115,6 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 			continue;
 		}
 	}
-
 	//consistency check on the range: if the range is zero
 	//or if it's backward, load everything, silently.
 	if( load_nb_events[1] <= load_nb_events[0] ){

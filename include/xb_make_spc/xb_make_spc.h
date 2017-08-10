@@ -24,7 +24,7 @@ extern "C"{
 // 0x8000 -- exit the command line
 // 0x4000 -- execute and reenter
 // 0x2000 -- return
-// (0x1000 -- nothing yet)
+// 0x1000 -- hang up the outputs (NOT USED)
 // the 4 secont-to-most significant bits are unassigned yet
 // the 4 second-to-least significant bits control the data hacking
 // 0x0080 -- call hack_data(), apply the cuts
@@ -39,6 +39,7 @@ extern "C"{
 #define DO_EXIT 0x8000
 #define DO_EXECUTE 0x4000
 #define DO_RETURN 0x2000
+#define DO_HGUP 0x1000
 #define DO_HACK_DATA 0x0080
 #define DO_UNLOAD 0x0040
 #define DO_LOAD 0x0020
@@ -111,6 +112,11 @@ class xb_make_spc{
 		void draw_histogram(); //draw the histogram (with gnuplot)
 		void reset( p_opts &settings ); //update the settings
 		void exec( unsigned short int prog ); //execute the program
+
+		//drone control
+		void open_drone_in();
+		void close_drone_in();
+		const d_opts &drone();
 	private:
 		void load_files(); //file loader
 		void unload_files(); //file unloader
@@ -123,6 +129,9 @@ class xb_make_spc{
 		
 		void put_histogram(); //output the histogram on the set stream (drone.out)
 		void put_data(); //output the data onto the set stream (drone.out)
+		//more drone control
+		void open_drone_out();
+		void close_drone_out();
 		
 		void select( XB::selsel selector_type, moreorless m ); //select inside the cluster structure
 		void target_multiplicity( moreorless m ); //select the target_multiplicity

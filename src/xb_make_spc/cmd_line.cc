@@ -47,6 +47,7 @@ namespace XB{
 		else if( command == "exit" || command == "quit" ) breaker = breaker | DO_EXIT;
 		else if( command == "go" || command == "exec" ) breaker = breaker | DO_EXECUTE;
 		else if( command == "return" ) breaker = breaker | DO_RETURN;
+		else if( command == "hgup" ) breaker = breaker | DO_HGUP;
 		else if( command == "hist" ) breaker = breaker | DO_POP_HISTO;
 		else if( command == "load" ) breaker = breaker | DO_LOAD;
 		else if( command == "unload" ) breaker = breaker | DO_UNLOAD;
@@ -338,30 +339,6 @@ namespace XB{
 		strcpy( settings.drone.instream, token_bf ); PREP_TK_BF
 		sscanf( token_bf, "%1s", &settings.drone.out_pof ); PREP_TK_BF
 		strcpy( settings.drone.outstream, token_bf );
-		
-		if( settings.drone.in )
-			( settings.drone.in_pof == 'p' )?
-			pclose( settings.drone.in ) :
-			fclose( settings.drone.in );
-		if( settings.drone.out )
-			( settings.drone.out_pof == 'p' )?
-			pclose( settings.drone.out ) :
-			fclose( settings.drone.out );
-		if( !strcmp( settings.drone.instream, "stdin" ) ) settings.drone.in = stdin;
-		else settings.drone.in = ( settings.drone.in_pof == 'p' )?
-		                         popen( settings.drone.instream, "r" ) :
-		                         fopen( settings.drone.instream, "r" );
-		if( !strcmp( settings.drone.outstream, "stdout" ) ) settings.drone.out = stdout;
-		else settings.drone.out = ( settings.drone.out_pof == 'p' )?
-		                          popen( settings.drone.outstream, "w" ) :
-		                          fopen( settings.drone.outstream, "w" );
-		                     
-		//if the drone is in some way broken, die immediately with the correct answer.
-		if( settings.drone.in == NULL || settings.drone.out == NULL ){
-			fprintf( stderr, "FATAL: drone throughtput is broken.\n" );
-			exit( 42 );
-		}
-		
 		#undef PREP_TK_BF
 	}
 	

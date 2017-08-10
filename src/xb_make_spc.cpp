@@ -23,7 +23,6 @@ extern "C"{
 #include "xb_make_spc/selectors.h"
 #include "xb_make_spc/xb_make_spc.h"
 
-
 //------------------------------------------------------------------------------------
 //the main
 int main( int argc, char **argv ){
@@ -191,24 +190,6 @@ int main( int argc, char **argv ){
 				sscanf( token_bf, "%1s", &settings.drone.out_pof ); PREP_TK_BF
 				strcpy( settings.drone.outstream, token_bf );
 				#undef PREP_TK_BF
-				
-				//open the drone
-				if( !strcmp( settings.drone.instream, "stdin" ) ) settings.drone.in = stdin;
-				else settings.drone.in = ( settings.drone.in_pof == 'p' )?
-				                         popen( settings.drone.instream, "r" ) :
-				                         fopen( settings.drone.instream, "r" );
-				if( !strcmp( settings.drone.outstream, "stdout" ) ) settings.drone.out = stdout;
-				else settings.drone.out = ( settings.drone.out_pof == 'p' )?
-				                          popen( settings.drone.outstream, "w" ) :
-				                          fopen( settings.drone.outstream, "w" );
-				                          
-				//if the drone is in some way broken, die immediately with the correct answer.
-				if( settings.drone.in == NULL || settings.drone.out == NULL ){
-					fprintf( stderr, "FATAL: drone throughtput is broken.\n" );
-					if( settings.drone.in == NULL ) fprintf( stderr, "NULL on input\n" );
-					if( settings.drone.out == NULL ) fprintf( stderr, "NULL on output\n" );
-					exit( 42 );
-				}
 				break;
 			case 'd':
 				settings.draw_flag = true;
@@ -227,32 +208,33 @@ int main( int argc, char **argv ){
 
 	if( settings.verbose ) printf( "*** Welcome in the spectrum making program! ***\n" );
 	
-	xb_make_spc da_prog;
+	//input looping
+	xb_make_spc da_prog( settings );
 	char *msg = (char*)calloc( 128, 1 );
 	do{
 		__FROM_HERE__:
 		try{
 			if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
-			else if( settings.drone_flag ) breaker = XB::cml_loop( settings.drone.in, settings );
+			else if( settings.drone_flag ){
+				da_prog.open_drone_in();
+				breaker = XB::cml_loop( da_prog.drone().in, settings );
+			}
 		} catch( XB::error e ){
 			strcpy( msg, e.what() );
 			msg = strtok( msg, "!" );
 			fprintf( stderr, "YOU made a mistake: %s\n", msg );
 			goto __FROM_HERE__;
 		}
-		
+
 		da_prog.reset( settings );
 		da_prog.exec( breaker );
 		if( settings.draw_flag ) da_prog.draw_histogram();
+		if( settings.drone_flag ) da_prog.close_drone_in();
 		breaker = breaker & 0xf000; //erase the program except the loop control
 	}while( !( breaker & DO_EXIT ) && ( settings.interactive || settings.drone_flag ) );
 	
 	//final ops
 	if( settings.verbose ) printf( "Exiting...\n" );
-	if( settings.drone_flag ){
-		( settings.drone.in_pof == 'p' )? pclose( settings.drone.in ) : fclose( settings.drone.in );
-		( settings.drone.out_pof == 'p' )? pclose( settings.drone.out ) : fclose( settings.drone.out );
-	}
 	return 0;
 }
 
@@ -310,10 +292,6 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 	
 	//can't compare or subtract less than two histograms
 	if( settings.in_f_count <= 1 ) settings.histo_mode = XB::JOIN;
-	
-	//set the do stuff switches
-	
-	load_files(); //and issues the file loading.
 }
 
 xb_make_spc::~xb_make_spc(){
@@ -707,8 +685,56 @@ void xb_make_spc::save_data(){
 }
 
 //------------------------------------------------------------------------------------
+//drone control
+
+//------------------------------------------------------------------------------------
+//open drone
+void xb_make_spc::open_drone_in(){
+	if( !strcmp( settings.drone.instream, "stdin" ) ) settings.drone.in = stdin;
+	else settings.drone.in = ( settings.drone.in_pof == 'p' )?
+	                         popen( settings.drone.instream, "r" ) :
+	                         fopen( settings.drone.instream, "r" );
+	if( settings.drone.in == NULL ){
+		fprintf( stderr, "FATAL: drone input is broken.\n" );
+		exit( 42 );
+	}
+}
+
+void xb_make_spc::open_drone_out(){
+	if( !strcmp( settings.drone.outstream, "stdout" ) ) settings.drone.out = stdout;
+	else settings.drone.out = ( settings.drone.out_pof == 'p' )?
+	                          popen( settings.drone.outstream, "w" ) :
+	                          fopen( settings.drone.outstream, "w" );
+	                          
+	//if the drone is in some way broken, die immediately with the correct answer.
+	if( settings.drone.out == NULL ){
+		fprintf( stderr, "FATAL: drone output is broken.\n" );
+		exit( 24 );
+	}
+}
+
+//-------------------------------------------------------------------------------------
+//get drone
+const d_opts &xb_make_spc::drone(){
+	return settings.drone;
+}
+
+//-------------------------------------------------------------------------------------
+//close drone
+void xb_make_spc::close_drone_in(){
+	( settings.drone.in_pof == 'p' )? pclose( settings.drone.in ) : fclose( settings.drone.in );
+}
+
+void xb_make_spc::close_drone_out(){
+	( settings.drone.out_pof == 'p' )?
+		pclose( settings.drone.out ) :
+		fclose( settings.drone.out );
+}
+
+//------------------------------------------------------------------------------------
 //put the histogram on the drone output
 void xb_make_spc::put_histogram(){
+	open_drone_out();
 	FILE *out = settings.drone.out;
 	if( settings.verbose ) printf( "Putting histogram into DRONE out.\n" );
 	
@@ -722,11 +748,12 @@ void xb_make_spc::put_histogram(){
 		fprintf( out, "\n" );
 	}
 	
-	fflush( out );
+	close_drone_out();
 }
 
 //--------------------------------------------------------------------------------------
 void xb_make_spc::put_data(){
+	open_drone_out();
 	FILE *out = settings.drone.out;
 	if( settings.verbose ) printf( "Putting data into DRONE out.\n" );
 
@@ -734,5 +761,5 @@ void xb_make_spc::put_data(){
 		XB::write( out, event_klZ[i], ( i )? 0 : 1 );
 	}
 	
-	fflush( out );
+	close_drone_out();
 }
