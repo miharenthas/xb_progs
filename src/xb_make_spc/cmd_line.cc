@@ -47,10 +47,11 @@ namespace XB{
 		else if( command == "exit" || command == "quit" ) breaker = breaker | DO_EXIT;
 		else if( command == "go" || command == "exec" ) breaker = breaker | DO_EXECUTE;
 		else if( command == "return" ) breaker = breaker | DO_RETURN;
-		else if( command == "hgup" ) breaker = breaker | DO_HGUP;
+		else if( command == "hgon" ) breaker = breaker | DO_HGON;
 		else if( command == "hist" ) breaker = breaker | DO_POP_HISTO;
 		else if( command == "load" ) breaker = breaker | DO_LOAD;
 		else if( command == "unload" ) breaker = breaker | DO_UNLOAD;
+		else if( command == "dropm" ) breaker = breaker | DO_DROPM;
 		else if( command == "hack" ) breaker = breaker | DO_HACK_DATA;
 		else if( command == "save" ) cml_parse__save( breaker, cmd );
 		else if( command == "put" ) cml_parse__put( breaker, cmd );

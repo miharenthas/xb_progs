@@ -24,8 +24,10 @@ extern "C"{
 // 0x8000 -- exit the command line
 // 0x4000 -- execute and reenter
 // 0x2000 -- return
-// 0x1000 -- hang up the outputs (NOT USED)
-// the 4 secont-to-most significant bits are unassigned yet
+// 0x1000 -- keep on listening
+// the 4 secont-to-most significant bits control the data safekeeping
+// 0x0800 -- drop data modification (and reolad from backup)
+// the rest is as yet unused.
 // the 4 second-to-least significant bits control the data hacking
 // 0x0080 -- call hack_data(), apply the cuts
 // 0x0040 -- call unload_files()
@@ -39,7 +41,8 @@ extern "C"{
 #define DO_EXIT 0x8000
 #define DO_EXECUTE 0x4000
 #define DO_RETURN 0x2000
-#define DO_HGUP 0x1000
+#define DO_HGON 0x1000
+#define DO_DROPM 0x0800
 #define DO_HACK_DATA 0x0080
 #define DO_UNLOAD 0x0040
 #define DO_LOAD 0x0020
@@ -120,8 +123,11 @@ class xb_make_spc{
 	private:
 		void load_files(); //file loader
 		void unload_files(); //file unloader
+		void copy_in_backup(); //make a backup copy of the data
+		void drop_backup(); //release the backup
 		
 		void hack_data(); //apply the cut to the data.
+		void drop_mod(); //drop data modifications and reload from backup
 		void populate_histogram(); //populate the histogram
 		
 		void save_histogram(); //save the histogram to file.
@@ -139,7 +145,8 @@ class xb_make_spc{
 		template< class the_selector >
 		void target_field( const the_selector &in_kl_selector );
 		
-		std::vector<XB::clusterZ> event_klZ[64]; //the clusters
+		std::vector<XB::clusterZ> *event_klZ; //the clusters
+		std::vector<XB::clusterZ> *event_bck; //data backup
 		gnuplot_ctrl *gp_h; //the handle to the gnuplot session
 		gsl_histogram *histo[64]; //the histograms
 		p_opts settings; //the settings

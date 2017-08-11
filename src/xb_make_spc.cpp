@@ -216,7 +216,7 @@ int main( int argc, char **argv ){
 		try{
 			if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
 			else if( settings.drone_flag ){
-				da_prog.open_drone_in();
+				if( !( breaker & DO_HGON ) ) da_prog.open_drone_in();
 				breaker = XB::cml_loop( da_prog.drone().in, settings );
 			}
 		} catch( XB::error e ){
@@ -228,8 +228,8 @@ int main( int argc, char **argv ){
 
 		da_prog.reset( settings );
 		da_prog.exec( breaker );
-		if( settings.draw_flag ) da_prog.draw_histogram();
-		if( settings.drone_flag ) da_prog.close_drone_in();
+		if( settings.draw_flag && !( breaker & DO_EXIT ) ) da_prog.draw_histogram();
+		if( settings.drone_flag && !( breaker & DO_HGON ) ) da_prog.close_drone_in();
 		breaker = breaker & 0xf000; //erase the program except the loop control
 	}while( !( breaker & DO_EXIT ) && ( settings.interactive || settings.drone_flag ) );
 	
@@ -243,9 +243,15 @@ int main( int argc, char **argv ){
 
 //------------------------------------------------------------------------------------
 //ctors, dtor
-xb_make_spc::xb_make_spc() {}; //default constructor, do nothing
+xb_make_spc::xb_make_spc() {
+	event_klZ = new std::vector<XB::clusterZ>[64];
+	event_bck = new std::vector<XB::clusterZ>[64];
+}; //default constructor, do nothing
 
 xb_make_spc::xb_make_spc( p_opts &sts ){
+	event_klZ = new std::vector<XB::clusterZ>[64];
+	event_bck = new std::vector<XB::clusterZ>[64];
+
 	//copy the stuff
 	settings.drone_flag = sts.drone_flag;
 	settings.in_flag = sts.in_flag;
@@ -297,11 +303,15 @@ xb_make_spc::xb_make_spc( p_opts &sts ){
 xb_make_spc::~xb_make_spc(){
 	for( int i=0; i < settings.in_f_count; ++i ){
 		event_klZ[i].clear();
+		event_bck[i].clear();
 		if( histo[i] != NULL ) gsl_histogram_free( histo[i] );
 	}
 	
 	//and very importantly, close gnuplot
 	if( gp_h != NULL ) gnuplot_close( gp_h );
+
+	delete[] event_klZ;
+	delete[] event_bck;
 }
 
 //------------------------------------------------------------------------------------
@@ -309,6 +319,7 @@ xb_make_spc::~xb_make_spc(){
 void xb_make_spc::exec( short unsigned prog ){
 	if( prog & DO_UNLOAD ) unload_files();
 	if( prog & DO_LOAD ) load_files();
+	if( prog & DO_DROPM ) drop_mod();
 	if( prog & DO_HACK_DATA ) hack_data();
 	if( prog & DO_POP_HISTO ) populate_histogram();
 	if( prog & DO_PUT_HISTO ) put_histogram();
@@ -321,11 +332,13 @@ void xb_make_spc::exec( short unsigned prog ){
 //file loader
 void xb_make_spc::load_files(){
 	if( settings.verbose && !settings.in_flag ) printf( "Reading from STDIN...\n" );
+	if( !event_klZ[0].empty() ) copy_in_backup();
 	
 	//get the clusters from somewhere
 	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i ){
 		if( settings.verbose && settings.in_flag )
 			printf( "Reading from: %s...\n", settings.in_fname[i] );
+		event_klZ[i].clear();
 		XB::load( settings.in_fname[i], event_klZ[i] );
 	}
 	
@@ -338,8 +351,25 @@ void xb_make_spc::unload_files(){
 	if( settings.verbose ) puts( "Clearing data." );
 	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i )
 		event_klZ[i].clear();
+
+	drop_backup();
 }
-		
+
+//------------------------------------------------------------------------------------
+//make a backup of the data (so you don't have to reload every time you drop the mod)
+void xb_make_spc::copy_in_backup(){
+	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i ){
+		if( !event_bck[i].empty() ) event_bck[i].clear();
+		event_bck[i] = event_klZ[i];
+	}
+}
+
+//------------------------------------------------------------------------------------
+//drop the bacup copy of the data
+void xb_make_spc::drop_backup(){
+	for( int i=0; i < settings.in_f_count && settings.in_flag; ++i )
+		event_bck[i].clear();
+}
 
 //------------------------------------------------------------------------------------
 //data selector
@@ -633,6 +663,7 @@ void xb_make_spc::populate_histogram(){
 //A function to apply the cut to the data (in sequence, not clever right now)
 void xb_make_spc::hack_data(){
 	if( settings.verbose ) puts( "Hacking data." );
+	copy_in_backup();
 	
 	if( settings.target_mul ) select( XB::IS_MULTIPLICITY, settings.mol_mul );
 	if( settings.target_cry ) select( XB::IS_MORE_CRYSTALS, settings.mol_cry );
@@ -641,6 +672,13 @@ void xb_make_spc::hack_data(){
 	if( fabs( settings.target_azi ) < 180 ) select( XB::IS_MORE_AZIMUTH, settings.mol_azi ); //?
 	if( settings.target_nrg  ) select( XB::IS_MORE_NRG, settings.mol_nrg );
 	
+}
+
+//------------------------------------------------------------------------------------
+//drop data modification and swap the two data buffer-ish
+//NOTE: the meaningfulness of having this function is debated.
+void xb_make_spc::drop_mod(){
+	std::swap( event_klZ, event_bck );
 }
 
 //------------------------------------------------------------------------------------
