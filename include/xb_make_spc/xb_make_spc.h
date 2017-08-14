@@ -107,19 +107,18 @@ typedef struct _program_settings{
 class xb_make_spc{
 	public:
 		//ctors, dtor
-		xb_make_spc( p_opts &settings ); //custom constructor
 		xb_make_spc(); //default constructor.
 		~xb_make_spc(); //death maker
 		
 		//methods
 		void draw_histogram(); //draw the histogram (with gnuplot)
-		void reset( p_opts &settings ); //update the settings
 		void exec( unsigned short int prog ); //execute the program
 
 		//drone control
 		void open_drone_in();
 		void close_drone_in();
-		const d_opts &drone();
+		
+		p_opts settings; //the settings. Yes, it's public.
 	private:
 		void load_files(); //file loader
 		void unload_files(); //file unloader
@@ -149,7 +148,7 @@ class xb_make_spc{
 		std::vector<XB::clusterZ> *event_bck; //data backup
 		gnuplot_ctrl *gp_h; //the handle to the gnuplot session
 		gsl_histogram *histo[64]; //the histograms
-		p_opts settings; //the settings
+		
 };
 
 #endif

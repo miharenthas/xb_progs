@@ -27,8 +27,12 @@ extern "C"{
 //the main
 int main( int argc, char **argv ){
 
-	//default settings
-	p_opts settings;
+	//default settings:
+	//create the program and bind its settings to a reference
+	xb_make_spc da_prog;
+	p_opts &settings = da_prog.settings;
+
+	//apply the default settings
 	settings.drone_flag = false;
 	settings.in_flag = false;
 	settings.out_flag = false;
@@ -209,7 +213,6 @@ int main( int argc, char **argv ){
 	if( settings.verbose ) printf( "*** Welcome in the spectrum making program! ***\n" );
 	
 	//input looping
-	xb_make_spc da_prog( settings );
 	char *msg = (char*)calloc( 128, 1 );
 	do{
 		__FROM_HERE__:
@@ -217,16 +220,16 @@ int main( int argc, char **argv ){
 			if( settings.interactive ) breaker = XB::cml_loop_prompt( stdin, settings );
 			else if( settings.drone_flag ){
 				if( !( breaker & DO_HGON ) ) da_prog.open_drone_in();
-				breaker = XB::cml_loop( da_prog.drone().in, settings );
+				breaker = XB::cml_loop( settings.drone.in, settings );
 			}
 		} catch( XB::error e ){
 			strcpy( msg, e.what() );
-			msg = strtok( msg, "!" );
+			msg = strtok( msg, "!" );p_opts settings; //the settings
 			fprintf( stderr, "YOU made a mistake: %s\n", msg );
 			goto __FROM_HERE__;
 		}
 
-		da_prog.reset( settings );
+		//da_prog.reset( settings );
 		da_prog.exec( breaker );
 		if( settings.draw_flag && !( breaker & DO_EXIT ) ) da_prog.draw_histogram();
 		if( settings.drone_flag && !( breaker & DO_HGON ) ) da_prog.close_drone_in();
@@ -246,59 +249,8 @@ int main( int argc, char **argv ){
 xb_make_spc::xb_make_spc() {
 	event_klZ = new std::vector<XB::clusterZ>[64];
 	event_bck = new std::vector<XB::clusterZ>[64];
+	memset( histo, 0, 64*sizeof( gsl_histogram* ) );
 }; //default constructor, do nothing
-
-xb_make_spc::xb_make_spc( p_opts &sts ){
-	event_klZ = new std::vector<XB::clusterZ>[64];
-	event_bck = new std::vector<XB::clusterZ>[64];
-
-	//copy the stuff
-	settings.drone_flag = sts.drone_flag;
-	settings.in_flag = sts.in_flag;
-	settings.out_flag = sts.out_flag;
-	settings.verbose = sts.verbose;
-	settings.interactive = sts.interactive;
-	settings.in_f_count = sts.in_f_count;
-	settings.num_bins = sts.num_bins;
-	settings.target_mul = sts.target_mul;
-	settings.target_ctr = sts.target_ctr;
-	settings.target_cry = sts.target_cry;
-	settings.target_alt = sts.target_alt;
-	settings.target_azi = sts.target_azi;
-	settings.target_nrg = sts.target_nrg;
-	settings.mol_mul = sts.mol_mul;
-	settings.mol_ctr = sts.mol_ctr;
-	settings.mol_cry = sts.mol_cry;
-	settings.mol_alt = sts.mol_alt;
-	settings.mol_azi = sts.mol_azi;
-	settings.mol_nrg = sts.mol_nrg;
-	settings.gp_opt.term = sts.gp_opt.term;
-	settings.gp_opt.is_log = sts.gp_opt.is_log;
-	strcpy( settings.gp_opt.x_label, sts.gp_opt.x_label );
-	settings.histo_mode = sts.histo_mode;
-	
-	if( settings.drone_flag ){
-		strcpy( settings.drone.instream, sts.drone.instream );
-		strcpy( settings.drone.outstream, sts.drone.outstream );
-		settings.drone.in_pof = sts.drone.in_pof;
-		settings.drone.out_pof = sts.drone.out_pof;
-		settings.drone.in = sts.drone.in;
-		settings.drone.out = sts.drone.out;
-	}
-	
-	//copy the strings
-	for( int i=0; i < settings.in_f_count; ++i )
-		strcpy( settings.in_fname[i], sts.in_fname[i] );
-	
-	strcpy( settings.out_fname, sts.out_fname );
-	strcpy( settings.gp_opt.title, sts.gp_opt.title );
-	
-	settings.range[0] = sts.range[0];
-	settings.range[1] = sts.range[1];
-	
-	//can't compare or subtract less than two histograms
-	if( settings.in_f_count <= 1 ) settings.histo_mode = XB::JOIN;
-}
 
 xb_make_spc::~xb_make_spc(){
 	for( int i=0; i < settings.in_f_count; ++i ){
@@ -464,82 +416,6 @@ void xb_make_spc::target_field( const the_selector &in_kl_selector ){
 		if( settings.verbose) printf( "Events after cut on file %s: %d.\n",
 		    settings.in_fname[f], event_klZ[f].size() ); 
 	}
-}
-
-//------------------------------------------------------------------------------------
-//reset the object
-void xb_make_spc::reset( p_opts &sts ){
-	//smart copy the stuff
-	//drone
-	strcpy( settings.drone.instream, sts.drone.instream );
-	strcpy( settings.drone.outstream, sts.drone.outstream );
-	settings.drone.in = sts.drone.in;
-	settings.drone.out = sts.drone.out;
-	
-	//nothing to think about here
-	settings.in_flag = sts.in_flag;
-	settings.out_flag = sts.out_flag;
-	settings.verbose = sts.verbose;
-	settings.interactive = sts.interactive;
-	
-	//if the number of files has changed, redo everything
-	if( settings.in_f_count != sts.in_f_count ){
-		settings.in_f_count = sts.in_f_count;
-	}
-	
-	//if the number of bins has changed, redo the histogram
-	if( settings.num_bins != sts.num_bins ){
-		settings.num_bins = sts.num_bins;
-	}
-	
-	if( memcmp( &settings.target_mul, &sts.target_mul,
-	            6*( sizeof(moreorless) + sizeof(unsigned int) ) ) ){
-		memcpy( &settings.target_mul, &sts.target_mul,
-		        6*( sizeof(moreorless) + sizeof(unsigned int) ) );
-		/*settings.target_mul = sts.target_mul;
-		settings.target_cry = sts.target_cry;
-		settings.target_ctr = sts.target_ctr;
-		settings.target_alt = sts.target_alt;
-		settings.target_azi = sts.target_azi;
-		settings.target_nrg = sts.target_nrg;
-		settings.mol_mul = sts.mol_mul;
-		settings.mol_cry = sts.mol_cry;
-		settings.mol_ctr = sts.mol_ctr;
-		settings.mol_alt = sts.mol_alt;
-		settings.mol_azi = sts.mol_azi;
-		settings.mol_nrg = sts.mol_nrg;*/
-	}
-	
-	settings.gp_opt.term = sts.gp_opt.term;
-	settings.gp_opt.is_log = sts.gp_opt.is_log;
-
-	strcpy( settings.gp_opt.x_label, sts.gp_opt.x_label );
-	strcpy( settings.gp_opt.title, sts.gp_opt.title );
-	
-	if( settings.histo_mode != sts.histo_mode ){
-		settings.histo_mode = sts.histo_mode;
-	}
-	
-	if( settings.drone_flag ){
-		strcpy( settings.drone.instream, sts.drone.instream );
-		strcpy( settings.drone.outstream, sts.drone.outstream );
-		settings.drone.in_pof = sts.drone.in_pof;
-		settings.drone.out_pof = sts.drone.out_pof;
-		settings.drone.in = sts.drone.in;
-		settings.drone.out = sts.drone.out;
-	}
-	
-	//copy the strings
-	for( int i=0; i < settings.in_f_count; ++i ){
-		if( strcmp( settings.in_fname[i], sts.in_fname[i] ) ){
-			strcpy( settings.in_fname[i], sts.in_fname[i] );
-		}
-	}
-	
-	strcpy( settings.out_fname, sts.out_fname );
-	
-	settings.range[0] = sts.range[0];
-	settings.range[1] = sts.range[1];
 }
 
 //------------------------------------------------------------------------------------
@@ -749,12 +625,6 @@ void xb_make_spc::open_drone_out(){
 		fprintf( stderr, "FATAL: drone output is broken.\n" );
 		exit( 24 );
 	}
-}
-
-//-------------------------------------------------------------------------------------
-//get drone
-const d_opts &xb_make_spc::drone(){
-	return settings.drone;
 }
 
 //-------------------------------------------------------------------------------------
