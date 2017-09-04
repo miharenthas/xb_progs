@@ -1,0 +1,67 @@
+xb_make_spc command line help
+
+xb_make_spc recognises the following commands:
+
+exit : causes the program to exit.
+
+go (exec) : executes the commands issued from the last "go" --or the beginning, if no "go" happened yet.
+
+return : closes a script without exectuing it, leaves the commands in queue.
+
+hgon : not really used.
+
+hist : populate the histogram.
+
+load : loads the files (doesn't unload them first, that's up to the user).
+
+unload : unloads the files (doesn't reload them afterwards).
+
+dropm : drop the modifications done before the last "go".
+
+hack : apply cuts and all sort of things to the data. It's cumulative.
+
+save : saves to file the current what, has to be specified:
+       hist -- the current histogram.
+       data -- the current data.
+
+put : prints to the drone (or standard, if not drone) output what, has to be specified:
+      like save.
+      NOTE: the histogram is putted in plain text, while it is saved as binary GSL histogram.
+
+draw : sets the draw flag to true, causing the program to draw. Persists after "go".
+
+undraw : unsets the draw flag. Persists after "go".
+
+script : reads (from a file) a go/return bit of commands.
+         NOTE: it does not persists after "go", yet.
+
+read : sets the file names to be loaded.
+
+write : sets the file name (only one) where the program writes.
+
+set : sets some program flags:
+      in : read from file instead of stdin
+      out : save to file insead of stdout
+      draw : causes the program to draw (duplicate)
+      verbose|v : sets verbosity
+      interactive|I : sets interactive (can kill command line).
+
+cut : sets the cutZ to be applied to the data (cumulative):
+      mul : multiplicity
+      cry : cristal
+      ctr : centroid
+      alt : altitude (cringeworthy)
+      azi : azimuth (cringeworthy)
+      nrg : energy
+      rng : from:to, energy range.
+      NOTE: accepts, optionally, > and < modifiers before the actual number
+            to direct the cut appropriately.
+gp : edit gnuplot preferences:
+     term : sets the terminal (in case you want to print an image)
+     [x|y]label : sets the axis' label
+     title : sets the title
+     fout : sets the name of the output file
+
+drone : type:input:type:output resets the drone. Use with caution.
+
+NOTE: you can pass as many commands as you want, separated by a semicolon. But just one "go" per session.

@@ -58,7 +58,7 @@ namespace XB{
 		else if( command == "draw" ) settings.draw_flag = true;
 		else if( command == "undraw" ) settings.draw_flag = false;
 		else if( command == "script" ) cml_parse__script( settings, cmd, breaker ); 
-		else if( command == "load" ) cml_parse__in_fname( settings, cmd );
+		else if( command == "read" ) cml_parse__in_fname( settings, cmd );
 		else if( command == "write" ) cml_parse__out_fname( settings, cmd );
 		else if( command == "set" ) cml_parse__flags( settings, cmd );
 		else if( command == "bin" ) cml_parse__bin( settings, cmd );
