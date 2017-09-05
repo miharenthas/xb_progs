@@ -246,7 +246,7 @@ int main( int argc, char **argv ){
 
 //------------------------------------------------------------------------------------
 //ctors, dtor
-xb_make_spc::xb_make_spc() {
+xb_make_spc::xb_make_spc() : gp_h( NULL ) {
 	event_klZ = new std::vector<XB::clusterZ>[64];
 	event_bck = new std::vector<XB::clusterZ>[64];
 	memset( histo, 0, 64*sizeof( gsl_histogram* ) );
@@ -330,14 +330,19 @@ void xb_make_spc::target_multiplicity( moreorless m ){
 	//create a comparison functional 
 	XB::is_multiplicity is_mul( settings.target_mul, m ); //MORE --> return 0 on true
 	std::vector<XB::clusterZ>::iterator last;
-	
+
 	//find all the non interesting multiplicities
 	for( int i=0; i < settings.in_f_count; ++i ){
+		if( settings.verbose ) printf( "Events before cut on file %s: %d.\n",
+			                             settings.in_fname[i], event_klZ[i].size() );
 		last = std::remove_if( event_klZ[i].begin(), event_klZ[i].end(), is_mul );
 		
 		if( last == event_klZ[i].begin() ){ event_klZ[i].clear(); continue; }
 		else if( last == event_klZ[i].end() ) continue;
 		event_klZ[i].erase( last, event_klZ[i].end() );
+
+		if( settings.verbose ) printf( "Events after cut on file %s: %d.\n",
+				                           settings.in_fname[i], event_klZ[i].size() );
 	}
 }
 
@@ -390,7 +395,7 @@ void xb_make_spc::target_field( const the_selector &in_kl_selector ){
 	std::vector<XB::cluster>::iterator k_last;
 	std::vector<XB::clusterZ>::iterator klz_last;
 	std::vector<XB::cluster> *kl;
-	XB::is_multiplicity chopper( 0, MORE );
+	XB::is_multiplicity chopper( 0, true );
 	
 	//remove the unwanted data (yes, the policy has changed)
 	for( int f=0; f < settings.in_f_count; ++f ){
@@ -410,11 +415,11 @@ void xb_make_spc::target_field( const the_selector &in_kl_selector ){
 		
 		//remove those marked for deletion (and generally 0 multiplicities).
 		if( settings.verbose ) printf( "Events before cut on file %s: %d.\n",
-		    settings.in_fname[f], event_klZ[f].size() );
+		                               settings.in_fname[f], event_klZ[f].size() );
 		klz_last = std::remove_if( event_klZ[f].begin(), event_klZ[f].end(), chopper );
-		event_klZ[f].erase( event_klZ[f].begin(), klz_last );
+		event_klZ[f].erase( klz_last, event_klZ[f].end() );
 		if( settings.verbose ) printf( "Events after cut on file %s: %d.\n",
-		    settings.in_fname[f], event_klZ[f].size() ); 
+		                               settings.in_fname[f], event_klZ[f].size() ); 
 	}
 }
 

@@ -29,8 +29,6 @@ namespace XB{
 	
 	//------------------------------------------------------------------------------------
 	//a functional to test for multiplicity
-	//this functional returns TRUE whenever the_multiplicity is NOT the one
-	//with which is constructed. This is because std::remove_if removes on TRUE.
 	class is_multiplicity : public std::unary_function< clusterZ, bool > {
 		public:
 			//constructors
