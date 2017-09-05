@@ -48,14 +48,16 @@ function cryscalib( varargin )
 	end
 	
 	%open the files and load the data (s)
-	data = {};
+	drone_cmd = ' -o /dev/null';
 	source_profiles = {};
 	disp( 'cc: loading data...' );
 	for ii=1:numel( cc_settings.rf_list )
-		disp( [ '...', cc_settings.rf_list{ii}] );
-		data(ii) = xb_load_data( cc_settings.rf_list{ii}, 1e6 );
+		drone_cmd = [ cc_settings.rf_list{ii}, drone_cmd ];
 		source_profiles(ii) = cctop_parse_sp( cc_settings.sp_list{ii} );
 	end
+	%make the drone
+	drone = xb_drone_init( drone_cmd );
+	drone = xb_drone_ctrl( drone, 'load; cut cry < 2; hack; go' );
 	disp( 'cc: done.' );
 
 	%organize runs by source profile
@@ -65,7 +67,7 @@ function cryscalib( varargin )
 	%      things that can be combined together, so you
 	%      should be sure that there's no drift.
 	disp( 'cc: combining runs...' );
-	[data, source_profiles] = cctop_combine_data( data, source_profiles );
+	source_profile = cctop_combine_sp( source_profiles );
 	disp( 'cc: done.' );
 	
 	%BIG loop on the crystals
@@ -90,10 +92,11 @@ function cryscalib( varargin )
 		disp( ['...crystla #', num2str(cc), ': preparing data...'] );
 		%do the energy spectrum from the data.
 		settings.crys_nb = cc;
-		oh = @( p ) p == cc;
-		c_data = xb_data_cut_on_field( data, oh, 'i' ); %TODO: speed up!!!
+		xb_drone_ctrl( drone, ['cut ctr ', num2str( cc ), '; hack; go' ] );
+		c_data = xb_drone_get( drone, 'klz' );
+		xb_drone_ctrl( drone, 'dropm; go' );
 		disp( 'cc: done.' );
-		[lore(cc).hst, lore(cc).binZ] = cc_do_spectrum( [c_data.e] );
+		[lore(cc).hst, lore(cc).binZ] = cc_do_spectrum( xb_cluster_nrg( c_data ) );
 	
 		%do the cutoff (no settings update necessary)
 		lore(cc).cutoff = cc_do_cutoff( [lore(cc).binZ; lore(cc).hst] );
@@ -130,5 +133,6 @@ function cryscalib( varargin )
 	save( '-float-binary', 'lore.ofb', 'lore' );
 	
 	%and that was it.
+	xb_drone_free( drone );
 	disp( 'cc: done, goodbye.' );
 end

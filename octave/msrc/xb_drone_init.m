@@ -33,7 +33,6 @@ function drone = xb_drone_init( varargin )
 		endfor
 	endif
 	command = [command, '--drone f:', drone.in, ':f:', drone.out, ' &' ];
-	disp( command );
 	
 	%and now, make the pipes.
 	system( ['mkfifo ', drone.in] );
