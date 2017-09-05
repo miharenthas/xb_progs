@@ -413,7 +413,7 @@ void xb_make_spc::target_field( const the_selector &in_kl_selector ){
 		    settings.in_fname[f], event_klZ[f].size() );
 		klz_last = std::remove_if( event_klZ[f].begin(), event_klZ[f].end(), chopper );
 		event_klZ[f].erase( event_klZ[f].begin(), klz_last );
-		if( settings.verbose) printf( "Events after cut on file %s: %d.\n",
+		if( settings.verbose ) printf( "Events after cut on file %s: %d.\n",
 		    settings.in_fname[f], event_klZ[f].size() ); 
 	}
 }
