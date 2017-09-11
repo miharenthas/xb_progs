@@ -95,15 +95,18 @@ int main( int argc, char **argv ){
 inline float dumb_get_res_at( float e ){
 	//resolution at 662KeV is .078
 	//resolution at 1332KeV is .055
-	//this means: m = −0.000034328 1/KeV
-	//            q = 0.10073
-	#define M -0.000034328
-	#define Q 0.10073
+	//this means: A = 2.0059
+	//            B = 3.9147e-05
+	//for the formula
+	// R( e ) = A/sqrt( e ) + B
 	
-	return M*e + Q;
+	#define A 2.0059
+	#define B 3.9147e-05
 	
-	#undef M
-	#undef Q
+	return A/sqrt( e ) + B;
+	
+	#undef A
+	#undef B
 }
 
 //------------------------------------------------------------------------------------
@@ -118,12 +121,9 @@ void dumb_smear_gaussian( std::vector<XB::data> &xb_book ){
 	gsl_rng *rng = gsl_rng_alloc( gsl_rng_ranlux );
 	
 	float dE_E, rnd_sample, sigma, *current_e;
-	#pragma omp parallel for shared( rng ) \
-	        schedule( dynamic, 1024 ) \
-	        private( dE_E, rnd_sample, sigma, current_e )
+	if( flagger & VERBOSE ) printf( "Processing entry 00000000" );
 	for( int i=0; i < xb_book.size(); ++i ){
-		if( flagger & VERBOSE && true
-		    //TODO: print the current event number );
+		if( flagger & VERBOSE ) printf( "\b\b\b\b\b\b\b\b%08d", i );
 		if( xb_book[i].empty_e )
 			current_e = xb_book[i].he;
 		else
@@ -138,6 +138,7 @@ void dumb_smear_gaussian( std::vector<XB::data> &xb_book ){
 			current_e[c] += rnd_sample;
 		}
 	}
+	if( flagger & VERBOSE ) printf( " done.\n" );
 	
 	//cleanup
 	gsl_rng_free( rng );

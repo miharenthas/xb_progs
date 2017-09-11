@@ -84,9 +84,11 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 		buf = XB::data( current_numel, current_evnt );
 		
 		//do the copying
-		buf.sum_e = o_map.getfield( "sum_e" ).float_value();
+		if( o_map.isfield( "sum_e" ) )
+			buf.sum_e = o_map.getfield( "sum_e" ).float_value();
 		if( !buf.sum_e ) buf.empty_sum_e = true;
-		buf.in_beta = o_map.getfield( "in_beta" ).float_value();
+		if( o_map.isfield( "in_beta" ) )
+			buf.in_beta = o_map.getfield( "in_beta" ).float_value();
 		if( buf.in_beta == 1 ) buf.empty_in_beta = true;
 		
 		if( o_map.isfield( "i" ) ){

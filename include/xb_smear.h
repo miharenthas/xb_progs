@@ -62,7 +62,7 @@ namespace XB{
 	void crystal_interp_free( cirp_gobbins *crystal_interp );
 	
 	//Get sigma from an energy resolution
-	double get_sigma( const double dE_E, const double e );
+	inline double get_sigma( const double res, const double e ){ return 0.4246609*res*e; };
 }
 
 #endif
