@@ -73,7 +73,10 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 	//loop-copy the data
 	for( int i=0; i < o_data_m.length(); ++i ){
 		o_map = o_data_m(i);
-		
+
+		if( !o_map.isfield( "n" ) || !o_map.isfield( "evnt" ) )
+			error( "Invalid data structure: missing vital fields." );
+
 		current_numel = o_map.getfield( "n" ).uint_value();
 		current_evnt = o_map.getfield( "evnt" ).uint_value();
 		

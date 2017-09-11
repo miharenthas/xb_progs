@@ -10,7 +10,7 @@ TEST = $(PROGS_HOME)/test
 GNUPLOT_I_HOME = /usr/local/gnuplot_i
 
 #define the targets
-PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut
+PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_dumbres
 TESTS = xb_check_nn  xb_view_ball xb_view_cluster xb_energy_list xb_try_nn_cluster xb_try_nn_clusterZ xb_try_kmeans_cluster test_xb_cuts xb_draw_cutZ xb_try_parse xb_try_sim_reader
 OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file xb_smear xb_read_calib
 GNUPLOT_OBJS = xb_draw_cluster_ball xb_draw_cut xb_draw_gsl_histogram
@@ -111,6 +111,9 @@ xb_doppc : libxb_core
 
 xb_do_cut : libxb_core libxb_viz
 	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_do_cut.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_do_cut
+
+xb_dumbres : libxb_core
+	$(CXX) -lxb_core $(SRC)/xb_dumbres.cpp $(CXXFLAGS) -o xb_dumbres
 
 #----------------------------------------------------------------------
 #test programs
