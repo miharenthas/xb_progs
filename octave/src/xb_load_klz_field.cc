@@ -90,28 +90,28 @@ DEFUN_DLD( xb_load_klz_field, args, nargout, O_DOC_STRING ){
 	//loop-load the files and get the number of events to load
 	std::vector<XB::clusterZ> data, data_buf;
 	char in_fname[256];
+	bool compression_flag = true;
 	for( int f=0; f < nargin; ++f ){
 		if( args(f).is_string() ){ //if the argument is a string
-		                           //can be either a file or a field
-		  if( args(f).string_value() == "field" ){
-		  	if( nargin <= f+1 ) error( "xb_load_klz_field: field requested and no field given." );
-		  	target_field = string2field_t( args(f+1).string_value() );
-		  	if( target_field == NONE ) return octave_value_list();
-		  	++f; //move up one before the loop ends
-		  	continue; //that was it.
-		  }
-		  
+		                           //attempt to load the file
 			octave::sys::file_stat fs( args(f).string_value() );
 			if( fs.exists() ){
 				strcpy( in_fname, args(f).string_value().c_str() );
 				try{
-					XB::load( in_fname, data_buf );
+					if( compression_flag ) XB::load( in_fname, data_buf );
+					else {
+						FILE *input_source = fopen( args(f).string_value().c_str(), "r" );
+						XB::load( input_source, data_buf );
+						fclose( input_source );
+					}
 				} catch( XB::error e ){
 					error( e.what() );
 				}
 				data.insert( data.end(), data_buf.begin(), data_buf.end() );
 				data_buf.clear();
-			} else {
+			} else if( args(f).string_value() == "no-compression" ) compression_flag = false;
+			else if( args(f).string_value() == "compression" ) compression_flag = true;
+			else {
 				octave_stdout << "xb_load_klz_field: warning: file \""
 				              << args(f).string_value() << "\" doesn't exist.\n";
 				continue;

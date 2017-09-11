@@ -39,8 +39,8 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 		catch
 			%I'm not yet sure this is the most brilliant solution
 			%but it's the best I can think right now.
-			[klz_rest nbr_rest] = xb_data_cut_on_field( klz(idx_part(ii):end), ...
-			                                            op_handle );
+			[klz_rest nbr_rest] = xb_cluster_cut_on_field( klz(idx_part(ii):end), ...
+			                                               op_handle );
 			break;
 		end
 		nb_proc += 1;
@@ -60,7 +60,7 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 	
 	%stitch together the stuff
 	klz = reshape( klz_part, 1, [] );
-	if ~isempty( klz_rest ) klz = [klz, klz_rest]; end
+	if ~isempty( klz_rest ) klz = [klz(:); klz_rest(:)]; end
 	nb_removed = sum( nb_removed_part ) + nbr_rest;	
 
 	%remove empty events.

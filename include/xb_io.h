@@ -15,6 +15,10 @@
 #define XB_FILE_DESCRIPTOR_DATA "DATADATA@@"
 #define XB_FILE_DESCRIPTOR_TRACK "TRACKTRACK"
 #define XB_FILE_DESCRIPTOR_CLUSTERS "KLZKLZKLZ@"
+#define XB_DATA_SZ 6*sizeof(bool) + 2*sizeof(unsigned int) + 2*sizeof(float)
+#define XB_TRACK_SZ 2*sizeof(unsigned int) + 4*sizeof(float)
+#define XB_KLZ_SZ 2*sizeof(unsigned int) + 3*sizeof(float)
+#define XB_KLZHDR_SZ 2*sizeof(unsigned int) + sizeof(float)
 
 namespace XB{
 	//-----------------------------------------------------------------------
@@ -39,19 +43,19 @@ namespace XB{
 	//to save space, this uses a pipe to bzip2 and saves compressed.
 	
 	//this block of functions work with XB::data kind of data
-	void write( FILE* f_out, std::vector<XB::data> &xb_book );
-	void write( std::string f_name, std::vector<XB::data> &xb_book );
-	void write( char* f_name, std::vector<XB::data> &xb_book );
+	void write( FILE* f_out, std::vector<XB::data> &xb_book, int header=1 );
+	void write( std::string f_name, std::vector<XB::data> &xb_book, int header=1 );
+	void write( char* f_name, std::vector<XB::data> &xb_book, int header=1 );
 	
 	//this block of functions work with XB::data kind of data
-	void write( FILE* f_out, std::vector<XB::track_info> &xb_book );
-	void write( std::string f_name, std::vector<XB::track_info> &xb_book );
-	void write( char* f_name, std::vector<XB::track_info> &xb_book );
+	void write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header=1 );
+	void write( std::string f_name, std::vector<XB::track_info> &xb_book, int header=1 );
+	void write( char* f_name, std::vector<XB::track_info> &xb_book, int header=1 );
 
 	//this block of functions work wiht XB::clusterZ kind of data
-	void write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ );
-	void write( std::string f_name, std::vector<XB::clusterZ> &event_klZ );
-	void write( char* f_name, std::vector<XB::clusterZ> &event_klZ );
+	void write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header=1 );
+	void write( std::string f_name, std::vector<XB::clusterZ> &event_klZ, int header=1 );
+	void write( char* f_name, std::vector<XB::clusterZ> &event_klZ, int header=1 );
 	
 	//-----------------------------------------------------------------------
 	//load from file
@@ -59,19 +63,19 @@ namespace XB{
 	//though bunzip2
 	
 	//this block of functions work with XB::data kind of data
-	void load( FILE* f_in, std::vector<XB::data> &xb_book );
-	void load( std::string f_name, std::vector<XB::data> &xb_book );
-	void load( char* f_name, std::vector<XB::data> &xb_book );
+	void load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt=-1 );
+	void load( std::string f_name, std::vector<XB::data> &xb_book, long unsigned cnt=-1 );
+	void load( char* f_name, std::vector<XB::data> &xb_bookm, long unsigned cnt=-1 );
 
 	//this block of functions work with XB::data kind of data
-	void load( FILE* f_in, std::vector<XB::track_info> &xb_book );
-	void load( std::string f_name, std::vector<XB::track_info> &xb_book );
-	void load( char* f_name, std::vector<XB::track_info> &xb_book );
+	void load( FILE* f_in, std::vector<XB::track_info> &xb_book, long unsigned cnt=-1 );
+	void load( std::string f_name, std::vector<XB::track_info> &xb_book, long unsigned cnt=-1 );
+	void load( char* f_name, std::vector<XB::track_info> &xb_book, long unsigned cnt=-1 );
 	
 	//this block of functions work with XB:clusterZ kind of data
-	void load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ );
-	void load( std::string f_name, std::vector<XB::clusterZ> &event_klZ );
-	void load( char* f_name, std::vector<XB::clusterZ> &event_klZ );
+	void load( FILE* f_in, std::vector<XB::clusterZ> &event_klZ, long unsigned cnt=-1 );
+	void load( std::string f_name, std::vector<XB::clusterZ> &event_klZ, long unsigned cnt=-1 );
+	void load( char* f_name, std::vector<XB::clusterZ> &event_klZ, long unsigned cnt=-1 );
 	
 }
 

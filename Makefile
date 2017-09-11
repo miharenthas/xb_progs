@@ -12,18 +12,18 @@ GNUPLOT_I_HOME = /usr/local/gnuplot_i
 #define the targets
 PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_dumbres
 TESTS = xb_check_nn  xb_view_ball xb_view_cluster xb_energy_list xb_try_nn_cluster xb_try_nn_clusterZ xb_try_kmeans_cluster test_xb_cuts xb_draw_cutZ xb_try_parse xb_try_sim_reader
-OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file xb_smear xb_read_calib
-GNUPLOT_OBJS = xb_draw_cluster_ball xb_draw_cut xb_draw_gsl_histogram
+OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file
+GNUPLOT_OBJS = xb_draw_cluster_ball xb_draw_cut xb_draw_gsl_histogram xb_make_spc__cmd_line
 OBJ_W_ROOT = xb_reader
 LIBRARIES = libxb_core libxb_viz libxb_root
-BINARIES = $(BIN)/xb_cluster.o $(BIN)/xb_error.o $(BIN)/xb_data.o $(BIN)/xb_io.o $(BIN)/xb_ball.o $(BIN)/xb_doppler_corr.o $(BIN)/xb_cut_typedefs.o $(BIN)/xb_cut.o $(BIN)/xb_apply_cut.o $(BIN)/xb_parse_cnf_file.o $(BIN)/xb_smear.o $(BIN)/xb_read_calib.o
-GNUPLOT_BINS = $(BIN)/xb_draw_cluster_ball.o $(BIN)/xb_draw_cut.o $(BIN)/xb_draw_gsl_histogram.o
+BINARIES = $(BIN)/xb_cluster.o $(BIN)/xb_error.o $(BIN)/xb_data.o $(BIN)/xb_io.o $(BIN)/xb_ball.o $(BIN)/xb_doppler_corr.o $(BIN)/xb_cut_typedefs.o $(BIN)/xb_cut.o $(BIN)/xb_apply_cut.o $(BIN)/xb_parse_cnf_file.o
+GNUPLOT_BINS = $(BIN)/xb_draw_cluster_ball.o $(BIN)/xb_draw_cut.o $(BIN)/xb_draw_gsl_histogram.o $(BIN)/xb_make_spc__cmd_line.o
 ROOT_BINS = $(BIN)/xb_reader.o
 GNUPLOT_I = $(GNUPLOT_I_HOME)/gnuplot_i.o
 
 #compiler and flags
 CXX = g++
-CXXFLAGS = -I$(INCLUDE) -L$(LIB) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11
+CXXFLAGS = -I$(INCLUDE) -L$(LIB) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11 -ggdb
 ROOT_CXXFLAGS = `root-config --cflags | sed 's/-stdlib=libc++//g'`
 ROOT_CXXFLAGS += -I $(FAIRROOTPATH)/include
 FAIR_LIBS = -lBaseMQ -lBase -lEventDisplay -lfairmq_logger -lFairMQ -lFairMQTest -lFairRutherford -lFairTestDetector -lFairTools -lGeane -lGen -lGeoBase -lMbsAPI -lMCStack -lParBase -lParMQ -lPassive -lPixel -lTrkBase
@@ -77,11 +77,8 @@ xb_parse_cnf_file :
 xb_draw_gsl_histogram :
 	$(CXX) $(SRC)/xb_draw_gsl_histogram.cc $(CXXFLAGS) $(GNUPLOT_FLAGS) -fPIC -c -o $(BIN)/xb_draw_gsl_histogram.o
 
-xb_smear :
-	$(CXX) $(SRC)/xb_smear.cc $(CXXFLAGS) -fPIC -c -o $(BIN)/xb_smear.o
-
-xb_read_calib :
-	$(CXX) $(SRC)/xb_read_calib.cc $(CXXFLAGS) -fPIC -c -o $(BIN)/xb_read_calib.o
+xb_make_spc__cmd_line :
+	$(CXX) $(SRC)/xb_make_spc/cmd_line.cc $(CXXFLAGS) $(GNUPLOT_FLAGS) -fPIC -c -o $(BIN)/xb_make_spc__cmd_line.o
 
 #----------------------------------------------------------------------
 #libraries
@@ -150,6 +147,9 @@ xb_try_parse: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
 xb_try_sim_reader: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I) $(OBJ_W_ROOT)
 	$(CXX) $(ROOT_BINS) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_sim_reader.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) $(ROOT_FLAGS) -o $(TEST)/xb_try_sim_reader
 
+xb_cml: libxb_core libxb_viz
+	$(CXX) -lxb_viz -lxb_core $(TEST)/xb_cml.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_cml
+
 #-----------------------------------------------------------------------
 #collective operations
 .PHONY: all
@@ -179,5 +179,5 @@ uninstall :
 
 .PHONY: clean
 clean:
-	rm -f $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
+	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
 

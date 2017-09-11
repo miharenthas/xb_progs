@@ -1,5 +1,9 @@
 //this is a port of the function used by the main class
 //of the program "xb_make_spc", to be used (also) elsewhere.
+
+#ifndef XB_DRAW_GSL_HISTOGRAM__H
+#define XB_DRAW_GSL_HISTOGRAM__H
+
 #include <string.h>
 
 #include <gsl/gsl_histogram.h>
@@ -41,3 +45,6 @@ namespace XB{
 		                          unsigned int howmany,
 		                          XB::histogram_mode histo_mode );
 }
+
+
+#endif
