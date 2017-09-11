@@ -45,6 +45,9 @@ function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
 	for ii=1:size( guesses, 1 ) %the number of rows in guesses is the number of gaussians
 		new_pees = [new_pees, guesses(ii,:)];
 	end
+	exp_bkg_p = [ energy_spc(2,1), 0];
+	exp_bkg_p(2) = log( energy_spc(2,end) ) - log( energy_spc(2,1) );
+	exp_bkg_p(2) /= energy_spc(1,end) - energy_spc(1,1);
 	
 	%main loop
 	g_all = xb_multigaus_stack_alloc( energy_spc(1,:), size( guesses, 1 ) );
@@ -54,7 +57,9 @@ function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
 		rel_err_est = .67/sqrt( lin_hgt ); %as anticipated, very bone idly
 		
 		%run the global fit
-		pees = xb_multigaus_fit( energy_spc, new_pees );
+		pees = xb_multigaus_fit( energy_spc, new_pees, exp_bkg_p );
+		exp_bkg_p = pees(end-1:end);
+		pees = pees(1:end-2);
 		p_err = pees.*rel_err_est; %very bone idly indeed
 		
 		%display
@@ -70,8 +75,12 @@ function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
 			plot( energy_spc(1,:), gaus, 'linewidth', 2 );
 		end
 
+		%plot the exponential background
+		exp_bkg = exp_bkg_p(1)*exp( energy_spc(1,:)*exp_bkg_p(2) );
+		plot( energy_spc(1,:), exp_bkg, 'linewidth', 2 );
+
 		%and add the global fit
-		g_fit = xb_multigaus_stack_exec( pees, g_all );
+		g_fit = xb_multigaus_stack_exec( pees, g_all ) + exp_bkg;
 		plot( energy_spc(1,:), g_fit, 'linewidth', 3, 'k--' );
 		
 		hold off;
@@ -87,7 +96,7 @@ function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
 		for ii=1:size( guesses, 1 )
 			leg = [leg; ['Peak #', num2str( ii )]];
 		end
-		leg = [leg; 'Global fit'];
+		leg = [leg; 'bkg'; 'Global fit'];
 		lg = legend( leg );
 		set( lg, 'fontsize', 24 );
 		
@@ -95,8 +104,11 @@ function [gfit_params, p_err] = cc_find_global_fit( energy_spc, guesses )
 		disp( "cc_find_global_fit: is this OK?" );
 		%make a payload
 		payload.gs = guesses;
+		payload.ebp = exp_bkg_p;
 		payload.spc = energy_spc; 
 		[go_on, settings, new_pees] = cc_find_global_fit_prompt( fig, settings, payload );
+		exp_bkg_p = new_pees(end-1:end);
+		new_pees = new_pees(1:end-2);
 	end
 	close( fig );
 	
@@ -150,6 +162,7 @@ function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings,
 				end
 			case 'guess?'
 				disp( payload.gs );
+				disp( payload.ebp );
 				guess_fig = cc_find_global_fit_showguesses( settings,
 				                                            payload,
 				                                            guess_fig );
@@ -187,6 +200,18 @@ function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings,
 				else
 					disp( 'command "sigma" requires 2 arguments.' );
 				end
+			case 'alpha'
+				if numel( opts ) == 1
+					payload.ebp(1) = str2num( opts{1} );
+				else
+					disp( 'command "alpha" reqires 1 argument.' );
+				end
+			case 'tau'
+				if numel( opts ) == 1
+					payload.ebp(2) = str2num( opts{1} );
+				else
+					disp( 'command "tau" requires 1 argument.' );
+				end
 			case 'save'
 				if ~isempty( opts )
 					name = opts{1};
@@ -200,7 +225,7 @@ function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings,
 			case 'scrap'
 				ccg_repeat = true;
 				gogo_on = false;
-				go_on = false;
+				go_on = true;
 			otherwise
 				disp( ['"', cmd, '" is not a valid command.'] );
 		end
@@ -213,6 +238,7 @@ function [go_on, settings, pees] = cc_find_global_fit_prompt( fig, old_settings,
 			pees = [pees, payload.gs(ii,:)];
 		end
 	end
+	pees = [pees, payload.ebp(:)'];
 	
 	%close the guesses figure
 	if guess_fig close( guess_fig ); end
@@ -233,6 +259,9 @@ function fig = cc_find_global_fit_showguesses( settings, payload, fig )
 		gaus = xb_multigaus_stack_exec( payload.gs(ii,:), gs );
 		plot( payload.spc(1,:), gaus, 'linewidth', 2 );
 	end
+	%plot the exponential background
+	exp_bkg = payload.ebp(1)*exp( payload.spc(1,:)*payload.ebp(2) );
+	plot( payload.spc(1,:), exp_bkg, 'linewidth', 2 );
 	hold off;
 	set( gca, 'linewidth', 2, 'fontsize', 24 );
 	axis( [settings.ax_lb, settings.ax_ub] );

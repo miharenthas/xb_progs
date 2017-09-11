@@ -15,6 +15,7 @@
 %              -- ax_lb: the x axis lower bound
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
+%              -- c_trg: the trigger level
 
 function cutoff = cc_do_cutoff( energy_spc )
 	global settings;
@@ -24,21 +25,28 @@ function cutoff = cc_do_cutoff( energy_spc )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
+		settings.c_trg = 10;
 	elseif isstruct( settings )
-		settings.ax_lb = settings.ax_lb;
-		settings.ax_ub = settings.ax_ub;
-		settings.crys_nb = settings.crys_nb;
+		if isfield( settings, 'ax_lb' ) settings.ax_lb = settings.ax_lb;
+		else settings.ax_lb = 0; end
+		if isfield( settings, 'ax_ub' ) settings.ax_ub = settings.ax_ub;
+		else settings.ax_ub = 3e3; end
+		if isfield( settings, 'crys_nb' ) settings.crys_nb = settings.crys_nb;
+		else settings.crys_nb = 0; end
+		if isfield( settings, 'c_trg' ) settings.c_trg = settings.c_trg;
+		else settings.c_trg = 10; end
 	elseif isscalar( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = settings;
+		settings.c_trg = 10;
 	end
 
 	go_on = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
 
 	%find the minimm value
-	cutoff = min( energy_spc(1,:) );
+	cutoff = min( energy_spc(1, find( energy_spc(2,:) > settings.c_trg ) ) );
 	lin_hgt = max( energy_spc(2,:) );
 	while go_on
 		%display

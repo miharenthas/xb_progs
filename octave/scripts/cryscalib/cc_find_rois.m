@@ -36,13 +36,15 @@ function [roi_spans, roi_centroids, guesses] = cc_find_rois( energy_spc, p_info 
 	go_on = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
 		
-	rcl = true; %A flag to (re)calculate.
+	rcl = 2; %A flag to (re)calculate.
 	guesses = [];
 	while go_on
 		%fit the rois
 		if rcl
 			%run the roi partitioner
-			[roi_spans, roi_centroids] = xb_roi_partition( energy_spc, p_info(2,:) );
+			if rcl == 2
+				[roi_spans, roi_centroids] = xb_roi_partition( energy_spc, p_info(2,:) );
+			end
 
 			guesses = [];
 			for ii=1:length( roi_centroids )
@@ -179,8 +181,8 @@ function [go_on, rcl, settings, payload] = cc_find_rois_prompt( fig, old_setting
 			case 'mvroi'
 				if numel( opts ) == 2
 					try
-						payload
 						payload.rois(str2num( opts{1} )) = str2num( opts{2} );
+						rcl = 1;
 					catch
 						disp( 'ROI out of range.' );
 					end
@@ -194,7 +196,7 @@ function [go_on, rcl, settings, payload] = cc_find_rois_prompt( fig, old_setting
 						idx = find( payload.pinf(1,:) ~= -1 );
 						payload.pinf = payload.pinf(:,idx);
 						payload.gs = payload.gs(idx,:);
-						rcl = true;
+						rcl = 1;
 					catch
 						disp( 'Out of range or not a number.' );
 					end
@@ -202,9 +204,9 @@ function [go_on, rcl, settings, payload] = cc_find_rois_prompt( fig, old_setting
 					disp( 'command "rmroi" supports one argument.' );
 				end
 			case 'rcl'
-				rcl = true;
+				rcl = 2;
 				gogo_on = false;
-				go_on = false;
+				go_on = true;
 			case 'save'
 				if ~isempty( opts )
 					name = opts{1};
@@ -218,7 +220,7 @@ function [go_on, rcl, settings, payload] = cc_find_rois_prompt( fig, old_setting
 			case 'scrap'
 				ccg_repeat = true;
 				gogo_on = false;
-				go_on = false;
+				go_on = true;
 			otherwise
 				disp( ['"', cmd, '" is not a valid command.'] );
 		end

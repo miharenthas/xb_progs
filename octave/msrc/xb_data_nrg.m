@@ -8,8 +8,10 @@ function nrg = xb_data_nrg( evt )
 	idx = 1;
 	for ii = 1:length( evt )
 		if evt(ii).n
-			if evt(ii).e
+			if ~isempty( evt(ii).e )
 				nrg(idx:idx + evt(ii).n -1) = evt(ii).e;
+			elseif ~isempty( evt(ii).he )
+				nrg(idx:idx + evt(ii).n -1) = evt(ii).he;
 			else
 				nrg(idx:idx + evt(ii).n -1) = zeros( evt(ii).n, 1 );
 			end
