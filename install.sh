@@ -63,3 +63,10 @@ if [ -L /usr/local/bin/xb_do_cut ]; then
 else
 	ln -s $PWD/xb_do_cut /usr/local/bin/
 fi
+
+if [ -L /usr/local/bin/xb_dumbres ]; then
+        echo "Program \"xb_dumbres\" already installed."
+else
+        ln -s $PWD/xb_dumbres /usr/local/bin/
+fi
+
