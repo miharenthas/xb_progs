@@ -107,6 +107,7 @@ namespace XB{
 	track_info::_xb_track_data_structure( unsigned int n_frags, unsigned int the_id ) {
 		n = n_frags;
 		evnt = the_id;
+		tpat = 0;
 		make_buf();
 	}
 
@@ -118,6 +119,7 @@ namespace XB{
 	{
 		n = given.n;
 		evnt = given.evnt;
+		tpat = given.tpat;
 		make_buf();
 		
 		memcpy( buf, given.buf, 3*n*sizeof(float) + 2*n*sizeof(versor) ); //copy the buffer

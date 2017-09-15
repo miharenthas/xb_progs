@@ -197,9 +197,9 @@ void translate_track_info( std::vector<XB::track_info> &xb_track_book,
 	//first check if it's in the system path, if so use it
 	//if not, try it in the local folder
 	//else, kill yourself.
-	if( system( "which xb_data_translator 2>1 1>/dev/null" ) )
+	if( !system( "which xb_data_translator 2>1 1>/dev/null" ) )
 		strcpy( command, "xb_data_translator " );
-	else if( system( "which ./xb_data_translator 2>1 1>/dev/null" ) )
+	else if( !system( "which ./xb_data_translator 2>1 1>/dev/null" ) )
 		strcpy( command, "./xb_data_translator " );
 	else{
 		fprintf( stderr, "Error: couldn't find the data translator.\n" );

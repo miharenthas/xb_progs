@@ -9,27 +9,31 @@ namespace XB{
 		char *full = (char*)malloc( strlen( tpat_str ) );
 		strcpy( full, tpat_str );
 		char *curr = strtok( full, ":" );
-		int mask = 0;
+		int mask = 0, mbuf = 0;
 		while( curr ){
-			if( !strcmp( curr, "all" ) ){ mask = 0xFFFF; break; }
-			else if( !strcmp( curr, "spill" ) ) mask |= ~S_UNSET;
-			else if( !strcmp( curr, "minb" ) ) mask |= S_MINBIAS;
-			else if( !strcmp( curr, "frag" ) ) mask |= S_FRAGMENT;
-			else if( !strcmp( curr, "frs" ) ) mask |= S_FRSS8;
-			else if( !strcmp( curr, "cbsum" ) ) mask |= S_CBSUM;
-			else if( !strcmp( curr, "prt" ) ) mask |= S_PROTON;
-			else if( !strcmp( curr, "gbpup" ) ) mask |= S_GBPILEUP;
-			else if( !strcmp( curr, "pix" ) ) mask |= S_PIX;
-			else if( !strcmp( curr, "ntr" ) ) mask |= S_NEUTRON;
-			else if( !strcmp( curr, "offsp" ) ) mask |= ~C_UNSET;
-			else if( !strcmp( curr, "cbmu" ) ) mask |= C_CBMUON;
-			else if( !strcmp( curr, "landc" ) ) mask |= C_LANDCOSM;
-			else if( !strcmp( curr, "tfwc" ) ) mask |= C_TFWCOSM;
-			else if( !strcmp( curr, "cbgam" ) ) mask |= C_CBGAMMA;
-			else if( !strcmp( curr, "dftc" ) ) mask |= C_DFTCOSM;
-			else if( !strcmp( curr, "ntfc" ) ) mask |= C_NTFCOSM;
-			else if( !strcmp( curr, "cblrmu" ) ) mask |= C_CBLRMUON;
+			mbuf = 0;
+			if( strstr( curr, "all" ) ){ mbuf = 0xFFFF; break; }
+			else if( strstr( curr, "spill" ) ) mbuf |= ~S_UNSET;
+			else if( strstr( curr, "minb" ) ) mbuf |= S_MINBIAS;
+			else if( strstr( curr, "frag" ) ) mbuf |= S_FRAGMENT;
+			else if( strstr( curr, "frs" ) ) mbuf |= S_FRSS8;
+			else if( strstr( curr, "cbsum" ) ) mbuf |= S_CBSUM;
+			else if( strstr( curr, "prt" ) ) mbuf |= S_PROTON;
+			else if( strstr( curr, "gbpup" ) ) mbuf |= S_GBPILEUP;
+			else if( strstr( curr, "pix" ) ) mbuf |= S_PIX;
+			else if( strstr( curr, "ntr" ) ) mbuf |= S_NEUTRON;
+			else if( strstr( curr, "offsp" ) ) mbuf |= ~C_UNSET;
+			else if( strstr( curr, "cbmu" ) ) mbuf |= C_CBMUON;
+			else if( strstr( curr, "landc" ) ) mbuf |= C_LANDCOSM;
+			else if( strstr( curr, "tfwc" ) ) mbuf |= C_TFWCOSM;
+			else if( strstr( curr, "cbgam" ) ) mbuf |= C_CBGAMMA;
+			else if( strstr( curr, "dftc" ) ) mbuf |= C_DFTCOSM;
+			else if( strstr( curr, "ntfc" ) ) mbuf |= C_NTFCOSM;
+			else if( strstr( curr, "cblrmu" ) ) mbuf |= C_CBLRMUON;
 			else continue;
+			
+			if( strstr( curr, "^" ) ) mbuf = ~mbuf;
+			mask |= mbuf;
 			curr = strtok( NULL, ":" );
 		}
 		

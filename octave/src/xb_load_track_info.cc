@@ -207,7 +207,7 @@ DEFUN_DLD( xb_load_track_info, args, nargout, O_DOC_STRING ){
 	octave_map o_data_m;
 	o_data_m.setfield( "n", o_field_n );
 	o_data_m.setfield( "evnt", o_field_evnt );
-	o_data_m.setfield( "tpat", o_field_evnt );
+	o_data_m.setfield( "tpat", o_field_tpat );
 	o_data_m.setfield( "in_beta", o_field_in_beta );
 	o_data_m.setfield( "beta_0", o_field_beta_0 );
 	o_data_m.setfield( "in_Z", o_field_in_Z );
