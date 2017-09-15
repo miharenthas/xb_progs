@@ -79,6 +79,7 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 		
 		//make the data (dynamic)
 		buf = XB::data( current_numel, current_evnt );
+		buf.tpat = o_map.getfield( "tpat" ).uint_value();
 		
 		//do the copying
 		buf.sum_e = o_map.getfield( "sum_e" ).float_value();

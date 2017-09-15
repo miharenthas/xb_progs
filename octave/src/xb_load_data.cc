@@ -131,6 +131,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	//prepare the fields:
 	Cell o_field_n( o_dim_v );
 	Cell o_field_evnt( o_dim_v );
+	Cell o_field_tpat( o_dim_v );
 	Cell o_field_sum_e( o_dim_v );
 	Cell o_field_in_beta( o_dim_v );
 	Cell o_field_i( o_dim_v );
@@ -152,6 +153,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 		//firts, copy the trivially copiable
 		o_field_n(off_i) = current_numel;
 		o_field_evnt(off_i) = data[i].evnt;
+		o_field_tpat(off_i) = data[i].tpat;
 		o_field_sum_e(off_i) = data[i].sum_e;
 		o_field_in_beta(off_i) = data[i].in_beta;
 				
@@ -205,6 +207,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	octave_map o_data_m;
 	o_data_m.setfield( "n", o_field_n );
 	o_data_m.setfield( "evnt", o_field_evnt );
+	o_data_m.setfield( "tpat", o_field_tpat );
 	o_data_m.setfield( "i", o_field_i );
 	o_data_m.setfield( "t", o_field_t );
 	o_data_m.setfield( "pt", o_field_pt );

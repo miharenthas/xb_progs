@@ -33,6 +33,7 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 	//let's get ready to read stuff
 	//thats utter braindamage
 	TBranch *evnt = data_tree->GetBranch( "Evnt" ); CK_NULL( evnt, "no Evnt!", "XB::reader" );
+	TBranch *xbtpat = data_tree->GetBranch( "Tpat" ); CK_NULL( evnt, "no Tpat!", "XB::reader" );
 	TBranch *xbn = data_tree->GetBranch( "Xbn" ); CK_NULL( xbn, "no Xbn!", "XB::reader" );
 	TBranch *xbi = data_tree->GetBranch( "Xbi" ); CK_NULL( xbi, "no Xbi!", "XB::reader" );
 	TBranch *xbt = data_tree->GetBranch( "Xbt" ); CK_NULL( xbt, "no Xbt!", "XB::reader" );
@@ -65,6 +66,7 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 		
 		//fill it:
 		//associate the branches
+		xbtpat->SetAddress( (Int_t*)&xb_book.back().tpat );
 		xbi->SetAddress( (UInt_t*)xb_book.back().i );
 		xbt->SetAddress( (Float_t*)xb_book.back().t );
 		xbpt->SetAddress( (Float_t*)xb_book.back().pt );
@@ -74,6 +76,7 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 		if( inbeta ) inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
 		
 		//issue the copy order
+		xbtpat->GetEntry( i );
 		xbi->GetEntry( i );
 		xbt->GetEntry( i );
 		xbpt->GetEntry( i );
@@ -127,6 +130,7 @@ void XB::reader( std::vector<XB::track_info> &xb_book, char* f_name ){
 	//let's get ready to read stuff
 	//thats utter braindamage
 	TBranch *evnt = data_tree->GetBranch( "Evnt" );
+	TBranch *tpat = data_tree->GetBranch( "Tpat" );
 	TBranch *inbeta = data_tree->GetBranch( "Inbeta" );
 	TBranch *inbeta0 = data_tree->GetBranch( "Inbeta0" );
 	TBranch *inz = data_tree->GetBranch( "Inz" );
@@ -168,6 +172,7 @@ void XB::reader( std::vector<XB::track_info> &xb_book, char* f_name ){
 		
 		//fill it:
 		//associate the branches
+		tpat->SetAddress( (Int_t*)&xb_book.back().tpat );
 		inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
 		inbeta0->SetAddress( (Float_t*)&xb_book.back().beta_0 );
 		inz->SetAddress( (Float_t*)&xb_book.back().in_Z );
@@ -182,6 +187,7 @@ void XB::reader( std::vector<XB::track_info> &xb_book, char* f_name ){
 		
 		
 		//issue the copy order
+		tpat->GetEntry( i );
 		inbeta->GetEntry( i );
 		inbeta0->GetEntry( i );
 		inz->GetEntry( i );

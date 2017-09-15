@@ -8,8 +8,6 @@ namespace XB{
 	//XB::data implementation
 	data::_xb_data_structure() { buf = NULL; }
 	data::_xb_data_structure( unsigned int the_n, unsigned int the_id ):
-		n( the_n ),
-		evnt( the_id ),
 		sum_e( 0 ),
 		in_beta( 0 ),
 		empty_t( true ),
@@ -19,12 +17,13 @@ namespace XB{
 		empty_sum_e( true ),
 		empty_in_beta( true )
 	{
+		n = the_n;
+		evnt = the_id;
+		tpat = 0;
 		make_buf();
 	}
 
 	data::_xb_data_structure( const _xb_data_structure& given ):
-		n( given.n ),
-		evnt( given.evnt ),
 		sum_e( given.sum_e ),
 		in_beta( given.in_beta ),
 		empty_t( given.empty_t ),
@@ -34,6 +33,9 @@ namespace XB{
 		empty_sum_e( given.empty_sum_e ),
 		empty_in_beta( given.empty_in_beta )
 	{
+		n = given.n;
+		evnt = given.evnt;
+		tpat = given.tpat;
 		make_buf();
 		
 		memcpy( buf, given.buf, 4*n*sizeof(float) + n*sizeof(unsigned int) ); //copy the buffer
@@ -76,6 +78,7 @@ namespace XB{
 		//copy all the things
 		n = given.n;
 		evnt = given.evnt;
+		tpat = given.tpat;
 		sum_e = given.sum_e;
 		in_beta = given.in_beta;
 		empty_t = given.empty_t;
@@ -101,21 +104,20 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//XB::track_info implementation
 	track_info::_xb_track_data_structure() { buf = NULL; }
-	track_info::_xb_track_data_structure( unsigned int n_frags, unsigned int the_id ):
-		n( n_frags ),
-		evnt( the_id )
-	{
+	track_info::_xb_track_data_structure( unsigned int n_frags, unsigned int the_id ) {
+		n = n_frags;
+		evnt = the_id;
 		make_buf();
 	}
 
 	track_info::_xb_track_data_structure( const _xb_track_data_structure& given ):
-		n( given.n ),
-		evnt( given.evnt ),
 		in_beta( given.in_beta ),
 		beta_0( given.beta_0 ),
 		in_Z( given.in_Z ),
 		in_A_on_Z( given.in_A_on_Z )
 	{
+		n = given.n;
+		evnt = given.evnt;
 		make_buf();
 		
 		memcpy( buf, given.buf, 3*n*sizeof(float) + 2*n*sizeof(versor) ); //copy the buffer
@@ -126,7 +128,7 @@ namespace XB{
 		fragment_A = NULL;
 		fragment_Z = NULL;
 		fragment_beta = NULL;
-		incoming = NULL,
+		incoming = NULL;
 		outgoing = NULL;
 	}
 	
@@ -147,6 +149,7 @@ namespace XB{
 	track_info &track_info::operator=( const track_info &given ){
 		n = given.n;
 		evnt = given.evnt;
+		tpat = given.tpat;
 		in_beta = given.in_beta;
 		beta_0 = given.beta_0;
 		in_Z = given.in_Z;
@@ -177,6 +180,7 @@ namespace XB{
 	bool operator==( const track_info &one, const track_info &two ){
 		if( one.n != two.n ) return false;
 		if( one.evnt != two.evnt ) return false;
+		if( one.tpat != two.tpat ) return false;
 		if( one.in_beta != two.in_beta ) return false;
 		if( one.beta_0 != two.beta_0 ) return false;
 		if( one.in_Z != two.in_Z ) return false;
@@ -203,6 +207,7 @@ namespace XB{
 	bool operator==( const data &one, const data &two ){
 		if( one.n != two.n ) return false;
 		if( one.evnt != two.evnt ) return false;
+		if( one.tpat != two.tpat ) return false;
 	
 		for( int i=0; i < one.n; ++i ){
 			if( one.t[i] != two.t[i] ) return false;

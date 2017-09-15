@@ -22,6 +22,7 @@ namespace XB{
 		public:
 			unsigned int n; //a multiplicity indicator
 			unsigned int evnt; //the event ID container
+			unsigned int tpat; //the TPAT (trigger stuff)
 	} event_holder;		
 				
 	
@@ -30,8 +31,9 @@ namespace XB{
 	typedef class _xb_data_structure : public event_holder {
 		//variables
 		public: //yes, public, live with it
-			unsigned int n; //number of signal delivering crystals
+			/*unsigned int n; //number of signal delivering crystals
 			unsigned int evnt; //event number
+			unsigned int tpat; //the TPAT (trigger stuff)*/
 			unsigned int* i; //indexes thereof
 			float *t; //timestamps
 			float *pt; //transverse
@@ -68,8 +70,9 @@ namespace XB{
 	//a structure that will hold the tracking data
 	typedef class _xb_track_data_structure : public event_holder {
 		public:
-			unsigned int n; //number of fragments
+			/*unsigned int n; //number of fragments
 			unsigned int evnt; //event ID
+			unsigned int tpat; //the TPAT (trigger stuff)*/
 			float in_beta; //the beta of the incoming beam
 			float beta_0; //the beta at the centre of the target
 			float in_Z; //the incoming charge
