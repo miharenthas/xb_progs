@@ -33,8 +33,7 @@ namespace XB{
 			//if we have a not, store the flag in the 16 most
 			//significant bits of mask (tpat is 16 bit nevertheless,
 			//and we have 32 to play with.
-			puts( curr );
-			if( strstr( curr, "^" ) ){ puts( "^" ); mbuf = mbuf << 16; }
+			if( strstr( curr, "^" ) )mbuf = ~mbuf;
 			mask |= mbuf;
 			curr = strtok( NULL, ":" );
 		}
