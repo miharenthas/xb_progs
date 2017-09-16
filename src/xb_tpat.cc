@@ -12,8 +12,7 @@ namespace XB{
 		int mask = 0, mbuf = 0;
 		while( curr ){
 			mbuf = 0;
-			if( strstr( curr, "all" ) ){ mbuf = 0xFFFF; break; }
-			else if( strstr( curr, "spill" ) ) mbuf |= ~S_UNSET;
+			if( strstr( curr, "all" ) ) mbuf = 0xffff;
 			else if( strstr( curr, "minb" ) ) mbuf |= S_MINBIAS;
 			else if( strstr( curr, "frag" ) ) mbuf |= S_FRAGMENT;
 			else if( strstr( curr, "frs" ) ) mbuf |= S_FRSS8;
@@ -22,7 +21,6 @@ namespace XB{
 			else if( strstr( curr, "gbpup" ) ) mbuf |= S_GBPILEUP;
 			else if( strstr( curr, "pix" ) ) mbuf |= S_PIX;
 			else if( strstr( curr, "ntr" ) ) mbuf |= S_NEUTRON;
-			else if( strstr( curr, "offsp" ) ) mbuf |= ~C_UNSET;
 			else if( strstr( curr, "cbmu" ) ) mbuf |= C_CBMUON;
 			else if( strstr( curr, "landc" ) ) mbuf |= C_LANDCOSM;
 			else if( strstr( curr, "tfwc" ) ) mbuf |= C_TFWCOSM;
@@ -32,7 +30,11 @@ namespace XB{
 			else if( strstr( curr, "cblrmu" ) ) mbuf |= C_CBLRMUON;
 			else continue;
 			
-			if( strstr( curr, "^" ) ) mbuf = ~mbuf;
+			//if we have a not, store the flag in the 16 most
+			//significant bits of mask (tpat is 16 bit nevertheless,
+			//and we have 32 to play with.
+			puts( curr );
+			if( strstr( curr, "^" ) ){ puts( "^" ); mbuf = mbuf << 16; }
 			mask |= mbuf;
 			curr = strtok( NULL, ":" );
 		}
