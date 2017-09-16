@@ -55,7 +55,7 @@ namespace XB{
 			
 			//since this goes into a std::remove_if, return false on true.
 			bool operator()( _xb_event_structure &datum ){
-				return !( datum.tpat & _mask || !( datum.tpat << 16 & _mask ) );
+				return !( datum.tpat & _mask );
 			};
 		private:
 			int _mask;
