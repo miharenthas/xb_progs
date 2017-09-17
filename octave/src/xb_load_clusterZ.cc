@@ -147,6 +147,7 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 		off_i = i - load_nb_events[0];
 		//copy the number of clusters at event i
 		o_field_n(off_i) = data[i].n;
+		o_field_event_id(off_i) = data[i].evnt;
 		
 		//load the clusters
 		o_field_clusters(off_i) = cluster2struct( data[i] );

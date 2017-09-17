@@ -30,9 +30,6 @@ namespace XB{
 			else if( strstr( curr, "cblrmu" ) ) mbuf |= C_CBLRMUON;
 			else continue;
 			
-			//if we have a not, store the flag in the 16 most
-			//significant bits of mask (tpat is 16 bit nevertheless,
-			//and we have 32 to play with.
 			if( strstr( curr, "^" ) )mbuf = ~mbuf;
 			mask |= mbuf;
 			curr = strtok( NULL, ":" );
