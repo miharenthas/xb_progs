@@ -9,7 +9,7 @@ namespace XB{
 		char *full = (char*)malloc( strlen( tpat_str ) );
 		strcpy( full, tpat_str );
 		char *curr = strtok( full, ":" );
-		int mask = 0, mbuf = 0;
+		int mask = strstr( tpat_str, "^" )? 0 : 0xffff0000, mbuf = 0;
 		while( curr ){
 			mbuf = 0;
 			if( strstr( curr, "all" ) ) mbuf = 0xffff;
@@ -30,7 +30,7 @@ namespace XB{
 			else if( strstr( curr, "cblrmu" ) ) mbuf |= C_CBLRMUON;
 			else continue;
 			
-			if( strstr( curr, "^" ) )mbuf = ~mbuf;
+			if( strstr( curr, "^" ) )mbuf = mbuf << 16;
 			mask |= mbuf;
 			curr = strtok( NULL, ":" );
 		}
