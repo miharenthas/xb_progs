@@ -86,6 +86,8 @@ DEFUN_DLD( xb_write_data, args, , O_DOC_STRING ){
 		if( !buf.sum_e ) buf.empty_sum_e = true;
 		buf.in_beta = o_map.getfield( "in_beta" ).float_value();
 		if( buf.in_beta == 1 ) buf.empty_in_beta = true;
+		buf.in_Z = o_map.getfield( "in_Z" ).float_value();
+		buf.in_A_on_Z = o_map.getfield( "in_A_on_Z" ).float_value();
 		
 		if( o_map.isfield( "i" ) ){
 			if( !o_map.getfield( "i" ).is_zero_by_zero() ){

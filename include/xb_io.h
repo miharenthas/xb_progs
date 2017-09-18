@@ -15,7 +15,7 @@
 #define XB_FILE_DESCRIPTOR_DATA "DATADATA@@"
 #define XB_FILE_DESCRIPTOR_TRACK "TRACKTRACK"
 #define XB_FILE_DESCRIPTOR_CLUSTERS "KLZKLZKLZ@"
-#define XB_DATA_SZ 6*sizeof(bool) + 3*sizeof(unsigned int) + 2*sizeof(float)
+#define XB_DATA_SZ 6*sizeof(bool) + 3*sizeof(unsigned int) + 4*sizeof(float)
 #define XB_TRACK_SZ 3*sizeof(unsigned int) + 4*sizeof(float)
 #define XB_KLZ_SZ 2*sizeof(unsigned int) + 3*sizeof(float)
 #define XB_KLZHDR_SZ 2*sizeof(unsigned int) + sizeof(float)

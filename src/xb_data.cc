@@ -36,6 +36,8 @@ namespace XB{
 		n = given.n;
 		evnt = given.evnt;
 		tpat = given.tpat;
+		in_Z = given.in_Z;
+		in_A_on_Z = given.in_A_on_Z;
 		make_buf();
 		
 		memcpy( buf, given.buf, 4*n*sizeof(float) + n*sizeof(unsigned int) ); //copy the buffer
@@ -70,6 +72,9 @@ namespace XB{
 		else sum_e = 0;
 		if( !isnan( in_beta ) ) empty_in_beta = false;
 		else in_beta = 1;
+		
+		if( isnan( in_Z ) || isinf( in_Z ) ) in_Z = 0;
+		if( isnan( in_A_on_Z ) || isinf( in_A_on_Z ) ) in_A_on_Z = 0;
 	}
 
 	
@@ -81,6 +86,8 @@ namespace XB{
 		tpat = given.tpat;
 		sum_e = given.sum_e;
 		in_beta = given.in_beta;
+		in_Z = given.in_Z;
+		in_A_on_Z = given.in_A_on_Z;
 		empty_t = given.empty_t;
 		empty_pt = given.empty_pt;
 		empty_e = given.empty_e;
@@ -113,13 +120,13 @@ namespace XB{
 
 	track_info::_xb_track_data_structure( const _xb_track_data_structure& given ):
 		in_beta( given.in_beta ),
-		beta_0( given.beta_0 ),
-		in_Z( given.in_Z ),
-		in_A_on_Z( given.in_A_on_Z )
+		beta_0( given.beta_0 )
 	{
 		n = given.n;
 		evnt = given.evnt;
 		tpat = given.tpat;
+		in_Z = given.in_Z;
+		in_A_on_Z = given.in_A_on_Z;
 		make_buf();
 		
 		memcpy( buf, given.buf, 3*n*sizeof(float) + 2*n*sizeof(versor) ); //copy the buffer
@@ -210,7 +217,9 @@ namespace XB{
 		if( one.n != two.n ) return false;
 		if( one.evnt != two.evnt ) return false;
 		if( one.tpat != two.tpat ) return false;
-	
+		if( one.in_Z != two.in_Z ) return false; 
+		if( one.in_A_on_Z != two.in_A_on_Z ) return false;
+
 		for( int i=0; i < one.n; ++i ){
 			if( one.t[i] != two.t[i] ) return false;
 			if( one.pt[i] != two.pt[i] ) return false;

@@ -42,7 +42,11 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 	TBranch *xbhe = data_tree->GetBranch( "Xbhe" ); CK_NULL( xbhe, "no Xbhe!", "XB::reader" );
 	TBranch *xbsume = data_tree->GetBranch( "Xbsume" ); CK_NULL( xbsume, "no Xbsume!",
                                                                      "XB::reader" );
-	TBranch *inbeta = data_tree->GetBranch( "Inbeta" );	
+	//These three fields are't provided in source runs, so they will be copied
+	//and cheked on only in case they are provided.	
+	TBranch *inbeta = data_tree->GetBranch( "Inbeta" );
+	TBranch *inz = data_tree->GetBranch( "Inz" );
+	TBranch *inaonz = data_tree->GetBranch( "Inaoverz" );	
 	
 	//reader loop
 	unsigned int n_on_this = 0;
@@ -74,6 +78,8 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 		xbhe->SetAddress( (Float_t*)xb_book.back().he );
 		xbsume->SetAddress( (Float_t*)&xb_book.back().sum_e );
 		if( inbeta ) inbeta->SetAddress( (Float_t*)&xb_book.back().in_beta );
+		if( inz ) inz->SetAddress( (Float_t*)&xb_book.back().in_Z );
+		if( inaonz ) inaonz->SetAddress( (Float_t*)&xb_book.back().in_A_on_Z );
 		
 		//issue the copy order
 		xbtpat->GetEntry( i );
@@ -84,6 +90,8 @@ void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
 		xbhe->GetEntry( i );
 		xbsume->GetEntry( i );
 		if( inbeta ) inbeta->GetEntry( i );
+		if( inz ) inz->GetEntry( i );
+		if( inaonz ) inaonz->GetEntry( i );
 		
 		//probe for nans
 		xb_book.back().probe_for_crap();

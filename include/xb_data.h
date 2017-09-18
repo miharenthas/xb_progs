@@ -23,6 +23,8 @@ namespace XB{
 			unsigned int n; //a multiplicity indicator
 			unsigned int evnt; //the event ID container
 			unsigned int tpat; //the TPAT (trigger stuff)
+			float in_Z; //the incoming charge
+			float in_A_on_Z; //mass to charge ratio
 	} event_holder;		
 				
 	
@@ -75,8 +77,6 @@ namespace XB{
 			unsigned int tpat; //the TPAT (trigger stuff)*/
 			float in_beta; //the beta of the incoming beam
 			float beta_0; //the beta at the centre of the target
-			float in_Z; //the incoming charge
-			float in_A_on_Z; //mass to charge ratio
 			float *fragment_A; //an array containing the mass numbers of the fragments
 			float *fragment_Z; //an array containing the charge of the fragments
 			float *fragment_beta; //an array containing the betas of the fragments

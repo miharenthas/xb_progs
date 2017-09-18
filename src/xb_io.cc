@@ -56,7 +56,7 @@ void XB::free_header( XB::io_header *hdr ){
 void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 	//write the the header
 	if( header ){
-		XB::io_header *hdr = alloc_header( 1, XB_FILE_DESCRIPTOR_DATA );
+		XB::io_header *hdr = alloc_header( 2, XB_FILE_DESCRIPTOR_DATA );
 		XB::write_header( f_out, *hdr );
 		XB::free_header( hdr );
 	}
@@ -94,6 +94,8 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 		//copy the two floats
 		f_buf[0] = xb_book[i].sum_e;
 		f_buf[1] = xb_book[i].in_beta;
+		f_buf[2] = xb_book[i].in_Z;
+		f_buf[3] = xb_book[i].in_A_on_Z;
 		
 		//write it all down
 		fwrite( buf, XB_DATA_SZ, 1, f_out );
@@ -171,6 +173,8 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt ){
 		//copy the floats
 		xb_book.back().sum_e = f_buf[0];
 		xb_book.back().in_beta = f_buf[1];
+		xb_book.back().in_Z = f_buf[2];
+		xb_book.back().in_A_on_Z = f_buf[3];
 		
 		//get the data
 		n = u_buf[0];
