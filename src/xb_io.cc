@@ -378,14 +378,15 @@ void XB::load( std::string f_name, std::vector<XB::track_info> &xb_book, long un
 void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header ){
 	//write the the header
 	if( header ){
-		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_CLUSTERS );
+		XB::io_header *hdr = alloc_header( 2, XB_FILE_DESCRIPTOR_CLUSTERS );
 		XB::write_header( f_out, *hdr );
 		XB::free_header( hdr );
 	}
 
 	//the format is:
 	//header:
-	//1*unsigned int - the.n
+	//3*unsigned int - the.n
+	//2*float
 	//body:
 	//n*clusters:
 	//  2*unsigned int

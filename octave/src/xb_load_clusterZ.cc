@@ -24,6 +24,9 @@ data = xb_load_clusterZ( 'some_file.cluster.xb' );\n\
 @result{} structure array data:\n\
     n\n\
     evnt\n\
+    tpat\n\
+    in_Z\n\
+    in_A_on_Z\n\
     in_beta\n\
      structure array clusters:\n\
          n\n\
@@ -140,6 +143,9 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	//prepare the fields:
 	Cell o_field_n( o_dim_v );
 	Cell o_field_event_id( o_dim_v );
+	Cell o_field_tpat( o_dim_v );
+	Cell o_field_inz( o_dim_v );
+	Cell o_field_inaonz( o_dim_v );
 	Cell o_field_in_beta( o_dim_v );
 	Cell o_field_clusters( o_dim_v );
 	
@@ -148,6 +154,10 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 		//copy the number of clusters at event i
 		o_field_n(off_i) = data[i].n;
 		o_field_event_id(off_i) = data[i].evnt;
+		o_field_tpat(off_i) = data[i].tpat;
+		o_field_inz(off_i) = data[i].in_Z;
+		o_field_inaonz(off_i) = data[i].in_A_on_Z;
+		o_field_in_beta(off_i) = data[i].in_beta;
 		
 		//load the clusters
 		o_field_clusters(off_i) = cluster2struct( data[i] );
@@ -157,6 +167,9 @@ DEFUN_DLD( xb_load_clusterZ, args, nargout, O_DOC_STRING ){
 	octave_map o_data_m;
 	o_data_m.setfield( "n", o_field_n );
 	o_data_m.setfield( "evnt", o_field_event_id );
+	o_data_m.setfield( "tpat", o_field_tpat );
+	o_data_m.setfield( "in_Z", o_field_inz );
+	o_data_m.setfield( "in_A_on_Z", o_field_inaonz );
 	o_data_m.setfield( "in_beta", o_field_in_beta );
 	o_data_m.setfield( "clusters", o_field_clusters );
 	

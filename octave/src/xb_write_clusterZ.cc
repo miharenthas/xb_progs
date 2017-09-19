@@ -17,6 +17,9 @@ The format of @var{clusterZ} should be the same-ish used in the xb_progs toolkit
 structure array data:\n\
     n\n\
     evnt\n\
+    tpat\n\
+    in_Z\n\
+    in_A_on_Z\n\
     in_beta\n\
      structure array clusters:\n\
          n\n\
@@ -83,6 +86,9 @@ DEFUN_DLD( xb_write_clusterZ, args, , O_DOC_STRING ){
 		
 		buf.n = o_map.getfield( "n" ).uint_value();
 		buf.evnt = o_map.getfield( "evnt" ).uint_value();
+		buf.tpat = o_map.getfield( "tpat" ).uint_value();
+		buf.in_Z = o_map.getfield( "in_Z" ).float_value();
+		buf.in_A_on_Z = o_map.getfield( "in_A_on_Z" ).float_value();
 		buf.in_beta = o_map.getfield( "in_beta" ).float_value();
 		buf.clusters = struct2cluster( o_map.getfield( "clusters" ).map_value() );		
 		
