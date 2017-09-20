@@ -40,6 +40,12 @@ else
 	ln -s $PWD/xb_data_translator /usr/local/bin/
 fi
 
+if [ -L /usr/local/bin/xb_trigger_siv ]; then
+	echo "Program \"xb_trigger_siv\" already installed."
+else
+	ln -s $PWD/xb_trigger_siv /usr/local/bin/
+fi
+
 if [ -L /usr/local/bin/xb_run_cluster ]; then
 	echo "Program \"xb_run_cluster\" already installed."
 else

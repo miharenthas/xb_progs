@@ -56,7 +56,7 @@ void XB::free_header( XB::io_header *hdr ){
 void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 	//write the the header
 	if( header ){
-		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_DATA );
+		XB::io_header *hdr = alloc_header( 2, XB_FILE_DESCRIPTOR_DATA );
 		XB::write_header( f_out, *hdr );
 		XB::free_header( hdr );
 	}
@@ -64,7 +64,7 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 	//begin writing:
 	//the format is:
 	//header:
-	//2*unint + 5*bool + 2*float
+	//3*unint + 5*bool + 2*float
 	//body:
 	//4*n*sizeof(float) + n*sizeof(unsigned int)
 	
@@ -75,12 +75,13 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 	float *f_buf;
 	//link the pointers
 	u_buf = (unsigned int*)buf;
-	flag_buf = (bool*)(u_buf + 2);
+	flag_buf = (bool*)(u_buf + 3);
 	f_buf = (float*)(flag_buf + 6);
 	for( int i=0; i < xb_book.size(); ++i ){
 		//copy the number of elements and event id
 		u_buf[0] = xb_book[i].n;
 		u_buf[1] = xb_book[i].evnt;
+		u_buf[2] = xb_book[i].tpat;
 		
 		//copy the flags in an orderdly manner
 		flag_buf[0] = xb_book[i].empty_t;
@@ -93,6 +94,8 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 		//copy the two floats
 		f_buf[0] = xb_book[i].sum_e;
 		f_buf[1] = xb_book[i].in_beta;
+		f_buf[2] = xb_book[i].in_Z;
+		f_buf[3] = xb_book[i].in_A_on_Z;
 		
 		//write it all down
 		fwrite( buf, XB_DATA_SZ, 1, f_out );
@@ -146,7 +149,7 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt ){
 	float *f_buf;
 	//link the pointers
 	u_buf = (unsigned int*)buf;
-	flag_buf = (bool*)(u_buf + 2);
+	flag_buf = (bool*)(u_buf + 3);
 	f_buf = (float*)(flag_buf + 6);	
 	
 	//read
@@ -157,6 +160,7 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt ){
 		
 		//construct the class in the back of the vector
 		xb_book.push_back( XB::data( u_buf[0], u_buf[1] ) );
+		xb_book.back().tpat = u_buf[2];
 		
 		//copy the bools
 		xb_book.back().empty_t = flag_buf[0];
@@ -169,6 +173,8 @@ void XB::load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt ){
 		//copy the floats
 		xb_book.back().sum_e = f_buf[0];
 		xb_book.back().in_beta = f_buf[1];
+		xb_book.back().in_Z = f_buf[2];
+		xb_book.back().in_A_on_Z = f_buf[3];
 		
 		//get the data
 		n = u_buf[0];
@@ -220,7 +226,7 @@ void XB::load( std::string f_name, std::vector<XB::data> &xb_book, long unsigned
 void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 	//write the the header
 	if( header ){
-		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_TRACK );
+		XB::io_header *hdr = alloc_header( 1, XB_FILE_DESCRIPTOR_TRACK );
 		XB::write_header( f_out, *hdr );
 		XB::free_header( hdr );
 	}
@@ -238,11 +244,12 @@ void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 	float *f_buf;
 	void *buf = malloc( XB_TRACK_SZ ); //allocate the buffer
 	u_buf = (unsigned int*)buf; //link the uint pointer
-	f_buf = (float*)(u_buf + 2); //link the float pointer
+	f_buf = (float*)(u_buf + 3); //link the float pointer
 	for( int i=0; i < xb_book.size(); ++i ){
 		//copy the number of elements and event id
 		u_buf[0] = xb_book[i].n;
 		u_buf[1] = xb_book[i].evnt;
+		u_buf[2] = xb_book[i].tpat;
 		f_buf[0] = xb_book[i].in_beta;
 		f_buf[1] = xb_book[i].beta_0;
 		f_buf[2] = xb_book[i].in_Z;
@@ -299,7 +306,7 @@ void XB::load( FILE* f_in, std::vector<XB::track_info> &xb_book, long unsigned c
 	
 	//link the pointers
 	u_buf = (unsigned int*)buf;
-	f_buf = (float*)(u_buf + 2);
+	f_buf = (float*)(u_buf + 3);
 	
 	//read
 	long unsigned count = 0;
@@ -309,6 +316,7 @@ void XB::load( FILE* f_in, std::vector<XB::track_info> &xb_book, long unsigned c
 
 		//construct the class in the back of the vector
 		xb_book.push_back( XB::track_info( u_buf[0], u_buf[1] ) );
+		xb_book.back().tpat = u_buf[2];
 
 		//set the in_beta and beta_0
 		xb_book.back().in_beta = f_buf[0];
@@ -370,14 +378,15 @@ void XB::load( std::string f_name, std::vector<XB::track_info> &xb_book, long un
 void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header ){
 	//write the the header
 	if( header ){
-		XB::io_header *hdr = alloc_header( 0, XB_FILE_DESCRIPTOR_CLUSTERS );
+		XB::io_header *hdr = alloc_header( 2, XB_FILE_DESCRIPTOR_CLUSTERS );
 		XB::write_header( f_out, *hdr );
 		XB::free_header( hdr );
 	}
 
 	//the format is:
 	//header:
-	//1*unsigned int - the.n
+	//3*unsigned int - the.n
+	//2*float
 	//body:
 	//n*clusters:
 	//  2*unsigned int

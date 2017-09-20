@@ -19,7 +19,10 @@
 #include "xb_data.h"
 #include "xb_error.h"
 
-#define IS_LIST_VALID( l ) l.i < 1 || l.i > 162 || l.t == 0 || l.e == 0
+//TODO: the time info SHOULD be used, but it isn't yet
+//      also, it's not checked any longer because it create problems
+//      with minimum bias events (?)
+#define IS_LIST_VALID( l ) l.i < 1 || l.i > 162 /*|| l.t == 0*/ || l.e == 0
 
 namespace XB{
 	//this structure holds the information about one cluster

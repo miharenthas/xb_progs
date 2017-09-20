@@ -1,6 +1,7 @@
 //implementation of xb_cluster
 
 #include "xb_cluster.h"
+#include <stdio.h>
 
 
 namespace XB{
@@ -114,7 +115,7 @@ namespace XB{
 		//make the cluster
 		//loop on the list until you find an entry that makes sense
 		for( int i=0; i < evnt.n; ++i ){
-			if( IS_LIST_VALID( list[i] ) ) continue;
+			if( IS_LIST_VALID( list[i] ) ){ continue; }
 			else{
 				kl.centroid_id = list[i].i;
 				kl.c_altitude = cb.at( kl.centroid_id ).altitude;
@@ -155,6 +156,9 @@ namespace XB{
 		the_clusters.n = 0;
 		the_clusters.evnt = the_evnt.evnt;
 		the_clusters.in_beta = the_evnt.in_beta;
+		the_clusters.tpat = the_evnt.tpat;
+		the_clusters.in_Z = the_evnt.in_Z;
+		the_clusters.in_A_on_Z = the_evnt.in_A_on_Z;
 		while( the_evnt.n ){
 			try{
 				kl = make_one_cluster_NN( the_evnt, order );
@@ -167,6 +171,10 @@ namespace XB{
 			
 			//empty the event of the associated crystals
 			new_evnt = data( the_evnt.n-kl.n, evnt.evnt ); //redo the event
+			new_evnt.tpat = the_evnt.tpat;
+			new_evnt.in_Z = the_evnt.in_Z;
+			new_evnt.in_A_on_Z = the_evnt.in_A_on_Z;
+			new_evnt.in_beta = the_evnt.in_beta;
 
 			new_evnt.empty_t = the_evnt.empty_t;
 			new_evnt.empty_pt = the_evnt.empty_pt;

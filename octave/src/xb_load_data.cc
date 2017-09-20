@@ -131,8 +131,11 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	//prepare the fields:
 	Cell o_field_n( o_dim_v );
 	Cell o_field_evnt( o_dim_v );
+	Cell o_field_tpat( o_dim_v );
 	Cell o_field_sum_e( o_dim_v );
 	Cell o_field_in_beta( o_dim_v );
+	Cell o_field_inz( o_dim_v );
+	Cell o_field_inaonz( o_dim_v );
 	Cell o_field_i( o_dim_v );
 	Cell o_field_t( o_dim_v );
 	Cell o_field_pt( o_dim_v );
@@ -152,8 +155,11 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 		//firts, copy the trivially copiable
 		o_field_n(off_i) = current_numel;
 		o_field_evnt(off_i) = data[i].evnt;
+		o_field_tpat(off_i) = data[i].tpat;
 		o_field_sum_e(off_i) = data[i].sum_e;
 		o_field_in_beta(off_i) = data[i].in_beta;
+		o_field_inz(off_i) = data[i].in_Z;
+		o_field_inaonz(off_i) = data[i].in_A_on_Z;
 				
 		//then, copy the arrays
 		//sizing
@@ -205,6 +211,7 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	octave_map o_data_m;
 	o_data_m.setfield( "n", o_field_n );
 	o_data_m.setfield( "evnt", o_field_evnt );
+	o_data_m.setfield( "tpat", o_field_tpat );
 	o_data_m.setfield( "i", o_field_i );
 	o_data_m.setfield( "t", o_field_t );
 	o_data_m.setfield( "pt", o_field_pt );
@@ -212,6 +219,8 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 	o_data_m.setfield( "he", o_field_he );
 	o_data_m.setfield( "sum_e", o_field_sum_e );
 	o_data_m.setfield( "in_beta", o_field_in_beta );
+	o_data_m.setfield( "in_Z", o_field_inz );
+	o_data_m.setfield( "in_A_on_Z", o_field_inaonz );
 	
 	//final cleanup
 	data.clear();
