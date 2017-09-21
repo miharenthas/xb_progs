@@ -222,6 +222,115 @@ void XB::load( std::string f_name, std::vector<XB::data> &xb_book, long unsigned
 }
 
 //-------------------------------------------------------------------------------
+//Writer for the arbitrary data structure
+void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
+	if( header ){
+		XB::io_header *hdr = alloc_header( 1, XB_FILE_DESCRIPTOR_ADATA );
+		XB::write_header( f_out, *hdr );
+		XB::free_header( hdr );
+	}
+	
+	void *buf;
+	int fb_size = 0;
+	for( int i=0; i < xb_book.size(); ++i ){
+		fb_size = XB::adata_getlbuf( &buf, xb_book[i] );
+		buf = realloc( buf, fb_size + sizeof(int) );
+		memmove( (int*)buf+1, buf, fb_size );
+		*(int*)buf = fb_size;
+		fb_size += sizeof(int);
+		
+		fwrite( buf, fb_size, 1, f_out );
+		free( buf );
+		buf = NULL;
+	}
+}
+
+//char* interface
+void XB::write( char* f_name, std::vector<XB::adata> &xb_book, int header ){
+	//build the command for the pipe
+	char command[310];
+	strcpy( command, "bzip2 -z > " );
+	strcat( command, f_name );
+	
+	//open the pipe and test
+	FILE* f_out = popen( command, "w" );
+	if( f_out == NULL ) throw( XB::error( "I/O Error!", "XB::Write" ) );
+
+	//write
+	XB::write( f_out, xb_book, header );
+	
+	//close
+	pclose( f_out );
+}
+
+//std::string interface
+void XB::write( std::string f_name, std::vector<XB::adata> &xb_book, int header ){
+	XB::write( f_name.c_str(), xb_book, header );
+}
+
+//-------------------------------------------------------------------------------
+//writer interface for the arbitrary data
+void XB::load( FILE *f_in, std::vector<XB::adata> &xb_book,long unsigned cnt ){
+	//check if the vector is empty. If it's not, raise an exception.
+	if( !xb_book.empty() ) throw XB::error( "Vector not empty!", "XB::load" );
+
+	//get and check the header
+	XB::io_header hdr;
+	XB::load_header( f_in, hdr );
+	if( !strstr( &hdr.d, "ADATA" ) ) throw XB::error( "Wrong data file!", "XB::load" );
+	
+	int fb_size;
+	void *buf;
+	long unsigned count=0;
+	XB::adata data;
+	while( count != cnt ){
+		//get the number of elemets in the current event
+		if( fread( &fb_size, sizeof(int), 1, f_in ) != 1 ) break;
+		
+		//and get the full linear buffer
+		buf = malloc( fb_size );
+		if( !buf ) throw( "Memory error!", "XB::load" );
+		fread( buf, fb_size, 1, f_in );
+		
+		XB::adata_fromlbuf( data, buf );
+		xb_book.push_back( data );
+		
+		free( buf );
+	}
+}
+
+//char* interface for the loader
+void XB::load( char* f_name, std::vector<XB::adata> &xb_book, long unsigned cnt ){
+	//build the command for the pipe
+	char command[310];
+	
+	//check if the file exists.
+	//NOTE: this bit of code works with glibc on GNU/Linux
+	//      no guarantee is provided for other operating systems.
+	strcpy( command, "test -f " );
+	strcat( command, f_name );
+	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
+	
+	strcpy( command, "bunzip2 -c " );
+	strcat( command, f_name );
+	
+	//open the pipe and test
+	FILE* f_in = popen( command, "r" );
+	if( f_in == NULL ) throw( XB::error( "I/O Error!", "XB::load" ) );
+
+	//write
+	XB::load( f_in, xb_book, cnt );
+	
+	//close
+	pclose( f_in );
+}
+
+//std::string interface for the loader.
+void XB::load( std::string f_name, std::vector<XB::adata> &xb_book, long unsigned cnt ){
+	XB::load( f_name.c_str(), xb_book, cnt );
+}
+
+//-------------------------------------------------------------------------------
 //The writer bit implementation for the tracker info
 void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 	//write the the header

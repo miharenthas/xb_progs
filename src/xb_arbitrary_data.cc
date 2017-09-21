@@ -233,7 +233,6 @@ namespace XB{
 		tpat = 0;
 		in_Z = 0;
 		in_A_on_Z = 0;
-		in_beta = 0;
 		free( _buf );
 		_buf_sz = 0;
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;

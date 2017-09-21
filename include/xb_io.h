@@ -9,10 +9,12 @@
 #include <vector>
 
 #include "xb_data.h"
+#include "xb_arbitrary_data.h"
 #include "xb_cluster.h"
 #include "xb_error.h"
 
 #define XB_FILE_DESCRIPTOR_DATA "DATADATA@@"
+#define XB_FILE_DESCRIPTOR_ADATA "ADATAADATA"
 #define XB_FILE_DESCRIPTOR_TRACK "TRACKTRACK"
 #define XB_FILE_DESCRIPTOR_CLUSTERS "KLZKLZKLZ@"
 #define XB_DATA_SZ 6*sizeof(bool) + 3*sizeof(unsigned int) + 4*sizeof(float)
@@ -49,6 +51,11 @@ namespace XB{
 	void write( std::string f_name, std::vector<XB::data> &xb_book, int header=1 );
 	void write( char* f_name, std::vector<XB::data> &xb_book, int header=1 );
 	
+	//this block of functions work with XB::adata kind of data
+	void write( FILE* f_out, std::vector<XB::adata> &xb_book, int header=1 );
+	void write( std::string f_name, std::vector<XB::adata> &xb_book, int header=1 );
+	void write( char* f_name, std::vector<XB::adata> &xb_book, int header=1 );
+
 	//this block of functions work with XB::data kind of data
 	void write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header=1 );
 	void write( std::string f_name, std::vector<XB::track_info> &xb_book, int header=1 );
@@ -68,6 +75,11 @@ namespace XB{
 	void load( FILE* f_in, std::vector<XB::data> &xb_book, long unsigned cnt=-1 );
 	void load( std::string f_name, std::vector<XB::data> &xb_book, long unsigned cnt=-1 );
 	void load( char* f_name, std::vector<XB::data> &xb_bookm, long unsigned cnt=-1 );
+	
+	//this block of functions work with XB::adata kind of data
+	void load( FILE* f_in, std::vector<XB::adata> &xb_book, long unsigned cnt=-1 );
+	void load( std::string f_name, std::vector<XB::adata> &xb_book, long unsigned cnt=-1 );
+	void load( char* f_name, std::vector<XB::adata> &xb_bookm, long unsigned cnt=-1 );
 
 	//this block of functions work with XB::data kind of data
 	void load( FILE* f_in, std::vector<XB::track_info> &xb_book, long unsigned cnt=-1 );

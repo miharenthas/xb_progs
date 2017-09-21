@@ -45,9 +45,6 @@ namespace XB{
 			
 			//important operators
 			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
-			//plus here is a merge operation.
-			_xb_arbitrary_data &operator+( const _xb_arbitrary_data &right ){
-				/*TODO*/ return *this; };
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size
 			void *operator()( const char *name );
@@ -79,6 +76,9 @@ namespace XB{
 			//a couple of friends, for I/O ops
 			friend int adata_getlbuf( void **buf, const _xb_arbitrary_data &given );
 			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
+			//and one for merge
+			friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+			                                       const _xb_arbitrary_data &two );
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -106,5 +106,10 @@ namespace XB{
 	//               allocated.
 	int adata_getlbuf( void **buf, const _xb_arbitrary_data &given );
 	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
+	_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one, const _xb_arbitrary_data &two ){
+		/*TODO*/
+		adata res; return res;
+	} 
+		
 }
 #endif
