@@ -12,7 +12,18 @@
 #include "xb_error.h"
 #include "xb_data.h"
 
-#define XB_ADATA_NB_FIELDS 256
+//some defines
+#define XB_ADATA_NB_FIELDS 256 //maximum number of fields supported
+                               //NOTE: keep it small, but that means
+                               //      hash collisions will be a problem
+//the hash table
+//NOTE: apparently, there's a way to generate one that won't produce collisions
+//      on a given set of words. This is NOT it yet, it's just a random one.
+//TODO: get a proper one for the 153 fields in the land02 tree.
+#define XB_PAERSON_HASH_TABLE { 171, 104, 228, 208, 188, 42, 152, 244, 137, 117, 173, 255, 201, 215, 204, 41, 74, 45, 246, 249, 91, 184, 227, 59, 64, 133, 114, 220, 122, 155, 192, 212, 43, 105, 46, 16, 77, 156, 98, 126, 191, 12, 190, 75, 55, 169, 13, 106, 84, 36, 33, 170, 61, 194, 144, 136, 178, 164, 29, 161, 108, 206, 121, 123, 129, 135, 47, 6, 146, 10, 250, 185, 239, 51, 89, 15, 49, 30, 94, 128, 193, 32, 181, 183, 142, 210, 163, 34, 67, 3, 143, 100, 230, 216, 23, 19, 97, 93, 159, 22, 124, 76, 237, 226, 162, 139, 200, 221, 252, 145, 125, 199, 70, 229, 20, 182, 154, 219, 18, 96, 119, 179, 5, 217, 160, 35, 231, 37, 56, 132, 82, 81, 115, 116, 223, 92, 65, 112, 158, 180, 2, 153, 168, 113, 209, 165, 134, 8, 167, 120, 225, 101, 148, 253, 176, 243, 205, 207, 21, 54, 247, 44, 235, 202, 172, 4, 147, 73, 40, 83, 213, 102, 196, 85, 189, 80, 53, 242, 66, 157, 109, 195, 31, 78, 48, 69, 57, 86, 186, 38, 218, 110, 79, 211, 187, 203, 0, 127, 1, 233, 9, 224, 14, 87, 7, 254, 95, 150, 88, 248, 25, 27, 107, 63, 149, 138, 50, 238, 240, 198, 24, 251, 17, 118, 140, 166, 68, 90, 99, 197, 111, 130, 234, 174, 245, 232, 62, 28, 60, 214, 151, 175, 222, 52, 72, 11, 58, 39, 177, 131, 71, 236, 26, 103, 241, 141 }
+
+//a define to get the header size of the linear buffer
+#define nf2hdr_size( nf ) ((nf)+2)*sizeof(int) + (nf)*sizeof(adata_field)
 
 namespace XB{
 	//----------------------------------------------------------------------------
@@ -33,7 +44,7 @@ namespace XB{
 			~_xb_arbitrary_data();
 			
 			//important operators
-			_xb_arbitrary_data &operator=( _xb_arbitrary_data &right );
+			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size
 			void *operator()( const char *name );
@@ -58,10 +69,12 @@ namespace XB{
 				return *(T*)head;
 			};
 			//list the fields
-			std::vector<adata_field> lsfields(){ return _fields } const;
+			std::vector<adata_field> lsfields() const { return _fields; };
+			int fsize( const char *name );
 			
-			friend int adata_getlbuf( void **buf, _xb_arbitrary_data &given );
-			friend int adata_fromlbuf( _xb_arbitrary_data &here, void *buf );
+			//a couple of friends, for I/O ops
+			friend int adata_getlbuf( void **buf, const _xb_arbitrary_data &given );
+			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -87,9 +100,7 @@ namespace XB{
 	//adata_getlbuf: get the linear buffer in void *buffer and return the size.
 	//               buffer will be allocated. An error is thrown if it's already
 	//               allocated.
-	int adata_getlbuf( void **buffer, const adata &given );
-	int adata_frombuf( adata &given, const void *buffer );
-	int nf2hdr_size( int nf ){ return (nf+2)*sizeof(int) + nf*sizeof(adata_field); }
+	int adata_getlbuf( void **buf, const _xb_arbitrary_data &given );
+	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
 }
-
 #endif
