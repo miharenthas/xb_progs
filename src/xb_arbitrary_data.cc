@@ -174,7 +174,8 @@ namespace XB{
 	}
 	
 	void adata::dofield( const char *name, size_t size, void *buf ){
-		adata_field fld = { name, size };
+		adata_field fld = { "", size };
+		strcpy( fld.name, name );
 		dofield( fld, buf );
 	}
 	

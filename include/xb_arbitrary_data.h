@@ -51,7 +51,12 @@ namespace XB{
 			//for size-1 fields of a specified type
 			//you can use this themplate mehtod, too
 			template< class T >
-			T getfield( const char *name ){ return *(T*)this->( name ); };
+			T getfield( const char *name ){
+				void *head = _fld_ptr[phash8( name )];
+				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
+				head = (int*)head + 1;
+				return *(T*)head;
+			};
 			//list the fields
 			std::vector<adata_field> lsfields(){ return _fields } const;
 			
