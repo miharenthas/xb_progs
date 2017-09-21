@@ -45,6 +45,9 @@ namespace XB{
 			
 			//important operators
 			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
+			//plus here is a merge operation.
+			_xb_arbitrary_data &operator+( const _xb_arbitrary_data &right ){
+				/*TODO*/ return *this; };
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size
 			void *operator()( const char *name );
@@ -59,6 +62,7 @@ namespace XB{
 			//get the size of a field
 			//remove a field
 			void rmfield( const char *name );
+			void clear(); //remove everything.
 			//for size-1 fields of a specified type
 			//you can use this themplate mehtod, too
 			template< class T >

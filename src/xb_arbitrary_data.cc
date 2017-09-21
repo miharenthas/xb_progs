@@ -33,7 +33,6 @@ namespace XB{
 	adata::_xb_arbitrary_data( const adata &given ):
 		_pT XB_PAERSON_HASH_TABLE
 	{
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
 		*this = given; //since it's exactly the same code...
 	}
 	
@@ -225,6 +224,20 @@ namespace XB{
 		from_front = 0; //recycle
 		while( strcmp( (_fields.begin()+from_front)->name, name ) ) ++from_front;
 		_fields.erase( _fields.begin() + from_front );
+	}
+	
+	//----------------------------------------------------------------------------
+	//clear the structure
+	void adata::clear(){
+		n = 0;
+		tpat = 0;
+		in_Z = 0;
+		in_A_on_Z = 0;
+		in_beta = 0;
+		free( _buf );
+		_buf_sz = 0;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
+		_fields.clear();
 	}
 	
 	//============================================================================
