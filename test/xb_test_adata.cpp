@@ -6,6 +6,7 @@
 
 #include "xb_arbitrary_data.h"
 #include "xb_io.h"
+#include "xb_reader.h"
 
 void tester( std::vector<XB::adata> &str, int ns, int fcount );
 char fields[256][64];
@@ -49,13 +50,31 @@ int main( int argc, char **argv ){
 
 	for( int i=0; i < str.size(); ++i  ) if( str[i] != vec[i] ) puts( "Broken copy!" );
 	
+	vec.clear();
+	XB::adata_field farr[] = {
+		{ "Xbn", 4 },
+		{ "Xbpt", 4 },
+		{ "Xbi", 4 },
+		{ "", 0 }
+	};
+	
+	XB::arb_reader( vec, "try.root", farr );
+	printf( "Read BURP file, %d entries\n", vec.size() );
+	
+	std::vector<XB::adata_field> fld;
+	for( int i=0; i < 10 && i < vec.size(); ++i ){
+		fld = vec[i].lsfields();
+		printf( "\t%s\n", fld[0].name );
+		printf( "\t%s\n", fld[1].name );
+	}
+	
 	return 0;
 }
 
 void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	XB::adata_field *farr = (XB::adata_field*)malloc( fcount*sizeof(XB::adata_field) );
 	for( int f=0; f < fcount; ++f ){
-		strncpy( farr[f].name, fields[f], 64 );
+		strncpy( farr[f].name, fields[f], 16 );
 		farr[f].size = 4*sizeof(float);
 	}
 	puts( "Created a field list." );

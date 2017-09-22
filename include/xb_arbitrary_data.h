@@ -29,7 +29,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//a data structure representing the field,
 	typedef struct _xb_arb_data_field {
-		char name[64];
+		char name[16];
 		size_t size;
 	} adata_field;
 
