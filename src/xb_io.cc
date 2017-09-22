@@ -233,7 +233,7 @@ void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
 	void *buf;
 	int fb_size = 0;
 	for( int i=0; i < xb_book.size(); ++i ){
-		buf = XB::adata_getlbuf( fb_size, xb_book[i] );
+		fb_size = XB::adata_getlbuf( &buf, xb_book[i] );
 		buf = realloc( buf, fb_size + sizeof(int) );
 		memmove( (int*)buf+1, buf, fb_size );
 		*(int*)buf = fb_size;

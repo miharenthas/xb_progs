@@ -74,7 +74,7 @@ namespace XB{
 			int fsize( const char *name ) const;
 			
 			//a couple of friends, for I/O ops
-			friend void *adata_getlbuf( int &bsize, const _xb_arbitrary_data &given );
+			friend int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
 			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
 			//TODO: and one for merge
 			/*friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
@@ -104,7 +104,7 @@ namespace XB{
 	//adata_getlbuf: get the linear buffer in void *buffer and return the size.
 	//               buffer will be allocated. An error is thrown if it's already
 	//               allocated.
-	void *adata_getlbuf( int &bsize, const _xb_arbitrary_data &given );
+	int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
 	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
 	/*_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 	                                const _xb_arbitrary_data &two );*/

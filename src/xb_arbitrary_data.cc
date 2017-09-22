@@ -1,11 +1,15 @@
 //implementation of xb_arbitrary_data.h
 
 #include "xb_arbitrary_data.h"
-
+#include <stdio.h>
 namespace XB{
 	//----------------------------------------------------------------------------
 	//constructors:
-	adata::_xb_arbitrary_data(): _buf( NULL ), _pT XB_PAERSON_HASH_TABLE {
+	adata::_xb_arbitrary_data():
+		_buf( NULL ),
+		_pT XB_PAERSON_HASH_TABLE,
+		_buf_sz( 0 )
+	{
 		//just banally init the event_holder members
 		n = 0;
 		evnt = 0;
@@ -18,7 +22,8 @@ namespace XB{
 	
 	adata::_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld ):
 		_buf( NULL ),
-		_pT XB_PAERSON_HASH_TABLE
+		_pT XB_PAERSON_HASH_TABLE,
+		_buf_sz( 0 )
 	{
 		n = 0;
 		evnt = 0;
@@ -41,7 +46,7 @@ namespace XB{
 		tpat = given.tpat;
 		in_Z = given.in_Z;
 		in_A_on_Z = given.in_A_on_Z;
-	
+		
 		//copy the buffer
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
@@ -49,10 +54,11 @@ namespace XB{
 		
 		//copy the pointers
 		int dist = 0;
-		char *p_curr;
+		char *p_curr = NULL;
 		const char *p_head = (char*)given._buf;
+
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !given._fld_ptr ){ _fld_ptr[i] = NULL; continue; }
+			if( !given._fld_ptr[i] ){ _fld_ptr[i] = NULL; continue; }
 			
 			p_curr = (char*)given._fld_ptr[i];
 			dist = p_curr - p_head;
@@ -80,19 +86,22 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//safe realloc (with moving around the pointers in _fld_ptr
+	//***works***
 	void adata::safe_buf_realloc( size_t size ){
-		if( !_buf ){ _buf = malloc( size+sizeof(int) ); return; }
+
+		if( !_buf ){_buf = malloc( size+sizeof(int) ); return; }
 	
 		void *old_buf = _buf;
+
 		_buf = realloc( _buf, size+sizeof(int) );
 		if( !_buf ) throw error( "Memory error!", "adata::safe_buf_realloc" );
-		
+
 		if( old_buf == _buf ) return; //nothing to do
-		
+
 		int delta;
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
 			if( !_fld_ptr[i] ) continue;
-			
+
 			delta = (char*)_fld_ptr[i] - (char*)old_buf; //D bytes;
 			_fld_ptr[i] = (char*)_buf + delta;
 		}
@@ -121,10 +130,11 @@ namespace XB{
 		
 		//copy the pointers
 		int dist = 0;
-		char *p_curr;
+		char *p_curr = NULL;
 		const char *p_head = (char*)given._buf;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !given._fld_ptr ){ _fld_ptr[i] = NULL; continue; }
+			if( !given._fld_ptr[i] ) continue;
 			
 			p_curr = (char*)given._fld_ptr[i];
 			dist = p_curr - p_head;
@@ -141,7 +151,8 @@ namespace XB{
 		if( evnt != right.evnt) return false;
 		if( tpat != right.tpat) return false;
 		if( in_Z != right.in_Z) return false;
-		if( in_A_on_Z != right.in_A_on_Z) return false;
+		if( in_A_on_Z != right.in_A_on_Z ) return false;
+
 		if( _buf_sz != right._buf_sz ) return false;
 		if( _fields.size() != right._fields.size() ) return false;
 		
@@ -150,9 +161,7 @@ namespace XB{
 			    _fields[i].size != right._fields[i].size ) return false;
 		}
 		
-		const char *b_ptr = (char*)_buf, *rb_ptr = (char*)right._buf;
-		for( int i=0; i < _buf_sz; ++i )
-			if( b_ptr[i] != rb_ptr[i] ) return false;
+		if( memcmp( _buf, right._buf, _buf_sz ) ) return false;
 		
 		return true;
 	}
@@ -226,6 +235,7 @@ namespace XB{
 		void *head = _fld_ptr[phash8( name )];
 		if( !head ) return 0;
 		return *(int*)head;
+		return 0;
 	}
 	
 	//----------------------------------------------------------------------------
@@ -277,45 +287,41 @@ namespace XB{
 	
 	//============================================================================
 	//the two friend functions.
-	#include <stdio.h>
+
 	//----------------------------------------------------------------------------
 	//make the linearized buffer:
 	//[# fields|field list|field pointer deltas|data size|data buffer]
-	void *adata_getlbuf( int &bsize, const adata &given ){
+	int adata_getlbuf( void **linbuf, const adata &given ){
 		int nf = given._fields.size();
-		printf( "nf %d\n", nf );
 		
 		//calculate the deltas
 		int *deltas = (int*)calloc( nf, sizeof(int) ), *d_indirect;
 		d_indirect = deltas;
-		printf( "given._buf %x\n", given._buf );
 		if( !deltas ) throw error( "Memory error!", "XB::adata_getlbuf" );
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
 			if( !given._fld_ptr[i] ) continue;
-			printf( "field pointer %x\n", given._fld_ptr[i] );
 			*d_indirect = (char*)given._fld_ptr[i] - (char*)given._buf;
-			printf( "d_indirect %d\n", *d_indirect );
 		}
 		
 		//allocate the linear buffer
-		printf( "given._buf_sz %d\n", given._buf_sz );
-		bsize = (nf+2)*sizeof(int) + nf*sizeof(adata_field) + given._buf_sz;
-		void *linbuf = malloc( bsize );
+		int bsize = (nf+2)*sizeof(int) + nf*sizeof(adata_field) + given._buf_sz;
+		*linbuf = malloc( bsize );
 		
 		//do the copying
-		*(int*)linbuf = nf; //# fields
-		linbuf = (int*)linbuf + 1;
-		memcpy( linbuf, &given._fields[0], nf*sizeof(adata_field) ); //field list
-		linbuf = (adata_field*)linbuf + nf;
-		memcpy( linbuf, deltas, nf*sizeof(int) ); //deltas
-		linbuf = (int*)linbuf + nf;
-		*(int*)linbuf = given._buf_sz; //data size
-		linbuf = (int*)linbuf + 1;
-		memcpy( linbuf, given._buf, given._buf_sz ); //data
+		void *head = *linbuf;
+		*(int*)head = nf; //# fields
+		head = (int*)head + 1;
+		memcpy( head, &given._fields[0], nf*sizeof(adata_field) ); //field list
+		head = (adata_field*)head + nf;
+		memcpy( head, deltas, nf*sizeof(int) ); //deltas
+		head = (int*)head + nf;
+		*(int*)head = given._buf_sz; //data size
+		head = (int*)head + 1;
+		memcpy( head, given._buf, given._buf_sz ); //data
 		
 		free( deltas );
 		
-		return linbuf;
+		return bsize;
 	}
 	
 	//----------------------------------------------------------------------------
