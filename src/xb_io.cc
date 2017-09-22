@@ -233,7 +233,7 @@ void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
 	void *buf;
 	int fb_size = 0;
 	for( int i=0; i < xb_book.size(); ++i ){
-		fb_size = XB::adata_getlbuf( &buf, xb_book[i] );
+		buf = XB::adata_getlbuf( fb_size, xb_book[i] );
 		buf = realloc( buf, fb_size + sizeof(int) );
 		memmove( (int*)buf+1, buf, fb_size );
 		*(int*)buf = fb_size;
@@ -241,7 +241,6 @@ void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
 		
 		fwrite( buf, fb_size, 1, f_out );
 		free( buf );
-		buf = NULL;
 	}
 }
 
@@ -280,7 +279,7 @@ void XB::load( FILE *f_in, std::vector<XB::adata> &xb_book,long unsigned cnt ){
 	if( !strstr( &hdr.d, "ADATA" ) ) throw XB::error( "Wrong data file!", "XB::load" );
 	
 	int fb_size;
-	void *buf;
+	void *buf = NULL;
 	long unsigned count=0;
 	XB::adata data;
 	while( count != cnt ){
@@ -295,7 +294,7 @@ void XB::load( FILE *f_in, std::vector<XB::adata> &xb_book,long unsigned cnt ){
 		XB::adata_fromlbuf( data, buf );
 		xb_book.push_back( data );
 		
-		free( buf );
+		free( buf ); buf = NULL;
 	}
 }
 

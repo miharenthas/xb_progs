@@ -31,21 +31,45 @@ namespace XB{
 	}
 	
 	adata::_xb_arbitrary_data( const adata &given ):
-		_pT XB_PAERSON_HASH_TABLE
+		_buf( NULL ),
+		_pT XB_PAERSON_HASH_TABLE,
+		_buf_sz( given._buf_sz ),
+		_fields( given._fields )
 	{
-		*this = given; //since it's exactly the same code...
+		n = given.n;
+		evnt = given.evnt;
+		tpat = given.tpat;
+		in_Z = given.in_Z;
+		in_A_on_Z = given.in_A_on_Z;
+	
+		//copy the buffer
+		_buf = malloc( given._buf_sz );
+		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
+		memcpy( _buf, given._buf, given._buf_sz );
+		
+		//copy the pointers
+		int dist = 0;
+		char *p_curr;
+		const char *p_head = (char*)given._buf;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
+			if( !given._fld_ptr ){ _fld_ptr[i] = NULL; continue; }
+			
+			p_curr = (char*)given._fld_ptr[i];
+			dist = p_curr - p_head;
+			_fld_ptr[i] = (char*)_buf + dist;
+		}
 	}
 	
 	//dtor:
 	adata::~_xb_arbitrary_data(){
-		free( _buf );
+		if( _buf ) free( _buf );
 	}
 	
 	//----------------------------------------------------------------------------
 	//utils:
 	//----------------------------------------------------------------------------
 	//now the fun begins: the hash function
-	unsigned char adata::phash8( const char *name ){
+	unsigned char adata::phash8( const char *name ) const {
 		int len = strlen( name );
 		unsigned short h = 0;
 		
@@ -80,10 +104,17 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//assignment operator
 	adata &adata::operator=( const adata &given ){
+		n = given.n;
+		evnt = given.evnt;
+		tpat = given.tpat;
+		in_Z = given.in_Z;
+		in_A_on_Z = given.in_A_on_Z;
+		
 		_buf_sz = given._buf_sz;
 		_fields = given._fields;
 		
 		//copy the buffer
+		if( _buf ) free( _buf );
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
@@ -106,11 +137,16 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//comparison ops
 	bool adata::operator==( const adata &right ) const {
+		if( n != right.n) return false;
+		if( evnt != right.evnt) return false;
+		if( tpat != right.tpat) return false;
+		if( in_Z != right.in_Z) return false;
+		if( in_A_on_Z != right.in_A_on_Z) return false;
 		if( _buf_sz != right._buf_sz ) return false;
 		if( _fields.size() != right._fields.size() ) return false;
 		
 		for( int i=0; i < _fields.size(); ++i ){
-			if( !strcmp( _fields[i].name, right._fields[i].name ) &&
+			if( strcmp( _fields[i].name, right._fields[i].name ) ||
 			    _fields[i].size != right._fields[i].size ) return false;
 		}
 		
@@ -130,7 +166,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//parenthesis operator
-	void *adata::operator()( const char *name ){
+	void *adata::operator()( const char *name ) const {
 		void *head = _fld_ptr[phash8( name )];
 		if( !head ) throw error( "Field is empty!", "XB::adata::()" );
 		
@@ -143,7 +179,7 @@ namespace XB{
 		memcpy( payload, head, fsize );
 		return payload;
 	}
-
+	
 	//----------------------------------------------------------------------------
 	//access in write a field denoted by adata_field
 	void adata::dofield( const adata_field &fld, void *buf ){
@@ -186,7 +222,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//get the size of a field (in bytes)
-	int adata::fsize( const char *name ){
+	int adata::fsize( const char *name ) const {
 		void *head = _fld_ptr[phash8( name )];
 		if( !head ) return 0;
 		return *(int*)head;
@@ -233,7 +269,7 @@ namespace XB{
 		tpat = 0;
 		in_Z = 0;
 		in_A_on_Z = 0;
-		free( _buf );
+		if( _buf ){ free( _buf ); _buf = NULL; }
 		_buf_sz = 0;
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
 		_fields.clear();
@@ -241,28 +277,30 @@ namespace XB{
 	
 	//============================================================================
 	//the two friend functions.
-
+	#include <stdio.h>
 	//----------------------------------------------------------------------------
 	//make the linearized buffer:
 	//[# fields|field list|field pointer deltas|data size|data buffer]
-	int adata_getlbuf( void **buffer, const adata &given ){
-		if( *buffer ) throw error( "Buffer not empty!", "XB::adata_getlbuf" );
-	
+	void *adata_getlbuf( int &bsize, const adata &given ){
 		int nf = given._fields.size();
+		printf( "nf %d\n", nf );
 		
 		//calculate the deltas
-		int *deltas = (int*)malloc( nf*sizeof(int) ), *d_indirect;
+		int *deltas = (int*)calloc( nf, sizeof(int) ), *d_indirect;
 		d_indirect = deltas;
+		printf( "given._buf %x\n", given._buf );
+		if( !deltas ) throw error( "Memory error!", "XB::adata_getlbuf" );
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
 			if( !given._fld_ptr[i] ) continue;
+			printf( "field pointer %x\n", given._fld_ptr[i] );
 			*d_indirect = (char*)given._fld_ptr[i] - (char*)given._buf;
-			++d_indirect;
+			printf( "d_indirect %d\n", *d_indirect );
 		}
 		
 		//allocate the linear buffer
-		int bsize = (nf+2)*sizeof(int) + nf*sizeof(adata_field) + given._buf_sz;
-		*buffer = malloc( bsize );
-		void *linbuf = *buffer;
+		printf( "given._buf_sz %d\n", given._buf_sz );
+		bsize = (nf+2)*sizeof(int) + nf*sizeof(adata_field) + given._buf_sz;
+		void *linbuf = malloc( bsize );
 		
 		//do the copying
 		*(int*)linbuf = nf; //# fields
@@ -275,7 +313,9 @@ namespace XB{
 		linbuf = (int*)linbuf + 1;
 		memcpy( linbuf, given._buf, given._buf_sz ); //data
 		
-		return bsize;
+		free( deltas );
+		
+		return linbuf;
 	}
 	
 	//----------------------------------------------------------------------------
@@ -289,9 +329,11 @@ namespace XB{
 		int data_sz = *(int*)data;
 		data = (int*)data + 1;
 		
+		//clear the structure
+		given.clear();
+		
 		//copy the data
 		given._buf_sz = data_sz;
-		if( given._buf ) free( given._buf );
 		given._buf = malloc( data_sz );
 		memcpy( given._buf, data, data_sz );
 		

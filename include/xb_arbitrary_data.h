@@ -47,7 +47,7 @@ namespace XB{
 			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size
-			void *operator()( const char *name );
+			void *operator()( const char *name ) const;
 			bool operator==( const _xb_arbitrary_data &right ) const;
 			bool operator!=( const _xb_arbitrary_data &right ) const;
 			
@@ -63,22 +63,22 @@ namespace XB{
 			//for size-1 fields of a specified type
 			//you can use this themplate mehtod, too
 			template< class T >
-			T getfield( const char *name ){
+			T getfield( const char *name ) const {
 				void *head = _fld_ptr[phash8( name )];
 				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
 				head = (int*)head + 1;
 				return *(T*)head;
 			};
 			//list the fields
-			std::vector<adata_field> lsfields() const { return _fields; };
-			int fsize( const char *name );
+			std::vector< adata_field > lsfields() const { return _fields; };
+			int fsize( const char *name ) const;
 			
 			//a couple of friends, for I/O ops
-			friend int adata_getlbuf( void **buf, const _xb_arbitrary_data &given );
+			friend void *adata_getlbuf( int &bsize, const _xb_arbitrary_data &given );
 			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
-			//and one for merge
-			friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
-			                                       const _xb_arbitrary_data &two );
+			//TODO: and one for merge
+			/*friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+			                                       const _xb_arbitrary_data &two );*/
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -91,7 +91,7 @@ namespace XB{
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
-			unsigned char phash8( const char *name );
+			unsigned char phash8( const char *name ) const;
 			const unsigned char _pT[256]; //LUT for the pearson's hash
 			
 			//an utility to realloc the buffer, safely
@@ -104,12 +104,10 @@ namespace XB{
 	//adata_getlbuf: get the linear buffer in void *buffer and return the size.
 	//               buffer will be allocated. An error is thrown if it's already
 	//               allocated.
-	int adata_getlbuf( void **buf, const _xb_arbitrary_data &given );
+	void *adata_getlbuf( int &bsize, const _xb_arbitrary_data &given );
 	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
-	_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one, const _xb_arbitrary_data &two ){
-		/*TODO*/
-		adata res; return res;
-	} 
+	/*_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+	                                const _xb_arbitrary_data &two );*/
 		
 }
 #endif
