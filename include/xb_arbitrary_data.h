@@ -84,7 +84,8 @@ namespace XB{
 			}
 			//list the fields
 			std::vector< adata_field > lsfields() const { return _fields; };
-			int fsize( const char *name ) const;
+			int nf() const { return _fields.size(); }; //count them
+			int fsize( const char *name ) const; //get the size of one
 			
 			//a couple of friends, for I/O ops
 			friend int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
