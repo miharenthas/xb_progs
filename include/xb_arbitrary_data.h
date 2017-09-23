@@ -63,12 +63,25 @@ namespace XB{
 			//for size-1 fields of a specified type
 			//you can use this themplate mehtod, too
 			template< class T >
-			T getfield( const char *name ) const {
+			T tip( const char *name ) const {
 				void *head = _fld_ptr[phash8( name )];
 				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
 				head = (int*)head + 1;
 				return *(T*)head;
 			};
+			
+			//this should be a fast access method
+			//since we laugh in the face of danger,
+			//no out of bound check is provided.
+			//you'll just loop in the array
+			template< class T >
+			inline T &at( const char *name, int i ){ //note that this is NOT const
+				void *head = _fld_ptr[phash8( name )];
+				int len = *(int*)head;
+				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
+				head = (int*)head + 1;
+				return ((T*)head)[i%len];
+			}
 			//list the fields
 			std::vector< adata_field > lsfields() const { return _fields; };
 			int fsize( const char *name ) const;

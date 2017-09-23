@@ -120,7 +120,7 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	float *redata = (float*)astr( "-prakkino" );
 	puts( "Copied data from a field:" );
 	printf( "\tredata = { %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-	printf( "\tredata[0] = %f\n", astr.getfield<float>( "-prakkino" ) );
+	printf( "\tredata[0] = %f\n", astr.tip<float>( "-prakkino" ) );
 	
 	free( redata ); //we'll play with it later again.
 	redata = NULL;
@@ -130,7 +130,7 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	else{ puts( "Copy construction failed" ); exit( 2 ); }
 	redata = (float*)bstr( "-prakkino" );
 	printf( "\tredata = { %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-	printf( "\tredata[0] = %f\n", bstr.getfield<float>( "-prakkino" ) );
+	printf( "\tredata[0] = %f\n", bstr.tip<float>( "-prakkino" ) );
 	bstr.clear();
 	puts( "Cleared bstr." );
 	
@@ -143,7 +143,7 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	puts( "Got a struct from a linear buffer:" );
 	redata = (float*)bstr( "-prak" );
 	printf( "\tredata = { %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-	printf( "\ttip = %f\n", bstr.getfield<float>( "-prakkello" ) );
+	printf( "\ttip = %f\n", bstr.tip<float>( "-prakkello" ) );
 
 	free( farr );
 	free( redata );
