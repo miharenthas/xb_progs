@@ -142,8 +142,9 @@ DEFUN_DLD( xb_load_adata, args, nargout, O_DOC_STRING ){
 	
 	//loop-load
 	unsigned int current_numel = 0;
-	Array<float> buf; //a float buffer.
-	for( int i=load_nd_events[0], off_i; i < data.size() && load_nb_events[1]; ++i ){
+	int off_i;
+	Array<float> f_buf; //a float buffer.
+	for( int i=load_nb_events[0], off_i; i < data.size() && load_nb_events[1]; ++i ){
 		off_i = i - load_nb_events[0];
 		
 		current_numel = data[i].n; //still works
@@ -159,8 +160,8 @@ DEFUN_DLD( xb_load_adata, args, nargout, O_DOC_STRING ){
 		//assume they are floats (usually justified)
 		for( int f=0; f < nf; ++f ){
 			dim_vector o_dim( current_numel, 1 );
-			f_buf.resize( o_dim );
-			memcpy( f_buf.fortran_vec(), &data[i].at( fld[f].name, 0 ), fld[f].size );
+			f_buf.resize( dim_vector( fld[f].size/sizeof(float), 1 ) );
+			memcpy( f_buf.fortran_vec(), &data[i].at<float>( fld[f].name, 0 ), fld[f].size );
 			o_field_named[f](off_i) = f_buf;
 			f_buf.clear();
 		}

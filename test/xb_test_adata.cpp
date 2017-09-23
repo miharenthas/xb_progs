@@ -83,21 +83,6 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	XB::adata astr( farr, fcount );
 	puts( "Created a structure from a field list." );
 	
-	for( int i=0; i < ns; ++i ) str[i] = astr; //assignmet op and copy ctor (the same)
-	puts( "Copied the structures in the vector." );
-	
-	for( int i=0; i < ns; ++i ) if( str[i] != astr /*str[i+1]*/ ) puts( "Broken copy!" );
-	puts( "Verified the copies in the vector." );
-	
-	//str.clear();
-	puts( "Vector cleared." );
-	for( int i=0; i < ns; ++i ) str.push_back( astr ); //assignmet op and copy ctor (the same)
-	puts( "Copy-construted the structures in the vector." );
-	
-	//this actually works?
-	for( int i=0; i < ns-1; ++i ) if( str[i] != str[i+1] ) puts( "Broken copy!" );
-	puts( "Verified the copies in the vector." );
-	
 	//try lsfields
 	std::vector<XB::adata_field> flist = astr.lsfields(); //list the fields
 	puts( "Listed the fields:" );
@@ -106,6 +91,21 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 		astr.dofield( fields[i], 4*sizeof(float), data ); //dofield in copy
 		printf( "\tCopied field %s\n", fields[i] );
 	}
+	
+	for( int i=0; i < ns; ++i ) str[i] = astr; //assignmet op and copy ctor (the same)
+	puts( "Copied the structures in the vector." );
+	
+	for( int i=0; i < ns; ++i ) if( str[i] != astr ) puts( "Broken copy!" );
+	puts( "Verified the copies in the vector." );
+	
+	str.clear();
+	puts( "Vector cleared." );
+	for( int i=0; i < ns; ++i ) str.push_back( astr ); //assignmet op and copy ctor (the same)
+	puts( "Copy-construted the structures in the vector." );
+	
+	//this actually works?
+	for( int i=0; i < ns-1; ++i ) if( str[i] != str[i+1] ) puts( "Broken copy!" );
+	puts( "Verified the copies in the vector." );
 	
 	astr.dofield( "-prak", 4*sizeof(float), NULL ); //dofield, just alloc
 	puts( "Allocated empty field." );

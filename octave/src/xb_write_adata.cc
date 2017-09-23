@@ -41,6 +41,12 @@ For more information about the content of the fields, use the documentation of t
 #include "xb_arbitrary_data.h" //XB::data
 #include "xb_error.h" //XB::error
 
+//------------------------------------------------------------------------------------
+//tiny tool to compare strings.
+inline bool is_named_field( std::string &str );
+
+//------------------------------------------------------------------------------------
+//the main thing
 DEFUN_DLD( xb_write_adata, args, , O_DOC_STRING ){
 	if( sizeof(octave_uint32) != sizeof(unsigned int) ){
 		error( "Quirky types." );
@@ -72,14 +78,13 @@ DEFUN_DLD( xb_write_adata, args, , O_DOC_STRING ){
 	//of arbitrary_data
 	string_vector fld_names = o_data_m.fieldnames();
 	string_vector std_names;
-	std_names.append( "n" );
-	std_names.append( "evnt" );
-	std_names.append( "tpat" );
-	std_names.append( "in_Z" );
-	std_names.append( "in_A_on_Z" );
-	Array< octave_idx_type > unwanted = fld_names.lookup( std_names );
-	fld_names.clear( unwanted );
+	std_names.append( std::string( "n" ) );
+	std_names.append( std::string( "evnt" ) );
+	std_names.append( std::string( "tpat" ) );
+	std_names.append( std::string( "in_Z" ) );
+	std_names.append( std::string( "in_A_on_Z" ) );
 	const int nf = fld_names.numel();
+	int current_numel;
 	
 	//now, we are good to go
 	for( int i=0; i < o_data_m.length(); ++i ){
@@ -89,17 +94,20 @@ DEFUN_DLD( xb_write_adata, args, , O_DOC_STRING ){
 		buf.n = o_map.getfield( "n" ).uint_value();
 		buf.evnt = o_map.getfield( "evnt" ).uint_value();
 		buf.tpat = o_map.getfield( "tpat" ).uint_value();
-		buf.in_A = o_map.getfield( "in_A" ).float_value();
+		buf.in_Z = o_map.getfield( "in_Z" ).float_value();
 		buf.in_A_on_Z = o_map.getfield( "in_A_on_Z" ).float_value();
 		
 		//and now the loop-copy of the named fields
-		for( int f=0; f < nf; ++f )
+		for( int f=0, u=0; f < nf; ++f ){
+			if( !is_named_field( fld_names(f) ) ){ ++u; continue; }
+			current_numel = o_map.getfield( fld_names(f) ).float_array_value().numel();
 			buf.dofield( fld_names(f).c_str(),
-			             buf.n*sizeof(float),
-			             o_map.getfield( fld_names(f).float_array_value().fortran_vec() );
+			             current_numel*sizeof(float),
+			             o_map.getfield( fld_names(f) ).float_array_value().fortran_vec() );
+		}
 		
 		data.push_back( buf );
-		o_data_m(i).clear;
+		o_data_m(i).clear();
 	}
 	
 	o_data_m.clear();
@@ -119,4 +127,14 @@ DEFUN_DLD( xb_write_adata, args, , O_DOC_STRING ){
 	//happy thoughts
 	return octave_value_list();
 }
-	
+
+//------------------------------------------------------------------------------------
+//imp of the tool
+inline bool is_named_field( std::string &str ){
+	if( str == "n" ) return false;
+	if( str == "evnt" ) return false;
+	if( str == "tpat" ) return false;
+	if( str == "in_Z" ) return false;
+	if( str == "in_A_on_Z" ) return false;
+	return true;
+}
