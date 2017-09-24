@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "xb_reader.h"
+//#include "xb_reader.h"
 #include "xb_io.h"
 #include "xb_arbitrary_data.h"
 
@@ -27,7 +27,7 @@ int xb_getarb__parse( XB::adata_field **farr, const char *spec );
 int main( int argc, char **argv ){
 	char in_fname[64][256];
 	char out_fname[256];
-	char spec[512]; strcpy( spec, "Xbn[Xbi:Xbpt:Xbt:Xbe:Xbhe]4" );
+	char spec[512]; strcpy( spec, "Xbn:4,Xbi:4,Xbpt:4,Xbt:4,Xbe:4,Xbhe:4" );
 	short int flagger = 0; //c'mon, 16 bits are enough
 	
 	//usual retrieval of filenames
@@ -84,8 +84,11 @@ int main( int argc, char **argv ){
 	
 	//parse the spec
 	if( flagger & VERBOSE ) puts( "Parsing spec..." );
-	XB::adata_field *farr;
+	XB::adata_field farr[257];
 	int nf = xb_getarb_parse( &farr, spec );
+	
+	if( flagger & VERBOSE ) for( int i=0; i < nf; ++i )
+		printf( "{ %s, %d }\n", farr[i].name, farr[i].size );
 	
 	//load all the files
 	if( flagger & VERBOSE ) puts( "Loading files..." );
@@ -113,28 +116,23 @@ int main( int argc, char **argv ){
 
 //------------------------------------------------------------------------------------
 //the parser
-int xb_getarb_parse( XB::adata_field **farr, const char *str ){
-	char lead[16], fields[495];
-	
-	//get the size of the fields (in bytes*lead_field)
-	int fsize;
-	sscanf( "%s[%s]%d", lead, fields, &fsize ); 
-	
-	//count the fields
-	char *head = fields;
-	int nf = 1;
-	while( *head != '\0' ) if( *head == ':' ) ++nf;
-	
-	*farr = (XB::adata_field*)calloc( nf*sizeof(XB::adata_field)+1, 1 );
+int xb_getarb_parse( XB::adata_field *farr, const char *str ){
+	char *spec[512]; strncpy( spec, str, 512 );
 	
 	//read the fields
-	head = strtok( spec, ":" );
+	head = strtok( spec, ":," ); //lead field name
 	int i=0;
 	while( head ){
-		strcpy( farr[i].name, head );
-		farr[i].size = fsize;
-		strtok( NULL, ":" );
+		strcpy( farr[i].name, head ); //copy name
+		head = strtok( NULL, ":," ); //field size
+		farr[i].size = atoi( head ); //save size
+		head = strtok( NULL, ":," ); //next field name or NULL
+		++i
 	} //and the last one is already nullified
+	
+	int nf = i;
+	++i;
+	farr[i] = { "", 0 };
 	
 	return nf;
 }
