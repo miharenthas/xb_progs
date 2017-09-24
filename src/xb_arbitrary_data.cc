@@ -290,7 +290,7 @@ namespace XB{
 
 	//----------------------------------------------------------------------------
 	//make the linearized buffer:
-	//[# fields|field list|field pointer deltas|data size|data buffer]
+	//[event_holder| # fields|field list|field pointer deltas|data size|data buffer]
 	int adata_getlbuf( void **linbuf, const adata &given ){
 		int nf = given._fields.size();
 		
@@ -304,11 +304,14 @@ namespace XB{
 		}
 		
 		//allocate the linear buffer
-		int bsize = (nf+2)*sizeof(int) + nf*sizeof(adata_field) + given._buf_sz;
+		int bsize = sizeof(event_holder) + (nf+2)*sizeof(int) +
+		            nf*sizeof(adata_field) + given._buf_sz;
 		*linbuf = malloc( bsize );
 		
 		//do the copying
 		void *head = *linbuf;
+		memcpy( head, &given.n, sizeof(event_holder) ); //the event holder
+		head = (event_holder*)head + 1;
 		*(int*)head = nf; //# fields
 		head = (int*)head + 1;
 		memcpy( head, &given._fields[0], nf*sizeof(adata_field) ); //field list
@@ -327,8 +330,9 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//now from the linear buffer to the structure
 	int adata_fromlbuf( adata &given, const void *buffer ){
-		int nf = *(int*)buffer;
-		void *hdr = (int*)buffer + 1;
+		void *hdr = (char*)buffer + sizeof(event_holder);
+		int nf = *(int*)hdr;
+		hdr = (int*)hdr + 1;
 		int hdr_sz = nf2hdr_size( nf ) -1*sizeof(int);
 		
 		void *data = (char*)buffer + hdr_sz;
@@ -337,6 +341,9 @@ namespace XB{
 		
 		//clear the structure
 		given.clear();
+		
+		//copy the event holder
+		memcpy( &given.n, buffer, sizeof(event_holder) );
 		
 		//copy the data
 		given._buf_sz = data_sz;

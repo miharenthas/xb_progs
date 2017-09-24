@@ -87,7 +87,7 @@ int main( int argc, char **argv ){
 	XB::adata_field farr[257];
 	int nf = parse_fld( farr, spec );
 	
-	if( flagger & VERBOSE ) for( int i=0; i < nf; ++i )
+	if( flagger & VERBOSE ) for( int i=0; farr[i].size; ++i )
 		printf( "\t{ %s, %d }\n", farr[i].name, farr[i].size );
 	
 	//load all the files
@@ -109,6 +109,7 @@ int main( int argc, char **argv ){
 	if( flagger & VERBOSE ) puts( "Putting data..." );
 	if( flagger & OUT_FLAG ) XB::write( out_fname, book );
 	else XB::write( stdout, book );
+	XB::load( out_fname, buf );
 	
 	if( flagger & VERBOSE ) puts( "Done. Goodbye." );
 	return 0;
@@ -130,10 +131,8 @@ int parse_fld( XB::adata_field *farr, const char *str ){
 		++i;
 	} //and the last one is already nullified
 	
-	int nf = i;
-	++i;
 	memset( farr[i].name, 0, 16 );
 	farr[i].size = 0;
 	
-	return nf;
+	return i;
 }

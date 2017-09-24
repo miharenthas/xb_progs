@@ -267,7 +267,6 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	TBranch *tpat = data_tree->GetBranch( "Tpat" ); CK_NULL( evnt, "no Tpat!", "XB::reader" );
 	//These three fields are't provided in source runs, so they will be copied
 	//and cheked on only in case they are provided.	
-	TBranch *inbeta = data_tree->GetBranch( "Inbeta" );
 	TBranch *inz = data_tree->GetBranch( "Inz" );
 	TBranch *inaonz = data_tree->GetBranch( "Inaoverz" );
 	
@@ -276,20 +275,23 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	TBranch **branches = (TBranch**)malloc( nf*sizeof(TBranch**));
 	for( int i=0; i < nf; ++i ){
 		branches[i] = data_tree->GetBranch( fields[i].name );
-		if( !branches[i] ) throw( "No field!", "XB::arb_reader" );
+		if( !branches[i] ) throw XB::error( "No field!", "XB::arb_reader" );
 	}
 	
 	//do the various associations
-	XB::adata data_buf; //the structure
-	evnt->SetAddress( &data_buf.evnt );
-	tpat->SetAddress( &data_buf.tpat );
-	if( inz ) inz->SetAddress( &data_buf.in_Z );
-	if( inaonz ) inaonz->SetAddress( &data_buf.in_A_on_Z );
-	branches[0]->SetAddress( &data_buf.n );
-	
 	int nb_entries = data_tree->GetEntries(), field_sz;
 	void *field_bf = malloc( 1 );
 	for( int i=0; i < nb_entries; ++i ){
+		xb_book.push_back( XB::adata() );
+		
+		//addressing
+		evnt->SetAddress( (Int_t*)&xb_book.back().evnt );
+		tpat->SetAddress( (Int_t*)&xb_book.back().tpat );
+		if( inz ) inz->SetAddress( (Float_t*)&xb_book.back().in_Z );
+		if( inaonz ) inaonz->SetAddress( (Float_t*)&xb_book.back().in_A_on_Z );
+		branches[0]->SetAddress( (UInt_t*)&xb_book.back().n );
+
+		//copying
 		evnt->GetEntry( i );
 		tpat->GetEntry( i );
 		if( inz ) inz->GetEntry( i );
@@ -297,17 +299,13 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 		branches[0]->GetEntry( i );
 		
 		for( int f=1; f < nf; ++f ){
-			field_sz = fields[f].size*data_buf.n;
+			field_sz = fields[f].size*xb_book.back().n;
 			field_bf = realloc( field_bf, field_sz );
-			branches[f]->ResetAddress();
-			branches[f]->SetAddress( field_bf );
+			branches[f]->SetAddress( (Float_t*)field_bf );
 			branches[f]->GetEntry( i );
-			data_buf.dofield( fields[f].name, field_sz, field_bf );
+			xb_book.back().dofield( fields[f].name, field_sz, field_bf );
 		}
-		
-		xb_book.push_back( data_buf );
-		data_buf.clear();
-	}
+	}		
 	free( field_bf );
 	
 	f.Close();

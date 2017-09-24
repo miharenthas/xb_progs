@@ -60,6 +60,7 @@ int main( int argc, char **argv ){
 	
 	XB::arb_reader( vec, "try.root", farr );
 	printf( "Read BURP file, %d entries\n", vec.size() );
+	XB::write( "try.axb", vec );
 	
 	std::vector<XB::adata_field> fld;
 	for( int i=0; i < 10 && i < vec.size(); ++i ){
