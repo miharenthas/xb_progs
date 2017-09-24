@@ -8,7 +8,7 @@
 
 #include <vector>
 
-//#include "xb_reader.h"
+#include "xb_reader.h"
 #include "xb_io.h"
 #include "xb_arbitrary_data.h"
 
@@ -20,7 +20,7 @@
 //------------------------------------------------------------------------------------
 //a parser for the data structure spec
 //remember: farr is null-ish terminated
-int xb_getarb__parse( XB::adata_field **farr, const char *spec );
+int parse_fld( XB::adata_field *farr, const char *spec );
 
 //------------------------------------------------------------------------------------
 //the main (no globclass here, yet)
@@ -28,7 +28,7 @@ int main( int argc, char **argv ){
 	char in_fname[64][256];
 	char out_fname[256];
 	char spec[512]; strcpy( spec, "Xbn:4,Xbi:4,Xbpt:4,Xbt:4,Xbe:4,Xbhe:4" );
-	short int flagger = 0; //c'mon, 16 bits are enough
+	int flagger = 0; //c'mon, 16 bits are enough
 	
 	//usual retrieval of filenames
 	int in_fcount = 0;
@@ -85,10 +85,10 @@ int main( int argc, char **argv ){
 	//parse the spec
 	if( flagger & VERBOSE ) puts( "Parsing spec..." );
 	XB::adata_field farr[257];
-	int nf = xb_getarb_parse( &farr, spec );
+	int nf = parse_fld( farr, spec );
 	
 	if( flagger & VERBOSE ) for( int i=0; i < nf; ++i )
-		printf( "{ %s, %d }\n", farr[i].name, farr[i].size );
+		printf( "\t{ %s, %d }\n", farr[i].name, farr[i].size );
 	
 	//load all the files
 	if( flagger & VERBOSE ) puts( "Loading files..." );
@@ -97,7 +97,7 @@ int main( int argc, char **argv ){
 		try{
 			if( flagger & VERBOSE ) printf( "\tLoading %s...\n", in_fname[f] );
 			XB::arb_reader( buf, in_fname[f], farr );
-			data.insert( data.end(), buf.begin(), buf.end() );
+			book.insert( book.end(), buf.begin(), buf.end() );
 		} catch( XB::error e ) {
 			fprintf( stderr, "File %s ended badly with %s\n",
 			         in_fname[f], e.what() );
@@ -106,33 +106,34 @@ int main( int argc, char **argv ){
 	}
 	
 	//and write all the data
-	if( flagger & VERBOSE ) puts( "Putting data..." )
-	if( flagger & OUT_FLAG ) XB::write( out_fname, data );
-	else XB::write( stdout, data );
+	if( flagger & VERBOSE ) puts( "Putting data..." );
+	if( flagger & OUT_FLAG ) XB::write( out_fname, book );
+	else XB::write( stdout, book );
 	
-	if( fagger & VERBOSE ) puts( "Done. Goodbye." );
+	if( flagger & VERBOSE ) puts( "Done. Goodbye." );
 	return 0;
 }
 
 //------------------------------------------------------------------------------------
 //the parser
-int xb_getarb_parse( XB::adata_field *farr, const char *str ){
-	char *spec[512]; strncpy( spec, str, 512 );
+int parse_fld( XB::adata_field *farr, const char *str ){
+	char spec[512]; strncpy( spec, str, 512 );
 	
 	//read the fields
-	head = strtok( spec, ":," ); //lead field name
+	char *head = strtok( spec, ":," ); //lead field name
 	int i=0;
 	while( head ){
 		strcpy( farr[i].name, head ); //copy name
 		head = strtok( NULL, ":," ); //field size
 		farr[i].size = atoi( head ); //save size
 		head = strtok( NULL, ":," ); //next field name or NULL
-		++i
+		++i;
 	} //and the last one is already nullified
 	
 	int nf = i;
 	++i;
-	farr[i] = { "", 0 };
+	memset( farr[i].name, 0, 16 );
+	farr[i].size = 0;
 	
 	return nf;
 }

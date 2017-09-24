@@ -103,7 +103,7 @@ xb_data_translator : libxb_core libxb_root
 	$(CXX) -lxb_core -lxb_root $(SRC)/xb_data_translator.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o xb_data_translator
 	
 xb_getarb : libxb_core libxb_root
-	$(CXX) -lxb_core -xb_root $(SRC)/xb_getarb.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o xb_getarb
+	$(CXX) -lxb_core -lxb_root $(SRC)/xb_getarb.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o xb_getarb
 
 xb_run_cluster : libxb_core libxb_viz
 	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_run_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_run_cluster
