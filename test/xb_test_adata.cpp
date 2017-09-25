@@ -89,7 +89,8 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	puts( "Listed the fields:" );
 	float data[] = {1.5, 2.5, 3.5, 4.5};
 	for( int i=0; i < fcount; ++i ){
-		astr.dofield( fields[i], 4*sizeof(float), data ); //dofield in copy
+		float tmp[] = {1.5+i, 2.5+i, 3.5+i, 4.5+i};
+		astr.dofield( fields[i], 4*sizeof(float), tmp ); //dofield in copy
 		printf( "\tCopied field %s\n", fields[i] );
 	}
 	
@@ -118,10 +119,19 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	astr.rmfield( "-prakkuccio" );
 	puts( "Removed fields." );
 	
-	float *redata = (float*)astr( "-prakkino" );
-	puts( "Copied data from a field:" );
-	printf( "\tredata = { %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-	printf( "\tredata[0] = %f\n", astr.tip<float>( "-prakkino" ) );
+	float *redata;
+	std::vector<XB::adata_field> fld = astr.lsfields();
+	int nf = fld.size();
+	printf( "Fields listed, they are %d.\n", nf );
+	for( int f=0; f < nf; ++f ){
+		redata = (float*)astr( fld[f].name );
+		printf( "Copied data from '%s':", fld[f].name );
+		printf( "\t{ %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
+		printf( "\tat = { %f %f %f %f }\n", astr.at<float>( fld[f].name, 0 ),
+		          astr.at<float>( fld[f].name, 1 ), astr.at<float>( fld[f].name, 2 ),
+		          astr.at<float>( fld[f].name, 3 ) );
+		printf( "\ttip = %f\n", astr.tip<float>( fld[f].name ) );
+	}
 	
 	free( redata ); //we'll play with it later again.
 	redata = NULL;
@@ -129,9 +139,15 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	XB::adata bstr( astr );
 	if( astr == bstr ) puts( "Copy-constructed structure:" );
 	else{ puts( "Copy construction failed" ); exit( 2 ); }
-	redata = (float*)bstr( "-prakkino" );
-	printf( "\tredata = { %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-	printf( "\tredata[0] = %f\n", bstr.tip<float>( "-prakkino" ) );
+	for( int f=0; f < nf; ++f ){
+		redata = (float*)bstr( fld[f].name );
+		printf( "Copied data from '%s':", fld[f].name );
+		printf( "\t{ %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
+		printf( "\tat = { %f %f %f %f }\n", bstr.at<float>( fld[f].name, 0 ),
+		          bstr.at<float>( fld[f].name, 1 ), bstr.at<float>( fld[f].name, 2 ),
+		          bstr.at<float>( fld[f].name, 3 ) );
+		printf( "\ttip = %f\n", bstr.tip<float>( fld[f].name ) );
+	}
 	bstr.clear();
 	puts( "Cleared bstr." );
 	
@@ -142,10 +158,15 @@ void tester( std::vector<XB::adata> &str, int ns, int fcount ){
 	puts( "Astr cleared." );
 	XB::adata_fromlbuf( bstr, linbuf );
 	puts( "Got a struct from a linear buffer:" );
-	redata = (float*)bstr( "-prak" );
-	printf( "\tredata = { %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-	printf( "\ttip = %f\n", bstr.tip<float>( "-prakkello" ) );
-
+	for( int f=0; f < nf; ++f ){
+		redata = (float*)bstr( fld[f].name );
+		printf( "Copied data from '%s':", fld[f].name );
+		printf( "\t{ %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
+		printf( "\tat = { %f %f %f %f }\n", bstr.at<float>( fld[f].name, 0 ),
+		          bstr.at<float>( fld[f].name, 1 ), bstr.at<float>( fld[f].name, 2 ),
+		          bstr.at<float>( fld[f].name, 3 ) );
+		printf( "\ttip = %f\n", bstr.tip<float>( fld[f].name ) );
+	}
 	free( farr );
 	free( redata );
 	puts( "Objects destroyed.\n" );

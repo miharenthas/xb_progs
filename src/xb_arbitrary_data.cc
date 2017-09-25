@@ -298,9 +298,10 @@ namespace XB{
 		int *deltas = (int*)calloc( nf, sizeof(int) ), *d_indirect;
 		d_indirect = deltas;
 		if( !deltas ) throw error( "Memory error!", "XB::adata_getlbuf" );
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !given._fld_ptr[i] ) continue;
-			*d_indirect = (char*)given._fld_ptr[i] - (char*)given._buf;
+		for( int i=0; i < nf; ++i ){
+			*d_indirect = (char*)given._fld_ptr[given.phash8( given._fields[i].name )] -
+			              (char*)given._buf;
+			++d_indirect;
 		}
 		
 		//allocate the linear buffer

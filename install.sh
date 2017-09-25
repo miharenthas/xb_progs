@@ -40,6 +40,12 @@ else
 	ln -s $PWD/xb_data_translator /usr/local/bin/
 fi
 
+if [ -L /usr/local/bin/xb_getarb ]; then
+	echo "Program \"xb_getarb\" already installed."
+else
+	ln -s $PWD/xb_getarb /usr/local/bin/
+fi
+
 if [ -L /usr/local/bin/xb_trigger_siv ]; then
 	echo "Program \"xb_trigger_siv\" already installed."
 else
