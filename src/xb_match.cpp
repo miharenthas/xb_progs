@@ -64,7 +64,7 @@ int main( int argc, char **argv ){
 	};
 	
 	type_type tt = XB_DATA; //if no type is specified, assume data.
-	while( (iota = getopt_long( argc, argv, "vct:-", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "vct:o:-", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'v' :
 				flagger |= VERBOSE;
@@ -213,12 +213,11 @@ int main( int argc, char **argv ){
 		else if( klz[0].size() XB::write( stdout, klz[0] );
 	}
 	
-	off = ( flagger & STDOUT_FLAG )? 1 : 0;
 	for( int f=0; f < out_fcount; ++f ){
-		if( data[f].size() ) XB::write( out_fname[f], data[f+off] );
-		else if( adata[f+off].size() ) XB::write( out_fname[f], adata[f+off] );
-		else if( track[f+off].size() ) XB::write( out_fname[f], track[f+off] );
-		else if( klz[f+off].size() XB::write( out_fname[f], klz[f+off] ); );
+		if( data[f].size() ) XB::write( out_fname[f], data[f] );
+		else if( adata[f].size() ) XB::write( out_fname[f], adata[f] );
+		else if( track[f].size() ) XB::write( out_fname[f], track[f] );
+		else if( klz[f].size() XB::write( out_fname[f], klz[f] ); );
 	}
 	
 	return 0;
