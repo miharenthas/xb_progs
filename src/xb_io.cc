@@ -22,6 +22,32 @@ void XB::load_header( FILE *f_in, XB::io_header &hdr ){
 	throw XB::error( "bad header!", "XB::load_header" );
 }
 
+//load the header, but from a file name (useful for typechecking)
+void XB::load_header( const char *f_name, io_header &hdr ){
+	//build the command for the pipe
+	char command[310];
+	
+	//check if the file exists.
+	//NOTE: this bit of code works with glibc on GNU/Linux
+	//      no guarantee is provided for other operating systems.
+	strcpy( command, "test -f " );
+	strcat( command, f_name );
+	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
+	
+	strcpy( command, "bunzip2 -c " );
+	strcat( command, f_name );
+	
+	//open the pipe and test
+	FILE* f_in = popen( command, "r" );
+	if( f_in == NULL ) throw( XB::error( "I/O Error!", "XB::load" ) );
+
+	//write
+	XB::load_header( f_in, hdr );
+	
+	//close
+	pclose( f_in );
+}
+
 //compare two headers
 bool XB::operator==( const io_header &left, const io_header &right ){
 	if( left.f_version != right.f_version ) return false;

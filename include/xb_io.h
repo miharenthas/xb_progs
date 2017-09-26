@@ -38,6 +38,7 @@ namespace XB{
 	//and provide versioning information (if the file layout changes)
 	void write_header( FILE *f_out, const io_header &hdr );
 	void load_header( FILE *f_in, io_header &hdr );
+	void load_header( const char *f_name, io_header &hdr );
 	bool operator==( const io_header &left, const io_header &right );
 	io_header *alloc_header( const unsigned int f_version, const char desc[11] );
 	void free_header( io_header *hdr );
