@@ -10,7 +10,7 @@ TEST = $(PROGS_HOME)/test
 GNUPLOT_I_HOME = /usr/local/gnuplot_i
 
 #define the targets
-PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_trigger_siv xb_getarb
+PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_trigger_siv xb_getarb xb_match
 TESTS = xb_check_nn  xb_view_ball xb_view_cluster xb_energy_list xb_try_nn_cluster xb_try_nn_clusterZ xb_try_kmeans_cluster test_xb_cuts xb_draw_cutZ xb_try_parse xb_try_sim_reader xb_test_adata
 OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file xb_tpat xb_adata
 GNUPLOT_OBJS = xb_draw_cluster_ball xb_draw_cut xb_draw_gsl_histogram xb_make_spc__cmd_line
@@ -31,6 +31,37 @@ R3B_LIBS = -lELILuMon -lField -lR3Bbase -lR3BCalifa -lR3BData -lR3BDch -lR3BdTof
 ROOT_LDFLAGS = `root-config --glibs | sed 's/-stdlib=libc++//g'` -L $(FAIRROOTPATH)/lib
 ROOT_FLAGS = $(ROOT_LDFLAGS) $(ROOT_CXXFLAGS) $(FAIR_LIBS) $(R3B_LIBS)
 GNUPLOT_FLAGS = -I$(GNUPLOT_I_HOME)/src
+
+#-----------------------------------------------------------------------
+#collective operations
+.PHONY: all
+all: $(OBJECTS) $(LIBRARIES) $(PROGRAMS)
+
+.PHONY: libs
+libs: $(LIBRARIES)
+
+.PHONY: test
+test: $(OBJECTS) $(TESTS)
+
+.PHONY: install
+install :
+	./install.sh
+
+.PHONY: uninstall
+uninstall :
+	rm -f /usr/local/lib/libxb_core.so
+	rm -f /usr/local/lib/libxb_viz.so
+	rm -f /usr/local/lib/libxb_root.so
+	rm -f /usr/lib/libxb_core.so
+	rm -f /usr/lib/libxb_viz.so
+	rm -f /usr/lib/libxb_root.so
+	rm -f /usr/lib64/libxb_core.so
+	rm -f /usr/lib64/libxb_viz.so
+	rm -f /usr/lib64/libxb_root.so
+
+.PHONY: clean
+clean:
+	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
 
 #recipes
 #----------------------------------------------------------------------
@@ -121,6 +152,9 @@ xb_do_cut : libxb_core libxb_viz
 xb_trigger_siv : libxb_core
 	$(CXX) -lxb_core $(SRC)/xb_trigger_siv.cpp $(CXXFLAGS) -o xb_trigger_siv
 
+xb_match : libxb_core
+	$(CXX) -lxb_core $(SRC)/xb_match.cpp $(CXXFLAGS) -o xb_match
+
 #----------------------------------------------------------------------
 #test programs
 xb_check_nn: xb_ball xb_error
@@ -161,35 +195,4 @@ xb_cml: libxb_core libxb_viz
 
 xb_test_adata : libxb_core libxb_root
 	$(CXX) -lxb_core -lxb_root $(TEST)/xb_test_adata.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o $(TEST)/xb_test_adata
-
-#-----------------------------------------------------------------------
-#collective operations
-.PHONY: all
-all: $(OBJECTS) $(LIBRARIES) $(PROGRAMS)
-
-.PHONY: libs
-libs: $(LIBRARIES)
-
-.PHONY: test
-test: $(OBJECTS) $(TESTS)
-
-.PHONY: install
-install :
-	./install.sh
-
-.PHONY: uninstall
-uninstall :
-	rm -f /usr/local/lib/libxb_core.so
-	rm -f /usr/local/lib/libxb_viz.so
-	rm -f /usr/local/lib/libxb_root.so
-	rm -f /usr/lib/libxb_core.so
-	rm -f /usr/lib/libxb_viz.so
-	rm -f /usr/lib/libxb_root.so
-	rm -f /usr/lib64/libxb_core.so
-	rm -f /usr/lib64/libxb_viz.so
-	rm -f /usr/lib64/libxb_root.so
-
-.PHONY: clean
-clean:
-	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
 
