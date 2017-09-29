@@ -58,6 +58,12 @@ else
 	ln -s $PWD/xb_run_cluster /usr/local/bin/
 fi
 
+if [ -L /usr/local/bin/xb_match ]; then
+	echo "Program \"xb_match\" already installed."
+else
+	ln -s $PWD/xb_match /usr/local/bin/
+fi
+
 if [ -L /usr/local/bin/xb_doppc ]; then
 	echo "Program \"xb_doppc\" already installed."
 else
