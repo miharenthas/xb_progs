@@ -3,10 +3,10 @@
 //if it's signaled to put on stdout, put the first of the bunch.
 /*
 EXAMPLE:
-data:  1 2 3 4 5 6 7 . .
+data:  . 2 3 4 5 6 7 . .
 adata: 1 . 3 . . . 7 . .
 returns
-data:   3 7 --> stdin & save if has a name
+data:   3 7 --> stdout & save if has a name
 adata:  3 7 --> save if has a name
 
 NOTE: what's taken from standard input is always first
