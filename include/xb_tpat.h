@@ -87,26 +87,41 @@ namespace XB{
 	class select_tpat : public std::unary_function < _xb_event_structure&, bool > {
 		public:
 			select_tpat(): _mask( 0 ) {};
-			select_tpat( int mask ): _mask( mask ) {};
-			select_tpat( const select_tpat &given ): _mask( given._mask ) {};
+			select_tpat( int mask, char sgn = 0 ): _mask( mask ), _sgn( sgn ) {};
+			select_tpat( const select_tpat &given ): _mask( given._mask ), _sgn( given._sgn ) {};
 			select_tpat &operator=( const select_tpat &right ){
-				_mask = right._mask; return *this; };
-			select_tpat &operator=( int right ){ _mask = right; return *this; };
+				_mask = right._mask; _sgn = right._sgn; return *this; };
 			
 			//since this goes into a std::remove_if, return false on true.
 			bool operator()( _xb_event_structure &datum ){
-				return !( datum.tpat && //prune zeros
-				          datum.tpat & _mask || 
-				          !( (datum.tpat << 16) & _mask ) );
+				bool val = ( datum.tpat && //prune zeros
+				             (datum.tpat & _mask) == _mask );
+				return _sgn ? val : !val;
 			};
 		private:
 			int _mask;
+			char _sgn;
 	};
 	
 	//----------------------------------------------------------------------------
-	//A function to run the selection.
-	int select_on_tpat( int mask, std::vector<XB::data> &xb_book );
-	int select_on_tpat( int mask, std::vector<XB::track_info> &xb_book );
+	//actually get rid of the data that doesn't match the mask
+	template< class T >
+	int select_on_tpat( int mask, std::vector<T> &xb_book ){
+		typename std::vector<T>::iterator last;
+		select_tpat sel( mask & 0x0000ffff ), selnot( (mask >> 16) & 0x0000ffff, 1 );
+		int sz = xb_book.size();
+		
+		if( mask & 0x0000ffff ){
+			last = std::remove_if( xb_book.begin(), xb_book.end(), sel );
+			xb_book.erase( last, xb_book.end() );
+		}
+		if( mask & 0xffff0000 ){
+			last = std::remove_if( xb_book.begin(), xb_book.end(), selnot );
+			xb_book.erase( last, xb_book.end() );
+		}
+		
+		return sz - xb_book.size();
+	}	
 }
 
 #endif
