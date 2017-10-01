@@ -13,21 +13,22 @@ namespace XB{
 		while( curr ){
 			mbuf = 0;
 			if( strstr( curr, "all" ) ) mbuf = 0xffff;
-			else if( strstr( curr, "minb" ) ) mbuf |= S_MINBIAS;
-			else if( strstr( curr, "frag" ) ) mbuf |= S_FRAGMENT;
-			else if( strstr( curr, "frs" ) ) mbuf |= S_FRSS8;
-			else if( strstr( curr, "cbsum" ) ) mbuf |= S_CBSUM;
-			else if( strstr( curr, "prt" ) ) mbuf |= S_PROTON;
-			else if( strstr( curr, "gbpup" ) ) mbuf |= S_GBPILEUP;
-			else if( strstr( curr, "pix" ) ) mbuf |= S_PIX;
-			else if( strstr( curr, "ntr" ) ) mbuf |= S_NEUTRON;
-			else if( strstr( curr, "cbmu" ) ) mbuf |= C_CBMUON;
-			else if( strstr( curr, "landc" ) ) mbuf |= C_LANDCOSM;
-			else if( strstr( curr, "tfwc" ) ) mbuf |= C_TFWCOSM;
-			else if( strstr( curr, "cbgam" ) ) mbuf |= C_CBGAMMA;
-			else if( strstr( curr, "dftc" ) ) mbuf |= C_DFTCOSM;
-			else if( strstr( curr, "ntfc" ) ) mbuf |= C_NTFCOSM;
-			else if( strstr( curr, "cblrmu" ) ) mbuf |= C_CBLRMUON;
+			else if( strstr( curr, "minb" ) ) mbuf |= POS_NOT_ROLU;
+			else if( strstr( curr, "frag" ) ) mbuf |= POS_NOT_ROLU | FRWALL;
+			else if( strstr( curr, "frs" ) ) mbuf |= S8;
+			else if( strstr( curr, "cbsum" ) ) mbuf |= POS_NOT_ROLU | FRWALL | CB_SUM;
+			else if( strstr( curr, "prt" ) ) mbuf |= POS_NOT_ROLU | FRWALL | PWALL;
+			else if( strstr( curr, "gbpup" ) ) mbuf |= POS_NOT_ROLU;
+			else if( strstr( curr, "pix" ) ) mbuf |= POS_NOT_ROLU | PIX;
+			else if( strstr( curr, "ntr" ) ) mbuf |= POS_NOT_ROLU | LAND_MULT | FRWALL;
+			else if( strstr( curr, "cbmu" ) ) mbuf |= CB_SUM_DEL;
+			else if( strstr( curr, "landc" ) ) mbuf |= LAND_COSM;
+			else if( strstr( curr, "tfwc" ) ) mbuf |= FRWALL_DEL;
+			else if( strstr( curr, "cbgam" ) ) mbuf |= CB_OR_DEL;
+			else if( strstr( curr, "dftc" ) ) mbuf |= PWALL_DEL;
+			else if( strstr( curr, "ntfc" ) ) mbuf |= NTF;
+			else if( strstr( curr, "cblrmu" ) ) mbuf |= CB_STEREO;
+			//TODO: add the single trigger keywords
 			else continue;
 			
 			if( strstr( curr, "^" ) )mbuf = mbuf << 16;
