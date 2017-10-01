@@ -9,7 +9,7 @@ namespace XB{
 		char *full = (char*)malloc( strlen( tpat_str ) );
 		strcpy( full, tpat_str );
 		char *curr = strtok( full, ":" );
-		int mask = strstr( tpat_str, "^" )? 0 : 0xffff0000, mbuf = 0;
+		int mask = 0, mbuf = 0;
 		while( curr ){
 			mbuf = 0;
 			if( strstr( curr, "all" ) ) mbuf = 0xffff;

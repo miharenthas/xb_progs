@@ -95,9 +95,8 @@ namespace XB{
 			
 			//since this goes into a std::remove_if, return false on true.
 			bool operator()( _xb_event_structure &datum ){
-				return !( datum.tpat && //prune zeros
-				          datum.tpat == (_mask & 0x0000ffff) || 
-				          !( (datum.tpat << 16) == (_mask & 0xffff0000) ) );
+				return !( datum.tpat == (_mask & 0x0000ffff) && 
+				          ((datum.tpat << 16) != (_mask & 0xffff0000)) );
 			};
 		private:
 			int _mask;
