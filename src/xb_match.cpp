@@ -156,12 +156,12 @@ int main( int argc, char **argv ){
 		XB::load_header( in_fnames[f], hdr );
 		
 		//switch-ish on the type
-		if( strstr( &hdr.d, "DATA" ) ){
+		if( strstr( &hdr.d, "DATADATA" ) ){
 			if( flagger & VERBOSE ) printf( "\t%s : data.\n", in_fnames[f] );
 			XB::load( in_fnames[f], data[f+off] );
 			std::sort( data[f+off].begin(), data[f+off].end(), event_id_comparison );
 			flagger |= HAVE_DATA;
-		} else if( strstr( &hdr.d, "ADATA" ) ){
+		} else if( strstr( &hdr.d, "ADATAADATA" ) ){
 			if( flagger & VERBOSE ) printf( "\t%s : adata.\n", in_fnames[f] );
 			XB::load( in_fnames[f], adata[f+off] );
 			std::sort( adata[f+off].begin(), adata[f+off].end(), event_id_comparison );
