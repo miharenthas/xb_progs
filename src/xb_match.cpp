@@ -80,12 +80,12 @@ int main( int argc, char **argv ){
 	};
 	
 	type_type tt = XB_DATA; //if no type is specified, assume data.
-	while( (iota = getopt_long( argc, argv, "vct:o:-", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "vct:o:p", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'v' :
 				flagger |= VERBOSE;
 				break;
-			case '-' :
+			case 'p' :
 				flagger |= STDOUT_FLAG;
 				break;
 			case 'c' :
@@ -234,7 +234,7 @@ int main( int argc, char **argv ){
 	if( flagger & VERBOSE ) puts( "Now putting." );
 	
 	if( flagger & STDOUT_FLAG ){
-		if( data[0].size() ) XB::write( stdout, data[0] );
+		if( data[0].size() )XB::write( stdout, data[0] );
 		else if( adata[0].size() ) XB::write( stdout, adata[0] );
 		else if( track[0].size() ) XB::write( stdout, track[0] );
 		else if( klz[0].size() ) XB::write( stdout, klz[0] );
