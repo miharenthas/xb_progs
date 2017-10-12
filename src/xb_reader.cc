@@ -272,8 +272,8 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	
 	//dynamic branch retrival
 	int nf = 0; while( fields[nf].size ) ++nf;
-	TBranch **branches = (TBranch**)malloc( nf*sizeof(TBranch**));
-	for( int i=0; i < nf; ++i ){
+	TBranch **branches = (TBranch**)calloc( nf, sizeof(TBranch**) );
+	for( int i=( strcmp( fields[0].name, "__scalar" )? 0 : 1 ); i < nf; ++i ){
 		branches[i] = data_tree->GetBranch( fields[i].name );
 		if( !branches[i] ) throw XB::error( "No field!", "XB::arb_reader" );
 	}
@@ -284,9 +284,12 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	void *field_bf = malloc( 1 );
 	for( int i=0; i < nb_entries; ++i ){
 		//at least, let's check it's not empty
-		branches[0]->SetAddress( &numel );
-		branches[0]->GetEntry( i );
-		if( !numel ) continue;
+		if( !branches[0] ) numel = 1;
+		else{
+			branches[0]->SetAddress( &numel );
+			branches[0]->GetEntry( i );
+			if( !numel ) continue;
+		}
 	
 		xb_book.push_back( XB::adata() );
 		
