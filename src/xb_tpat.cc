@@ -18,7 +18,7 @@ namespace XB{
 			else if( strstr( curr, "frs" ) ) mbuf |= S8;
 			else if( strstr( curr, "cbsum" ) ) mbuf |= POS_NOT_ROLU | FRWALL | CB_SUM;
 			else if( strstr( curr, "prt" ) ) mbuf |= POS_NOT_ROLU | FRWALL | PWALL;
-			else if( strstr( curr, "gbpup" ) ) mbuf |= POS_NOT_ROLU;
+			else if( strstr( curr, "cbpup" ) ) mbuf |= POS_NOT_ROLU;
 			else if( strstr( curr, "pix" ) ) mbuf |= POS_NOT_ROLU | PIX;
 			else if( strstr( curr, "ntr" ) ) mbuf |= POS_NOT_ROLU | LAND_MULT | FRWALL;
 			else if( strstr( curr, "cbmu" ) ) mbuf |= CB_SUM_DEL;
@@ -28,7 +28,25 @@ namespace XB{
 			else if( strstr( curr, "dftc" ) ) mbuf |= PWALL_DEL;
 			else if( strstr( curr, "ntfc" ) ) mbuf |= NTF;
 			else if( strstr( curr, "cblrmu" ) ) mbuf |= CB_STEREO;
-			//TODO: add the single trigger keywords
+			//raw triggersf from here.
+			//NOTE: some are synonims with the Tpat names
+			//      I don't care.
+			else if( strstr( curr, "Rpnr" ) ) mbuf |= POS_NOT_ROLU;
+			else if( strstr( curr, "Rpos" ) ) mbuf |= POS;
+			else if( strstr( curr, "Rlm" ) ) mbuf |= LAND_MULT;
+			else if( strstr( curr, "Rlc" ) ) mbuf |= LAND_COSM;
+			else if( strstr( curr, "Rfrw" ) ) mbuf |= FRWALL;
+			else if( strstr( curr, "Rfrw-d" ) ) mbuf |= FRWALL_DEL;
+			else if( strstr( curr, "Rpw" ) ) mbuf |= PWALL;
+			else if( strstr( curr, "Rpw-d" ) ) mbuf |= PWALL_DEL;
+			else if( strstr( curr, "Rcbo" ) ) mbuf |= CB_OR;
+			else if( strstr( curr, "Rcbo-d" ) ) mbuf |= CB_OR_DEL;
+			else if( strstr( curr, "Rcbs" ) ) mbuf |= CB_SUM;
+			else if( strstr( curr, "Rcbs-d" ) ) mbuf |= CB_SUM_DEL;
+			else if( strstr( curr, "Rs8" ) ) mbuf |= S8;
+			else if( strstr( curr, "Rpix" ) ) mbuf |= PIX;
+			else if( strstr( curr, "Rntf" ) ) mbuf |= NTF;
+			else if( strstr( curr, "Rcbstereo" ) ) mbuf |= CB_STEREO;
 			else continue;
 			
 			if( strstr( curr, "^" ) )mbuf = mbuf << 16;
