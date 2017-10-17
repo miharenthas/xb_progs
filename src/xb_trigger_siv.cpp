@@ -11,6 +11,7 @@
 #define IN_FLAG 0x01
 #define OUT_FLAG 0x02
 #define TRACK 0x20
+#define DO_OR 0x40
 
 int main( int argc, char **argv ){
 	char in_fname[64][256];
@@ -34,11 +35,12 @@ int main( int argc, char **argv ){
 		{ "output", required_argument, NULL, 'o' },
 		{ "tpat", required_argument, NULL, 'T' },
 		{ "track", no_argument, &flagger, flagger | TRACK },
+		{ "do-or", no_argument, &flagger, flagger | DO_OR },
 		{ NULL, 0, NULL, 0 }
 	};
 	
 	char iota = 0; int idx;
-	while( (iota = getopt_long( argc, argv, "i:o:T:vt", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:T:vtO", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'i' :
 				strncpy( in_fname[0], optarg, 256 );
@@ -57,6 +59,9 @@ int main( int argc, char **argv ){
 				break;
 			case 't' :
 				flagger |= TRACK;
+				break;
+			case 'O' :
+				flagger |= DO_OR;
 				break;
 			default :
 				fprintf( stderr, "usage: [-T tpat|-i FILE|-o FILE|-v|-t]\n" );
@@ -92,8 +97,13 @@ int main( int argc, char **argv ){
 	
 	int mask = XB::str2tpat( tpat_str );
 	int nb_removed, sz_bf = ( flagger & TRACK )? track.size() : data.size();
-	if( flagger & TRACK ) nb_removed = select_on_tpat( mask, track );
-	else nb_removed = select_on_tpat( mask, data );
+	if( flagger & TRACK ){
+		if( flagger & DO_OR ) nb_removed = select_or_tpat( mask, track );
+		else nb_removed = select_and_tpat( mask, track );
+	} else {
+		if( flagger & DO_OR ) nb_removed = select_or_tpat( mask, data );
+		else nb_removed = select_and_tpat( mask, data );
+	}
 	
 	if( flagger & VERBOSE ) printf( "Events before: %d\nEvents now: %d\nRemoved: %d\n",
 	                                sz_bf, ( flagger & TRACK )? track.size() : data.size(),
