@@ -6,11 +6,19 @@
 #define XB_TPAT__H
 
 #include <string.h>
+#include <stdio.h> //that's unusual, but need FILE and printf.
+#include <math.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 #include <vector>
 #include <functional>
 #include <algorithm>
 
+#include <gsl/gsl_histogram.h>
+
 #include "xb_data.h"
+#include "xb_error.h"
 
 /*
 How does the TPat works?
@@ -77,10 +85,24 @@ CB stereo muon : CB_STEREO
 */
 
 namespace XB{
-
 	//----------------------------------------------------------------------------
 	//An utility that translates a string into a tpat mask
 	int str2tpat( const char *tpat_str );
+	
+	//----------------------------------------------------------------------------
+	//some utilities to do the stats
+	gsl_histogram *tpat_stats_alloc(); //allocate a GSL histogram of the right size
+	void tpat_stats_free( gsl_histogram *stats ){ gsl_histogram_free( stats ); };
+	void tpat_stats_push( gsl_histogram *stats, const event_holder &hld ); //push one element
+	                                                                          //into the histom
+	void tpat_stats_printf( FILE *stream, gsl_histogram *stats ); //print the histogram to
+	                                                              //a stream.
+	
+	//a template driver for the fill
+	template< class T >
+	void tpat_stats_fill( gsl_histogram *stats, const std::vector<T> &data ){
+		for( int i=0; i < data.size(); ++i ) tpat_stats_push( stats, data.at( i ) );
+	}
 
 	//----------------------------------------------------------------------------
 	//a functional to select data and track info, logical and

@@ -56,6 +56,89 @@ namespace XB{
 		free( full );
 		return mask;
 	}
-}
+
+	//----------------------------------------------------------------------------
+	//allocate a gsl histogram of the right size
+	gsl_histogram *tpat_stats_alloc(){
+		gsl_histogram *stats = gsl_histogram_alloc( 17 ); //all the flags plus no flag set
+		gsl_histogram_set_ranges_uniform( stats, 0, 16 ); //flags are numbered 1 to 16
+		                                                  //NOTE: in the **EXACT** order
+		                                                  //      they are listed in the header
+		return stats;
+	}
+
+	//----------------------------------------------------------------------------
+	//populate the histogram
+	void tpat_stats_push( gsl_histogram *stats, const event_holder &hld ){
+		if( !hld.tpat ){ gsl_histogram_accumulate( stats, 0, 1 ); return; }
+		if( hld.tpat & POS_NOT_ROLU ) gsl_histogram_accumulate( stats, 1, 1 );
+		if( hld.tpat & POS ) gsl_histogram_accumulate( stats, 2, 1 );
+		if( hld.tpat & LAND_MULT ) gsl_histogram_accumulate( stats, 3, 1 );
+		if( hld.tpat & LAND_COSM ) gsl_histogram_accumulate( stats, 4, 1 );
+		if( hld.tpat & FRWALL ) gsl_histogram_accumulate( stats, 5, 1 );
+		if( hld.tpat & FRWALL_DEL ) gsl_histogram_accumulate( stats, 6, 1 );
+		if( hld.tpat & PWALL ) gsl_histogram_accumulate( stats, 7, 1 );
+		if( hld.tpat & PWALL_DEL ) gsl_histogram_accumulate( stats, 8, 1 );
+		if( hld.tpat & CB_OR ) gsl_histogram_accumulate( stats, 9, 1 );
+		if( hld.tpat & CB_OR_DEL ) gsl_histogram_accumulate( stats, 10, 1 );
+		if( hld.tpat & CB_SUM ) gsl_histogram_accumulate( stats, 11, 1 );
+		if( hld.tpat & CB_SUM_DEL ) gsl_histogram_accumulate( stats, 12, 1 );
+		if( hld.tpat & S8 ) gsl_histogram_accumulate( stats, 13, 1 );
+		if( hld.tpat & PIX ) gsl_histogram_accumulate( stats, 14, 1 );
+		if( hld.tpat & NTF ) gsl_histogram_accumulate( stats, 15, 1 );
+		if( hld.tpat & CB_STEREO ) gsl_histogram_accumulate( stats, 16, 1 );
+	}
+	
+	//----------------------------------------------------------------------------
+	//the big thing: the printing of the stats.
+	void tpat_stats_printf( FILE *stream, gsl_histogram *stats ){
+		if( stats->n != 17 ) throw error( "Wrong histogram!", "XB::tpat_stats_printf" );
 		
-			
+		//scale the histogram
+		double htop = 0;
+		for( int i=0; i < 17; ++i )
+			if( stats->bin[i] > htop ) htop = stats->bin[i];
+		
+		if( !htop ) throw error( "Empty histogram!", "XB::tpat_stats_printf" );
+		
+		//find out the terminal size
+		struct winsize w;
+		ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
+		const int NB_PLUSSES = ( w.ws_col > 30 )? w.ws_col - 30 : 1;
+		
+		htop = NB_PLUSSES/htop;
+		double scaled_bin[17];
+		for( int i=0; i < 17; ++i )
+			scaled_bin[i] = round( stats->bin[i]*htop );
+		
+		//do the printing
+		fprintf( stream, "===TPAT stats===\n" );
+		char flag_names[17][14] = {
+			"UNSET.......",
+			"POS_NOT_ROLU",
+			"POS.........",
+			"LAND_MULT...",
+			"LAND_COSM...",
+			"FRWALL......",
+			"FRWALL_DEL..",
+			"PWALL.......",
+			"PWALL_DEL...",
+			"CB_OR.......",
+			"CB_OR_DEL...",
+			"CB_SUM......",
+			"CB_SUM_DEL..",
+			"S8..........",
+			"PIX.........",
+			"NTF.........",
+			"CB_STERO...."
+		};
+		for( int i=0; i < 17; ++i ){
+			fprintf( stream, "%s:", flag_names[i] );
+			int count;
+			for( count=0; count < scaled_bin[i]; ++count ) fprintf( stream, "+" );
+			for( int c=count; c <= NB_PLUSSES; ++c ) fprintf( stream, " " );
+			fprintf( stream, " | %9.0lf\n", stats->bin[i] );
+		}
+		fprintf( stream, "==/TPAT stats===\n" );
+	}
+}

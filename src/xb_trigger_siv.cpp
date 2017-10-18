@@ -12,13 +12,15 @@
 #define OUT_FLAG 0x02
 #define TRACK 0x20
 #define DO_OR 0x40
+#define DO_STATS 0x80
 
 int main( int argc, char **argv ){
 	char in_fname[64][256];
 	char out_fname[256];
-	char tpat_str[256]; strcpy( tpat_str, "all" );
+	char tpat_str[256]; strcpy( tpat_str, "minb" );
 	int flagger = 0;
 	int in_fcount = 0;
+	FILE *stat_stream = stdout;
 
 	//as unzual, interpret the first arguments as files
 	for( int i=1; i < argc && i < 64; ++i ){
@@ -36,11 +38,12 @@ int main( int argc, char **argv ){
 		{ "tpat", required_argument, NULL, 'T' },
 		{ "track", no_argument, &flagger, flagger | TRACK },
 		{ "do-or", no_argument, &flagger, flagger | DO_OR },
+		{ "stats", no_argument, &flagger, flagger | DO_STATS },
 		{ NULL, 0, NULL, 0 }
 	};
 	
 	char iota = 0; int idx;
-	while( (iota = getopt_long( argc, argv, "i:o:T:vtO", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:T:vtOs", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'i' :
 				strncpy( in_fname[0], optarg, 256 );
@@ -63,8 +66,13 @@ int main( int argc, char **argv ){
 			case 'O' :
 				flagger |= DO_OR;
 				break;
+			case 's' :
+				flagger |= DO_STATS;
+				//TODO: make the optional argument work
+				break;
 			default :
-				fprintf( stderr, "usage: [-T tpat|-i FILE|-o FILE|-v|-t]\n" );
+				fprintf( stderr,
+				         "usage: [-T tpat|-i FILE|-o FILE|-v|-t|-O|-s[FILE]]\n" );
 				exit( 1 );
 		}
 	}
@@ -93,6 +101,19 @@ int main( int argc, char **argv ){
 		else XB::load( stdin, data );
 	}
 	
+	gsl_histogram *stats;
+	if( flagger & DO_STATS ){
+		stats = XB::tpat_stats_alloc();
+		if( flagger & VERBOSE ) printf( "Doing stats...\n" );
+		if( flagger & TRACK ) XB::tpat_stats_fill( stats, track );
+		else XB::tpat_stats_fill( stats, data );
+		
+		XB::tpat_stats_printf( stat_stream, stats );
+		
+		XB::tpat_stats_free( stats );
+		if( stat_stream != stdout ) fclose( stat_stream );
+	}
+	
 	if( flagger & VERBOSE ) printf( "Pruning data...\n" );
 	
 	int mask = XB::str2tpat( tpat_str );
@@ -109,6 +130,7 @@ int main( int argc, char **argv ){
 	                                sz_bf, ( flagger & TRACK )? track.size() : data.size(),
 	                                nb_removed );
 	
+	if( strstr( "/dev/null", out_fname ) ) goto __END__;
 	if( flagger & OUT_FLAG ){
 		if( flagger & TRACK ) XB::write( out_fname, track );
 		else XB::write( out_fname, data );
@@ -117,6 +139,7 @@ int main( int argc, char **argv ){
 		else XB::write( stdout, data );
 	}
 	
+	__END__:
 	if( flagger & VERBOSE ) puts( "Done. Goodbye." );
 	
 	return 0;
