@@ -303,11 +303,18 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, char *f_name ){
 			data_tree->GetBranch( "bodgelogger" )->GetEntry( i );
 			p_boogie = (r3b_ascii_blog*)bbuf.At( 0 );
 			
+			#define __b p_boogie->b
 			xb_book.back().evnt = p_boogie->event_id;
-			xb_book.back().in_beta = p_boogie->beam_momentum;
-			//NOTE: beam_momentum contains a value in AMeV
-			//      it will have to be a) kept in mind and
-			//      b) converted when used.
+			xb_book.back().in_beta = __b;
+			xb_book.back().in_Z = 1;
+			xb_book.back().in_A_on_Z = __b/(sqrt( 1 - __b*__b )*p_boogie->pBeam);
+			#undef __b
+			//NOTE: I'm interpreting b as beta from now on.
+			//      this shouldn't break much for older
+			//      batches of events, where it's not used.
+			//NOTE: I'm not making any assumption on the charge
+			//      remember to fix is later! So in A_on_Z you get
+			//      the beam mass by default.
 			//that's it for now
 		}
 		
