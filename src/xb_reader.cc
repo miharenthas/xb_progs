@@ -307,7 +307,7 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, char *f_name ){
 			xb_book.back().evnt = p_boogie->event_id;
 			xb_book.back().in_beta = __b;
 			xb_book.back().in_Z = 1;
-			xb_book.back().in_A_on_Z = __b/(sqrt( 1 - __b*__b )*p_boogie->pBeam);
+			xb_book.back().in_A_on_Z = sqrt( 1 - __b*__b )*p_boogie->pBeam/__b;
 			#undef __b
 			//NOTE: I'm interpreting b as beta from now on.
 			//      this shouldn't break much for older
