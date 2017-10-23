@@ -16,6 +16,9 @@ The file is created and overwritten if existing: no warning messages are display
 @result{} structure array data:\n\
      n\n\
      evnt\n\
+     tpat\n\
+     in_Z\n\
+     in_A_on_Z\n\
      i  (array)\n\
      t  (array)\n\
      e  (array)\n\

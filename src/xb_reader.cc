@@ -1,9 +1,10 @@
 //implementation of xb_reader
+//NOTE: this code is ugly, because ROOT is ugly
 #include "xb_reader.h"
 
 //--------------------------------------------------------------------------
 //the reader bit implementation
-void XB::reader( std::vector<XB::data> &xb_book, char* f_name ){
+void XB::reader( std::vector<XB::data> &xb_book, const char* f_name ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
             !(sizeof(float) == sizeof(Float_t)) ){
@@ -108,7 +109,7 @@ void XB::reader( std::vector<XB::data> &xb_book, std::string f_name ){
 
 //--------------------------------------------------------------------------
 //the reader bit implementation
-void XB::reader( std::vector<XB::track_info> &xb_book, char* f_name ){
+void XB::reader( std::vector<XB::track_info> &xb_book, const char* f_name ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
             !(sizeof(float) == sizeof(Float_t)) ){
@@ -233,8 +234,97 @@ void XB::reader( std::vector<XB::track_info> &xb_book, std::string f_name ){
 }
 
 //------------------------------------------------------------------------------------
+void XB::arb_reader( std::vector<XB::adata> &xb_book,
+                     const char *f_name, const XB::adata_field *fields ){
+	//first thing first, check that the datatypes are allright
+	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
+            !(sizeof(float) == sizeof(Float_t)) ){
+		throw XB::error( "Quirky types!", "XB::sim_reader" );
+	}
+
+	//open the usual file
+	TFile f( f_name );
+
+	if( f.IsZombie() ){
+		throw XB::error( "File error!", "XB::reader" );
+	}
+	
+	//work out what is the name of the tree
+	TIter nextkey( f.GetListOfKeys() );
+	TKey *key;
+	TObject *obj;
+	TTree *data_tree;
+	while( (key = (TKey*)nextkey()) ){
+		obj = key->ReadObj();
+		if( obj->IsA()->InheritsFrom( TTree::Class() ) ){
+			data_tree = (TTree*)obj;
+			break;
+		}
+	}
+
+	//standard branch retrieval
+	TBranch *evnt = data_tree->GetBranch( "Evnt" ); CK_NULL( evnt, "no Evnt!", "XB::reader" );
+	TBranch *tpat = data_tree->GetBranch( "Tpat" ); CK_NULL( evnt, "no Tpat!", "XB::reader" );
+	//These three fields are't provided in source runs, so they will be copied
+	//and cheked on only in case they are provided.	
+	TBranch *inz = data_tree->GetBranch( "Inz" );
+	TBranch *inaonz = data_tree->GetBranch( "Inaoverz" );
+	
+	//dynamic branch retrival
+	int nf = 0; while( fields[nf].size ) ++nf;
+	TBranch **branches = (TBranch**)malloc( nf*sizeof(TBranch**));
+	for( int i=0; i < nf; ++i ){
+		branches[i] = data_tree->GetBranch( fields[i].name );
+		if( !branches[i] ) throw XB::error( "No field!", "XB::arb_reader" );
+	}
+	
+	//do the various associations
+	int nb_entries = data_tree->GetEntries(), field_sz;
+	unsigned int numel=0;
+	void *field_bf = malloc( 1 );
+	for( int i=0; i < nb_entries; ++i ){
+		//at least, let's check it's not empty
+		branches[0]->SetAddress( &numel );
+		branches[0]->GetEntry( i );
+		if( !numel ) continue;
+	
+		xb_book.push_back( XB::adata() );
+		
+		//addressing
+		evnt->SetAddress( (Int_t*)&xb_book.back().evnt );
+		tpat->SetAddress( (Int_t*)&xb_book.back().tpat );
+		if( inz ) inz->SetAddress( (Float_t*)&xb_book.back().in_Z );
+		if( inaonz ) inaonz->SetAddress( (Float_t*)&xb_book.back().in_A_on_Z );
+
+		//copying
+		evnt->GetEntry( i );
+		tpat->GetEntry( i );
+		if( inz ) inz->GetEntry( i );
+		if( inaonz ) inaonz->GetEntry( i );
+		xb_book.back().n = numel;
+		
+		for( int f=1; f < nf; ++f ){
+			field_sz = fields[f].size*numel;
+			field_bf = realloc( field_bf, field_sz );
+			branches[f]->SetAddress( (Float_t*)field_bf );
+			branches[f]->GetEntry( i );
+			xb_book.back().dofield( fields[f].name, field_sz, field_bf );
+		}
+	}		
+	free( field_bf );
+	
+	f.Close();
+}
+
+//std::string interface...
+void XB::arb_reader( std::vector<XB::adata> &xb_book,
+                     std::string f_name, const XB::adata_field *fields ){
+	XB::arb_reader( xb_book, f_name.c_str(), fields );
+}			
+
+//------------------------------------------------------------------------------------
 //the simulation reader implementation
-void XB::sim_reader( std::vector<XB::data> &xb_book, char *f_name ){
+void XB::sim_reader( std::vector<XB::data> &xb_book, const char *f_name ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
             !(sizeof(float) == sizeof(Float_t)) ){
@@ -333,5 +423,5 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, std::string f_name ){
 //------------------------------------------------------------------------------------
 //dummy track readers
 void XB::sim_reader( std::vector<XB::track_info> &xb_book, std::string f_name ){ return; }
-void XB::sim_reader( std::vector<XB::track_info> &xb_book, char *f_name ){ return; }
+void XB::sim_reader( std::vector<XB::track_info> &xb_book, const char *f_name ){ return; }
 		

@@ -59,6 +59,7 @@ int main( int argc, char **argv ){
 				break;
 			case 'c' : //check the output file
 				check_flag = true;
+				fprintf( stderr, "%s: warning: the check is mostly bogus.\n", argv[0] );
 				break;
 			default:
 				printf( "-%c is not a valid option.\n", optopt );
