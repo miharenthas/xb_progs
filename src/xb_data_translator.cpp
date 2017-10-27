@@ -292,7 +292,7 @@ void xb_data_translator<xb_data_type>::check(){
 //NOTE: this is custom and may change. In the future, this could also
 //      become an input option. As for now, let's hardcode it in.
 bool is_crappy_beam( XB::data &given ){
-	if( given.empty_e && given.empty_he || given.empty_in_beta ) return true;
+	if( (given.empty_e && given.empty_he) || given.empty_in_beta ) return true;
 	return false;
 }
 
