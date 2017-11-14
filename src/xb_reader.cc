@@ -366,7 +366,7 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, const char *f_name ){
 	//try to associate the thing to a bodgelogger
 	bool boogie_flag = false;
 	TClonesArray bbuf( "r3b_ascii_blog", 1 ), *p_bbuf; //we know it's only one per event.
-	p_bbuf = &buf;
+	p_bbuf = &bbuf;
 	if( data_tree->SetBranchAddress( "bodgelogger", &p_bbuf ) ) boogie_flag = false;
 	else boogie_flag = true;
 
