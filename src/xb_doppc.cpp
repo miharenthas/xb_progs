@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -20,7 +21,7 @@
 //the (piped) interface to read a root file with xb_data_translator
 void translate_track_info( std::vector<XB::track_info> &xb_track_book,
                            unsigned int track_f_count, char track_f_name[][256],
-                           bool verbose );
+                           int flagger );
 
 //------------------------------------------------------------------------------------
 //the main
@@ -33,12 +34,7 @@ int main( int argc, char **argv ){
 	unsigned int default_beam_out = 81; //the default beam in
 
 	//flags
-	bool verbose = false; //if true, verbose output
-	bool in_flag = false; //if true, read from a file and not stdin
-	bool track_flag = false; //if true, read the track info from file and not stdin
-	bool cluster_flag = false; //if true, correct clusters instead of just events.
-	bool out_flag = false; //if true, write to a file and not to stdout
-	bool reader_flag = false; //if true, use xb_data_translator to read the TRACK file
+	int flagger = 0;
 	correct_mode mode = RELAXED; //the default is: correct everything
 	                             //at the best of your capabilities.
 	
@@ -56,15 +52,28 @@ int main( int argc, char **argv ){
 	}
 	
 	//set the flag for stdin reading
-	if( track_f_count != 0 ) track_flag = true;
-		
-	char iota = 0;
-	while( (iota = getopt( argc, argv, "d:o:RfFskvb:" )) != -1 ){
+	if( track_f_count != 0 ) track_from_file_flag = true;
+	
+	struct options opts[] = {
+		{ "data", required_argument, NULL, 'd' },
+		{ "output", required_argument, NULL, 'o' },
+		{ "read-rootfile", no_argument, &flagger, flagger | USE_TRANSLATOR },
+		{ "fastidious", no_argument, NULL, 'f' },
+		{ "very-fastidious", no_argument, NULL, 'F' },
+		{ "simulation", no_argument, NULL, 's' },
+		{ "cluster", no_argument,  &flagger, flagger | CLUSTER_FLAG },
+		{ "verbose", no_argument, &flagger, flagger | VERBOSE },
+		{ "beam-out", required_argument, NULL, 'b' },
+		{ "no-track", no_argument, &flagger, flagger | NO_TRACK }
+	};
+	
+	char iota = 0; int idx;
+	while( (iota = getopt_long( argc, argv, "d:o:RfFskvb:", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'd' :
 				if( strlen( optarg ) < 256 ){
 					strcpy( in_f_name, optarg );
-					in_flag = true;
+					flagger |= IN_FROM_FILE;
 				} else {
 					printf( "Input file name too long.\n" );
 					exit( 1 );
@@ -73,14 +82,14 @@ int main( int argc, char **argv ){
 			case 'o' :
 				if( strlen( optarg ) < 256 ){
 					strcpy( out_f_name, optarg );
-					out_flag = true;
+					flagger |= OUT_TO_FILE;
 				} else {
 					printf( "Output file name too long.\n" );
 					exit( 1 );
 				}
 				break;
 			case 'R' :
-				reader_flag = true;
+				flagger |= USE_TRANSLATOR;
 				break;
 			case 'f' :
 				if( mode != VERY_FASTIDIOUS ) mode = FASTIDIOUS;
@@ -92,7 +101,7 @@ int main( int argc, char **argv ){
 				mode = SIMULATION;
 				break;
 			case 'k' :
-				cluster_flag = true;
+				flagger |= CLUSTER_FLAG;
 				break;
 			case 'v' :
 				verbose = true;
@@ -113,24 +122,27 @@ int main( int argc, char **argv ){
 	}
 	
 	//consistency check
-	if( !track_flag && !in_flag ){
+	if( !( flagger & (IN_FROM_FILE | TRACK_FROM_FILE | NO_TRACK) ) ){
 		printf( "Sorry, at the moment I can't read everything from STDIN...\n" );
 		exit( 1 );
 	}
 	
-	if( verbose ) printf( "*** Welcome in the doppler corrector ***\n" );
+	if( flagger & VERBOSE ) printf( "*** Welcome in the doppler corrector ***\n" );
 	
 	//------------------------------------
 	//first of all, read the track data
 	std::vector<XB::track_info> xb_track_book, tb_buf;
-	
-	if( reader_flag && track_flag ){ //if the file(s) haven't been translated yet
-	                                 //use the translator
-		if( verbose ) printf( "Reading through xb_data_translator...\n" );
+	if( flagger & NO_TRACK );
+		//we don't have a track, move on.
+	else if( flagger & (USE_TRANSLATOR | TRACK_FROM_FILE) ){
+		//if the file(s) haven't been translated yet
+	        //use the translator
+		if( flagger & VERBOSE ) printf( "Reading through xb_data_translator...\n" );
 		translate_track_info( xb_track_book, track_f_count, track_f_name, verbose );
-	} else if( !reader_flag && track_flag ) { //or loop on them with XB::load
+	} else if( flagger & TRACK_FROM_FILE && !( flagger & USE_TRANSLATOR ) ) {
+		//or loop on them with XB::load
 		for( int i=0; i < track_f_count; ++i ){
-			if( verbose ) printf( "Reading track from %s...\n", track_f_name[i] );
+			if( flagger & VERBOSE ) printf( "Reading track from %s...\n", track_f_name[i] );
 			XB::load( track_f_name[i], tb_buf ); //load the track data
 			
 			//cat them at the end of the array
@@ -139,47 +151,47 @@ int main( int argc, char **argv ){
 			//cleanup
 			tb_buf.clear();
 		}
-	} else if( !track_flag ) { //or load from STDIN
-		if( verbose ) printf( "Reading track from STDIN...\n" );
+	} else if( !( flagger & TRACK_FROM_FILE ) ) { //or load from STDIN
+		if( flagger & VERBOSE ) printf( "Reading track from STDIN...\n" );
 		XB::load( stdin, xb_track_book );
 	}
 	
 	//then, load the actual data to correct
 	std::vector<XB::data> xb_book;
 	std::vector<XB::clusterZ> klz;
-	if( in_flag ){
-		if( verbose ) printf( "Reading data from %s...\n", in_f_name );
-		if( cluster_flag ) XB::load( in_f_name, klz );
+	if( flagger & IN_FROM_FILE ){
+		if( flagger & VERBOSE ) printf( "Reading data from %s...\n", in_f_name );
+		if( flagger & CLUSTER_FLAG ) XB::load( in_f_name, klz );
 		else XB::load( in_f_name, xb_book );
 	} else {
-		if( verbose ) printf( "Reading data from STDIN...\n" );
-		if( cluster_flag ) XB::load( stdin, klz );
+		if( flagger & VERBOSE ) printf( "Reading data from STDIN...\n" );
+		if( flagger & CLUSTER_FLAG ) XB::load( stdin, klz );
 		else XB::load( stdin, xb_book );
 	}
 	
 	//------------------------------------
 	//do the correction
-	if( verbose ) printf( "Processing...\n" );
-	if( cluster_flag ) apply_doppler_correction( klz, xb_track_book,
-	                                             default_beam_out,
-	                                             mode, verbose );
+	if( flagger & VERBOSE ) printf( "Processing...\n" );
+	if( flagger & CLUSTER_FLAG ) apply_doppler_correction( klz, xb_track_book,
+	                                                       default_beam_out,
+	                                                       mode, flagger );
 	else apply_doppler_correction( xb_book, xb_track_book,
 	                               default_beam_out,
-	                               mode, verbose );
+	                               mode, flagger );
 
 	//------------------------------------	
 	//now, save
-	if( out_flag ){
-		if( verbose ) printf( "Writing to %s...\n", out_f_name );
-		if( cluster_flag ) XB::write( out_f_name, klz );
+	if( flagger & OUT_TO_FILE ){
+		if( flagger & VERBOSE ) printf( "Writing to %s...\n", out_f_name );
+		if( flagger & CLUSTER_FLAG ) XB::write( out_f_name, klz );
 		else XB::write( out_f_name, xb_book );
 	} else {
-		if( cluster_flag ) XB::write( stdout, klz );
+		if( flagger & CLUSTER_FLAG ) XB::write( stdout, klz );
 		else XB::write( stdout, xb_book );
 	}
 	
 	//happy thoughts
-	if( verbose ) printf( "*** Done, goodbye. ***\n" );
+	if( flagger & VERBOSE ) printf( "*** Done, goodbye. ***\n" );
 	return 0;
 }
 
@@ -207,9 +219,9 @@ void translate_track_info( std::vector<XB::track_info> &xb_track_book,
 	}
 
 	//cat the filenames
-	if( verbose ) printf( "Translator will read from file(s):\n" );
+	if( flagger & VERBOSE ) printf( "Translator will read from file(s):\n" );
 	for( int f=0; f < track_f_count; ++f ){
-		if( verbose ) printf( "\t%s\n", track_f_name[f] );
+		if( flagger & VERBOSE ) printf( "\t%s\n", track_f_name[f] );
 		strcat( command, track_f_name[f] );
 		strcat( command, " " );
 	}
@@ -217,7 +229,7 @@ void translate_track_info( std::vector<XB::track_info> &xb_track_book,
 	//add the option to get tracking data
 	strcat( command, "-t" );
 	
-	if( verbose ) printf( "Calling:\n\n%s\n\n", command );
+	if( flagger & VERBOSE ) printf( "Calling:\n\n%s\n\n", command );
 	
 	//open the read pipe
 	FILE *p_xb_data_translator = popen( command, "r" );

@@ -1,6 +1,6 @@
 #include "xb_doppc.h"
 
-//------------------------------------------------------------------------------------
+//====================================================================================
 //implementation of the function that drives the doppler correction
 //in parallel.
 //NOTE: for now, the fedault beam out is always used as the direction
@@ -12,7 +12,7 @@
 void apply_doppler_correction( std::vector<XB::data> &xb_book,
                                std::vector<XB::track_info> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
-                               bool verbose ){
+                               int flagger ){
 	//ok, now do some actual work:
 	//prepare the thing by ordering the vectors according to the event number
 	std::sort( xb_track_book.begin(), xb_track_book.end(), evnt_id_comparison );
@@ -36,7 +36,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 	
 	//some verbosty cosmetics
 	unsigned int thread_num = omp_get_thread_num();
-	if( verbose && !thread_num ) printf( "Event: 0000000000" );
+	if( flagger & VERBOSE && !thread_num ) printf( "Event: 0000000000" );
 	
 	switch( mode ){
 		case RELAXED : //process them all if we aren't fastidious
@@ -45,7 +45,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 			#pragma omp for schedule( static, 10 ) 
 			for( int i=0; i < xb_book.size(); ++i ){
 				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
@@ -72,7 +72,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 			#pragma omp for schedule( static, 10 )
 			for( int i=0; i < xb_book.size(); ++i ){
 				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
@@ -96,7 +96,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 			#pragma omp for schedule( static, 10 )
 			for( int i=0; i < xb_book.size(); ++i ){
 			
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
@@ -129,7 +129,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 			#pragma omp for schedule( dynamic ) 
 			for( int i=0; i < xb_book.size(); ++i ){
 				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//The simulation has NO in_beta information available, so we need it
 				//from the track info of the run we are tailoring the simulation to.
@@ -150,14 +150,14 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 			break;
 	}
 	
-	if( verbose && !thread_num ) printf( "\n" );
+	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
 	
 	} //parallel pragma ends here
 	
 	//if we were fastidious, clean up the events. In a clever way.
 	int n_zeroed = 0;
 	if( mode != RELAXED && mode != SIMULATION ){
-		if( verbose ) printf( "Pruning data...\n" );
+		if( flagger & VERBOSE ) printf( "Pruning data...\n" );
 	
 		//first: sort them again, all the 0-ed events will bubble up at the beginning.
 		std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
@@ -186,7 +186,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
                                std::vector<XB::track_info> &xb_track_book,
                                unsigned int default_beam_out, correct_mode mode,
-                               bool verbose ){
+                               int flagger ){
 	//ok, now do some actual work:
 	//prepare the thing by ordering the vectors according to the event number
 	std::sort( xb_track_book.begin(), xb_track_book.end(), evnt_id_comparison );
@@ -210,7 +210,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 	
 	//some verbosty cosmetics
 	unsigned int thread_num = omp_get_thread_num();
-	if( verbose && !thread_num ) printf( "Event: 0000000000" );
+	if( flagger & VERBOSE && !thread_num ) printf( "Event: 0000000000" );
 	
 	switch( mode ){
 		case RELAXED : //process them all if we aren't fastidious
@@ -219,7 +219,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 			#pragma omp for schedule( static, 10 ) 
 			for( int i=0; i < xb_book.size(); ++i ){
 				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
@@ -248,7 +248,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 			#pragma omp for schedule( static, 10 )
 			for( int i=0; i < xb_book.size(); ++i ){
 				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
@@ -272,7 +272,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 			#pragma omp for schedule( static, 10 )
 			for( int i=0; i < xb_book.size(); ++i ){
 			
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
@@ -305,7 +305,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 			#pragma omp for schedule( dynamic ) 
 			for( int i=0; i < xb_book.size(); ++i ){
 				
-				if( verbose && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
 				
 				//The simulation has NO in_beta information available, so we need it
 				//from the track info of the run we are tailoring the simulation to.
@@ -326,14 +326,14 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 			break;
 	}
 	
-	if( verbose && !thread_num ) printf( "\n" );
+	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
 	
 	} //parallel pragma ends here
 	
 	//if we were fastidious, clean up the events. In a clever way.
 	int n_zeroed = 0;
 	if( mode != RELAXED && mode != SIMULATION ){
-		if( verbose ) printf( "Pruning data...\n" );
+		if( flagger & VERBOSE ) printf( "Pruning data...\n" );
 	
 		//first: sort them again, all the 0-ed events will bubble up at the beginning.
 		std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
@@ -351,6 +351,75 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 }
 
 //------------------------------------------------------------------------------------
+//the doppler corrector without a track (but in_beta must be valid!)
+void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
+                               unsigned int default_beam_out,
+                               int flagger ){
+	//this is a perfect candidate to do in parallel
+	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
+	 private( track_iter, is_evnt )
+	{
+		//init a random sequence
+		srand( time( NULL ) );
+		
+		//loop on all of them (cleverly and in parallel)
+		#pragma omp for schedule( dynamic ) 
+		for( int i=0; i < xb_book.size(); ++i ){
+			
+			if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+			
+			try{
+				XB::doppler_correct( xb_book.at(i),
+				                     xb_book.at(i)->in_beta,
+				                     default_beam_out );
+			} catch( XB::error e ){
+				//TODO: figure out how to get rid of the corrupted events
+				continue;
+			}
+		}
+	}
+	
+	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
+	
+	} //parallel pragma ends here
+}
+
+//------------------------------------------------------------------------------------
+//the doppler corrector without a track (but in_beta must be valid!)
+//TODO: these functions are identical and really should be templated...
+void apply_doppler_correction( std::vector<XB::data> &xb_book,
+                               unsigned int default_beam_out,
+                               int flagger ){
+	//this is a perfect candidate to do in parallel
+	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
+	 private( track_iter, is_evnt )
+	{
+		//init a random sequence
+		srand( time( NULL ) );
+		
+		//loop on all of them (cleverly and in parallel)
+		#pragma omp for schedule( dynamic ) 
+		for( int i=0; i < xb_book.size(); ++i ){
+			
+			if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+			
+			try{
+				XB::doppler_correct( xb_book.at(i),
+				                     xb_book.at(i)->in_beta,
+				                     default_beam_out );
+			} catch( XB::error e ){
+				//TODO: figure out how to get rid of the corrupted events
+				continue;
+			}
+		}
+	}
+	
+	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
+	
+	} //parallel pragma ends here
+}
+
+//====================================================================================
 //the comparison utility
 //for the event holder structure
 bool evnt_id_comparison( const XB::event_holder &one, const XB::event_holder &two ){
