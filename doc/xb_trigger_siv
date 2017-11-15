@@ -1,0 +1,78 @@
+Welcome to xb_trigger_siv, the trigger condition selector!
+
+  $ xb_trigger_siv [FILEs] [OPTIONS]
+
+This program check the "tpat" field, a bitfield where the triggers associated with every event are stored. The ouput are all the events that MATCH the given condition.
+As for now, only data and track_info can be used with this program. They should be enough.
+
+===
+COMPILE
+===
+
+As usual, just type
+
+  $ make xb_trigger_siv
+
+To get the executable. If something goes wrong, check your libraries.
+
+==
+OPTIONS
+==
+
+	-v | --verbose
+		Print some information about the execution.
+	
+	--input | -i
+		Set the ONE file from where the data are read. Really, use just the unescaped file list instead.
+	
+	--output | -o
+		Set the name of the output file.
+	
+	--tpat | -T <string>
+		Set the condition to be met by the events.
+		The syntax is: [^]flags, where ^ is optional and signifies NOT that flag.
+			"high level" reaction triggers:
+				minb     -- good beam
+				frag     -- we have a fragment
+				frs      -- the FRS bit is set
+				cbsum    -- both halves of the CB fired
+				prt      -- it's a proton
+				cbpup    -- CB pileup **BROKEN UPSTREAM**
+				pix      -- pix detector fired
+				ntr      -- it's a neutron
+				cbmu     -- it's a muon in the CB
+				landc    -- it's a cosmic in LAND
+				cbgam    -- it's a gamma in the CB
+				dftc     -- cosmic in the proton chamber
+				ntfc     -- cosmic in the NTF
+				cblrmu   -- a very wide muon in the CB
+			"raw" trigger bits:
+				Rpnr     -- POS_NOT_ROLU bit is set
+				Rpos     -- POS bit is set
+				Rlm      -- LAND_MULT bit is set
+				Rlc      -- LAND_COSM bit is set
+				Rfrw     -- FRWALL bit is set
+				Rfrw-d   -- FRWALL_DELay bit is set
+				Rpw      -- PWALL bit is set
+				Rpw-d    -- PWALL_DELay bit is set
+				Rcbo     -- CB_OR bit is set
+				Rcbo-d   -- CB_OR_DELay bit is set
+				Rcbs     -- CB_SUM bit is set
+				Rcbs-d   -- CB_SUM_DELay bit is set
+				Rs8      -- S8 bit is set
+				Rpix     -- PIX bit is set
+				Rntf     -- NTF bit is set
+				Rcbstereo-- CB_STEREO bit is set.
+		For more detailed infor about the Tpat, read the comments in the head of "xb_tpat.h" or Land02 documentation --in the latter case: may Newton have mercy of your soul.
+	
+	--do-or | -O
+		Instead of looking for all the selected flags, look for any of them.
+	
+	--stats | -s
+		Print a very rudimentary histogram of the "raw" triggers.
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas
+			
