@@ -17,6 +17,7 @@
 
 #include "R3BXBallCrystalHitSim.h"
 #include "R3BXBallPoint.h"
+#include "r3b_ascii_bodgelogger.h"
 
 //a very ugly check on ROOT version
 //because the "machine independent types" are defined

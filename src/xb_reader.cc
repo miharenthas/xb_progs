@@ -365,9 +365,17 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, const char *f_name ){
 	p_buf = &buf;
 	int rc = data_tree->SetBranchAddress( "XBCrystalHitSim", &p_buf );
 	if( rc ) throw XB::error( "Branch not found!", "XB::sim_reader" );
+	
+	//try to associate the thing to a bodgelogger
+	bool boogie_flag = false;
+	TClonesArray bbuf( "r3b_ascii_blog", 1 ), *p_bbuf; //we know it's only one per event.
+	p_bbuf = &buf;
+	if( data_tree->SetBranchAddress( "bodgelogger", &p_bbuf ) ) boogie_flag = false;
+	else boogie_flag = true;
 
 	//a place to handle the data
 	R3BXBallCrystalHitSim *p_data;
+	r3b_ascii_blog *p_boogie;
 	
 	//loop on the data
 	for( int i=0; i < n_events; ++i ){
@@ -382,6 +390,25 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, const char *f_name ){
 			xb_book.back().i[t] = p_data->GetCrystalNumber();
 			xb_book.back().t[t] = p_data->GetTime();
 			xb_book.back().e[t] = 1e6*p_data->GetEnergy(); //GeV to KeV
+		}
+		
+		if( boogie_flag ){
+			data_tree->GetBranch( "bodgelogger" )->GetEntry( i );
+			p_boogie = (r3b_ascii_blog*)bbuf.At( 0 );
+			
+			#define __b p_boogie->b
+			xb_book.back().evnt = p_boogie->event_id;
+			xb_book.back().in_beta = __b;
+			xb_book.back().in_Z = 1;
+			xb_book.back().in_A_on_Z = sqrt( 1 - __b*__b )*p_boogie->pBeam/__b;
+			#undef __b
+			//NOTE: I'm interpreting b as beta from now on.
+			//      this shouldn't break much for older
+			//      batches of events, where it's not used.
+			//NOTE: I'm not making any assumption on the charge
+			//      remember to fix is later! So in A_on_Z you get
+			//      the beam mass by default.
+			//that's it for now
 		}
 		
 		//this basically sets the flags correctly, here
