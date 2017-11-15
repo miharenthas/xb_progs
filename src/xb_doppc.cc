@@ -123,7 +123,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 			break;
 		case SIMULATION : //process them all if we aren't fastidious
 			//init a random sequence
-			srand( time( NULL ) );
+			srand( time( NULL )+thread_num );
 			
 			//loop on all of them (cleverly and in parallel)
 			#pragma omp for schedule( dynamic ) 
@@ -299,7 +299,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 			break;
 		case SIMULATION : //process them all if we aren't fastidious
 			//init a random sequence
-			srand( time( NULL ) );
+			srand( time( NULL )+thread_num );
 			
 			//loop on all of them (cleverly and in parallel)
 			#pragma omp for schedule( dynamic ) 
@@ -346,77 +346,6 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 		//finally, chop off those elements.
 		xb_book.erase( xb_book.begin(), xb_book.begin()+n_zeroed );
 	}
-		
-	
-}
-
-//------------------------------------------------------------------------------------
-//the doppler corrector without a track (but in_beta must be valid!)
-void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
-                               unsigned int default_beam_out,
-                               int flagger ){
-	//this is a perfect candidate to do in parallel
-	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
-	 private( track_iter, is_evnt )
-	{
-		//init a random sequence
-		srand( time( NULL ) );
-		
-		//loop on all of them (cleverly and in parallel)
-		#pragma omp for schedule( dynamic ) 
-		for( int i=0; i < xb_book.size(); ++i ){
-			
-			if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-			
-			try{
-				XB::doppler_correct( xb_book.at(i),
-				                     xb_book.at(i)->in_beta,
-				                     default_beam_out );
-			} catch( XB::error e ){
-				//TODO: figure out how to get rid of the corrupted events
-				continue;
-			}
-		}
-	}
-	
-	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
-	
-	} //parallel pragma ends here
-}
-
-//------------------------------------------------------------------------------------
-//the doppler corrector without a track (but in_beta must be valid!)
-//TODO: these functions are identical and really should be templated...
-void apply_doppler_correction( std::vector<XB::data> &xb_book,
-                               unsigned int default_beam_out,
-                               int flagger ){
-	//this is a perfect candidate to do in parallel
-	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
-	 private( track_iter, is_evnt )
-	{
-		//init a random sequence
-		srand( time( NULL ) );
-		
-		//loop on all of them (cleverly and in parallel)
-		#pragma omp for schedule( dynamic ) 
-		for( int i=0; i < xb_book.size(); ++i ){
-			
-			if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-			
-			try{
-				XB::doppler_correct( xb_book.at(i),
-				                     xb_book.at(i)->in_beta,
-				                     default_beam_out );
-			} catch( XB::error e ){
-				//TODO: figure out how to get rid of the corrupted events
-				continue;
-			}
-		}
-	}
-	
-	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
-	
-	} //parallel pragma ends here
 }
 
 //====================================================================================

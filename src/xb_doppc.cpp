@@ -52,9 +52,9 @@ int main( int argc, char **argv ){
 	}
 	
 	//set the flag for stdin reading
-	if( track_f_count != 0 ) track_from_file_flag = true;
+	if( track_f_count != 0 ) flagger |= TRACK_FROM_FILE;
 	
-	struct options opts[] = {
+	struct option opts[] = {
 		{ "data", required_argument, NULL, 'd' },
 		{ "output", required_argument, NULL, 'o' },
 		{ "read-rootfile", no_argument, &flagger, flagger | USE_TRANSLATOR },
@@ -64,18 +64,19 @@ int main( int argc, char **argv ){
 		{ "cluster", no_argument,  &flagger, flagger | CLUSTER_FLAG },
 		{ "verbose", no_argument, &flagger, flagger | VERBOSE },
 		{ "beam-out", required_argument, NULL, 'b' },
-		{ "no-track", no_argument, &flagger, flagger | NO_TRACK }
+		{ "no-track", no_argument, &flagger, flagger | NO_TRACK },
+		{ NULL, 0, NULL, 0 }
 	};
 	
 	char iota = 0; int idx;
-	while( (iota = getopt_long( argc, argv, "d:o:RfFskvb:", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "d:o:RfFskvb:u", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'd' :
 				if( strlen( optarg ) < 256 ){
 					strcpy( in_f_name, optarg );
 					flagger |= IN_FROM_FILE;
 				} else {
-					printf( "Input file name too long.\n" );
+					fprintf( stderr, "Input file name too long.\n" );
 					exit( 1 );
 				}
 				break;
@@ -84,7 +85,7 @@ int main( int argc, char **argv ){
 					strcpy( out_f_name, optarg );
 					flagger |= OUT_TO_FILE;
 				} else {
-					printf( "Output file name too long.\n" );
+					fprintf( stderr, "Output file name too long.\n" );
 					exit( 1 );
 				}
 				break;
@@ -104,23 +105,21 @@ int main( int argc, char **argv ){
 				flagger |= CLUSTER_FLAG;
 				break;
 			case 'v' :
-				verbose = true;
+				flagger |= VERBOSE;
 				break;
 			case 'b' :
 				default_beam_out = atoi( optarg );
 				if( default_beam_out < 1 || default_beam_out > 162 ){
-					printf( "Valid indices: 1..162.\n" );
+					fprintf( stderr, "Valid indices: 1..162.\n" );
 					exit( 1 );
 				}
 				break;
-			default :
-				printf( "\"%s\" is not a valid option.\n", optopt );
-				printf( "Valid options are: -i <file_name>\n-o <file_name>\n" );
-				printf( "-R\n-f\n-F\n-s\n-v\n-b [1..162]\n" );
-				exit( 0 );
+			case 'u' :
+				flagger |= NO_TRACK;
+				break;
 		}
 	}
-	
+	printf( "%x\n", flagger );
 	//consistency check
 	if( !( flagger & (IN_FROM_FILE | TRACK_FROM_FILE | NO_TRACK) ) ){
 		printf( "Sorry, at the moment I can't read everything from STDIN...\n" );
@@ -132,13 +131,14 @@ int main( int argc, char **argv ){
 	//------------------------------------
 	//first of all, read the track data
 	std::vector<XB::track_info> xb_track_book, tb_buf;
-	if( flagger & NO_TRACK );
+	if( flagger & NO_TRACK )
+		if( flagger & VERBOSE ) puts( "Working with no track." );
 		//we don't have a track, move on.
 	else if( flagger & (USE_TRANSLATOR | TRACK_FROM_FILE) ){
 		//if the file(s) haven't been translated yet
 	        //use the translator
 		if( flagger & VERBOSE ) printf( "Reading through xb_data_translator...\n" );
-		translate_track_info( xb_track_book, track_f_count, track_f_name, verbose );
+		translate_track_info( xb_track_book, track_f_count, track_f_name, flagger );
 	} else if( flagger & TRACK_FROM_FILE && !( flagger & USE_TRANSLATOR ) ) {
 		//or loop on them with XB::load
 		for( int i=0; i < track_f_count; ++i ){
@@ -172,13 +172,21 @@ int main( int argc, char **argv ){
 	//------------------------------------
 	//do the correction
 	if( flagger & VERBOSE ) printf( "Processing...\n" );
-	if( flagger & CLUSTER_FLAG ) apply_doppler_correction( klz, xb_track_book,
-	                                                       default_beam_out,
-	                                                       mode, flagger );
-	else apply_doppler_correction( xb_book, xb_track_book,
-	                               default_beam_out,
-	                               mode, flagger );
-
+	if( flagger & NO_TRACK	){
+		if( flagger & VERBOSE ) puts( "Simple processor, no track." );
+		if( flagger & CLUSTER_FLAG )
+			apply_doppc_simple<XB::clusterZ>( klz, default_beam_out, flagger );
+		else
+			apply_doppc_simple<XB::data>( xb_book, default_beam_out, flagger );
+	} else {
+		if( flagger & CLUSTER_FLAG ) apply_doppler_correction( klz, xb_track_book,
+			                                               default_beam_out,
+			                                               mode, flagger );
+		else apply_doppler_correction( xb_book, xb_track_book,
+			                       default_beam_out,
+			                       mode, flagger );
+	}
+	
 	//------------------------------------	
 	//now, save
 	if( flagger & OUT_TO_FILE ){
@@ -200,7 +208,7 @@ int main( int argc, char **argv ){
 //implementation of the (piped) interface to xb_data_translator
 void translate_track_info( std::vector<XB::track_info> &xb_track_book,
                            unsigned int track_f_count, char track_f_name[][256],
-                           bool verbose ){
+                           int flagger ){
 
 	//prepare the command
 	char command[64*256 + 512]; //potentially, this is huge

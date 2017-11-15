@@ -81,15 +81,39 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
                                unsigned int default_beam_out, correct_mode mode,
                                int flagger );
 
-//again two overloads, for the "without a track" option
-//for the data
-void apply_doppler_correction( std::vector<XB::data> &xb_book,
-                               unsigned int default_beam_out,
-                               int flagger );
-//and for the clusterZ
-void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
-                               unsigned int default_beam_out,
-                               int flagger );
+//and a template, for the "without a track" option
+template< class T >
+void apply_doppc_simple( std::vector<T> &xb_book,
+                         unsigned int default_beam_out,
+                         int flagger ){
+	//this is a perfect candidate to do in parallel
+	#pragma omp parallel shared( xb_book )
+	{
+		//init a random sequence
+		unsigned int thread_num = omp_get_thread_num();
+		srand( time( NULL )+thread_num );
+		
+		//loop on all of them (cleverly and in parallel)
+		#pragma omp for schedule( dynamic ) 
+		for( int i=0; i < xb_book.size(); ++i ){
+			
+			if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+			
+			try{
+				XB::doppler_correct( xb_book.at(i),
+				                     xb_book.at(i).in_beta,
+				                     default_beam_out );
+			} catch( XB::error e ){
+				//TODO: figure out how to get rid of the corrupted events
+				continue;
+			}
+		}
+	if( flagger & VERBOSE && !thread_num ) printf( "\n" );
+	
+	} //parallel pragma ends here
+}
+
+//---------------------------------------------------------------------------------
 //an utility collection for sorting
 bool evnt_id_comparison( const XB::event_holder &one, const XB::event_holder &two );
 #endif
