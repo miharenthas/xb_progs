@@ -1,0 +1,41 @@
+Welcome in xb_match, a program that matches event data from two files
+
+  $ xb_match [FILE1] [FILE2] [OPTIONS]
+  
+The data from file 1 are matched with those of file 2 (this supports all four flavours that exist in the toolkit: data adata clusterZ and track_info). What's left of the files is saved, in order and starting from standard input, when present, ending with file 2.
+
+==
+COMPILE
+==
+
+As usual, just type
+
+  $ make xb_match
+
+To get the executable. If something goes wrong, check your libraries.
+
+==
+OPTIONS
+==
+
+	--verbose | -v
+		Print some information about the exectution to the standard output.
+	
+	--put-on-stdout | -p
+		Print the first matched data to the standard output
+		Hint: you can use this option to do matching "in cascade".
+	
+	--get-from-stdin | -c
+		Read data from the standard input as first file
+		If you specify this option and also give a file, the file is file 2.
+	
+	--type | -t <data|adata|track|klz>
+		If you plan to use -c, you MUST specify the type (auto-detection doesn't work... yet).
+	
+	--put-to | -o
+		Specify the outputS. You can use this option more than once and the output files will be filled in order.
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas

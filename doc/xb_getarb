@@ -1,0 +1,42 @@
+Welcome in the arbitrary data getter program!
+
+  $ xb_getarb [SOME_ROOT_SH...FILE] [OPTIONS]
+  
+This program will read some fields out of a Land02-like TTree and put them in an arbitrary data structure. It's useful to get a glimpse of other detectors, although it's still limited in functionality (development in progress).
+
+===
+COMPILE
+===
+
+As usual, just type
+
+  $ make xb_trigger_siv
+
+To get the executable. If something goes wrong, check your libraries.
+
+==
+OPTIONS
+==
+
+	--verbose | -v
+		Print some information about the execution to the standard output.
+	
+	--read-from | -i <file>
+		Sets the ONE input file. Really, use the file list instead.
+	
+	--write-to | -o <file>
+		Write the data read in this file.
+	
+	--fields | -F
+		Look for and read these fields, with the following syntax:
+			index_field:bytesize,field:bytesize,...
+		The "index_field" is the size of the array of the other fields.
+		bytsize is always te size of in bytes of the field (should be always 4).
+		NOTE: this also means that you can't read two arrays that have different dimensions in oe single go, sorry.
+		NOTE: scalar fields are scalars by using the "__scalar:bytesize" index_field
+
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas

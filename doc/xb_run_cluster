@@ -1,32 +1,58 @@
-xb_run_cluster:
+Welcome in xb_run_cluster, the clustering program!
 
 ./xb_run_cluster [FILE] [OPTIONS]
 
-This program runs the clustering and addback (*NO* doppler correction).
+This program runs the clustering and addback (*NO* doppler correction). The method is nth-neighbour, ordered by energy:
 
+  1. Order the energy deposits in a single event.
+  2. Consider the highest the first centroid.
+  3. Look around it up to the nth-neighbouring order (rings of crystals around the centroid)
+  4. Whatever is non-zero, add it to the cluster and sum it to the total energy.
+  5. Repeat until every deposit in the event has been assigned to a cluster.
+
+NOTE: this algorithm has certainly a lot of limits, especially when there are many deposits in close proximity --effect "bite out of the apple" on the cluster that happens to be considered after. But on 126 crystals any fancier methond really feels like overkill.
+
+===
 COMPILATION:
+===
 
-$ make xb_run_cluster
+  $ make xb_run_cluster
 
 This program uses the library "gnuplot_i", written by N. Devillard, which should be reachable by your system.
 Also, you should edit the Makefile in order to let the program know where the library is.
 The library itself can be retrieved from "http://ndevilla.free.fr/gnuplot/":
 
-$ wget ndevilla.free.fr/gnuplot/gnuplot_i-2.11.tar.gz
-$ tar -xzvf gnuplot_i-2.11.tar.gz
+  $ wget ndevilla.free.fr/gnuplot/gnuplot_i-2.11.tar.gz
+  $ tar -xzvf gnuplot_i-2.11.tar.gz
 
+NOTE: modify the Makefile of the thing, adding -fPIC option. Otherwise, your libxb_viz won't compile
+
+===
 USAGE:
+===
 
--i <file_name> : the name of the input file, which should have come out of xb_data_translator or xb_doppc. If it's not specified, the program reads from standard input.
+	-i <file_name>
+		the name of the input file, which should have come out of xb_data_translator or xb_doppc. If it's not specified, the program reads from standard input.
 
--o <file_name> : the name of the output file. It should have the suffix .cluster.xb, but that's up to the user. If it's not specified, the program writes on the standard output.
+	-o <file_name>
+		the name of the output file. It should have the suffix .cluster.xb, but that's up to the user. If it's not specified, the program writes on the standard output.
 
--v : verobse output. The program will print statemets about itself. *DO NOT USE* if you're writing on the standard output, as it will corrupt the data.
+	-v
+		verobse output. The program will print statemets about itself. *DO NOT USE* if you're writing on the standard output, as it will corrupt the data.
 
--n : sets the neighborhood order for the clustering (i.e.: -n 2 looks for neighbours up to order 2)
+	-n
+		sets the neighborhood order for the clustering (i.e.: -n 2 looks for neighbours up to order 2)
 
--d : causes the program to draw the clusters, at interval wait_for (specified with opion -w <seconds>). Obviously, do not use with the standard output...
+	-d
+		causes the program to draw the clusters, at interval wait_for (specified with opion -w <seconds>). Obviously, do not use with the standard output...
 
--w : the time to wait for between the cluster displays.
+	-w
+		the time to wait for between the cluster displays.
 
--c : check(-ish, as yet) the written file, has effect effect only if a file is written.
+	-c
+		check(-ish, as yet) the written file, has effect effect only if a file is written.
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas
