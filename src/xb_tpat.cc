@@ -17,7 +17,7 @@ namespace XB{
 			else if( strstr( curr, "frs" ) ) mbuf |= S8;
 			else if( strstr( curr, "cbsum" ) ) mbuf |= POS_NOT_ROLU | FRWALL | CB_SUM;
 			else if( strstr( curr, "prt" ) ) mbuf |= POS_NOT_ROLU | FRWALL | PWALL;
-			else if( strstr( curr, "gbpup" ) ) mbuf |= POS_NOT_ROLU;
+			else if( strstr( curr, "cbpup" ) ) mbuf |= POS_NOT_ROLU;
 			else if( strstr( curr, "pix" ) ) mbuf |= POS_NOT_ROLU | PIX;
 			else if( strstr( curr, "ntr" ) ) mbuf |= POS_NOT_ROLU | LAND_MULT | FRWALL;
 			else if( strstr( curr, "cbmu" ) ) mbuf |= CB_SUM_DEL;
