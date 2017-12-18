@@ -12,21 +12,25 @@ function field = xb_data_field( evt, field_name )
 	%loop-copy the energies into nrg
 	idx = 1;
 	for ii = 1:length( evt )
-		if evt(ii).n
-			if isfield( evt(ii), field_name )
-				if evt(ii).( field_name )
-					field(idx:idx + evt(ii).n -1) = ...
-					    evt(ii).( field_name );
+		try
+			if evt(ii).n
+				if isfield( evt(ii), field_name )
+					if evt(ii).( field_name )
+						field(idx:idx + evt(ii).n -1) = ...
+							evt(ii).( field_name );
+					else
+						field(idx:idx + evt(ii).n -1) = ...
+							zeros( evt(ii).n, 1 );
+					end
+					idx = idx + evt(ii).n;
 				else
-					field(idx:idx + evt(ii).n -1) = ...
-						zeros( evt(ii).n, 1 );
+					warning( ['At index', num2str(ii), ...
+							' the requested field "', ...
+							field_name, '" wasn`t found.'] );
 				end
-				idx = idx + evt(ii).n;
-			else
-				warning( ['At index', num2str(ii), ...
-				          ' the requested field "', ...
-				          field_name, '" wasn`t found.'] );
-			end
-		endif
+			endif
+		catch err
+			warning( ["Something happened: ", err.message] );
+		end %catch
 	endfor
 end
