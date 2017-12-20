@@ -119,7 +119,7 @@ int main( int argc, char **argv ){
 				break;
 		}
 	}
-	printf( "%x\n", flagger );
+	
 	//consistency check
 	if( !( flagger & (IN_FROM_FILE | TRACK_FROM_FILE | NO_TRACK) ) ){
 		printf( "Sorry, at the moment I can't read everything from STDIN...\n" );
@@ -131,15 +131,16 @@ int main( int argc, char **argv ){
 	//------------------------------------
 	//first of all, read the track data
 	std::vector<XB::track_info> xb_track_book, tb_buf;
-	if( flagger & NO_TRACK )
+	if( flagger & NO_TRACK ){
 		if( flagger & VERBOSE ) puts( "Working with no track." );
 		//we don't have a track, move on.
-	else if( flagger & (USE_TRANSLATOR | TRACK_FROM_FILE) ){
+	}else if( flagger & USE_TRANSLATOR && flagger & TRACK_FROM_FILE ){
+
 		//if the file(s) haven't been translated yet
 	        //use the translator
 		if( flagger & VERBOSE ) printf( "Reading through xb_data_translator...\n" );
 		translate_track_info( xb_track_book, track_f_count, track_f_name, flagger );
-	} else if( flagger & TRACK_FROM_FILE && !( flagger & USE_TRANSLATOR ) ) {
+	} else if( flagger & TRACK_FROM_FILE ) {
 		//or loop on them with XB::load
 		for( int i=0; i < track_f_count; ++i ){
 			if( flagger & VERBOSE ) printf( "Reading track from %s...\n", track_f_name[i] );
@@ -151,7 +152,8 @@ int main( int argc, char **argv ){
 			//cleanup
 			tb_buf.clear();
 		}
-	} else if( !( flagger & TRACK_FROM_FILE ) ) { //or load from STDIN
+	} else { //or load from STDIN
+		puts( "pup" );
 		if( flagger & VERBOSE ) printf( "Reading track from STDIN...\n" );
 		XB::load( stdin, xb_track_book );
 	}

@@ -24,91 +24,48 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 	//some useful iterators
 	XB::track_info *xbtb_begin = &xb_track_book.front();
 	XB::track_info *xbtb_end = &xb_track_book.back()+1;
-	XB::track_info *track_iter;
+	XB::track_info *track_iter = xbtb_begin, *track_iter_bak;
 	
 	//the comparison functional
 	is_event_id is_evnt;
 	
 	//this is a perfect candidate to do in parallel
-	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
-	 private( track_iter, is_evnt )
+	#pragma omp parallel
 	{
+	
+	//some useful iterators
+	XB::track_info *xbtb_begin = &xb_track_book.front();
+	XB::track_info *xbtb_end = &xb_track_book.back()+1;
+	XB::track_info *track_iter = xbtb_begin, *track_iter_bak;
+	
+	//the comparison functional
+	is_event_id is_evnt;
 	
 	//some verbosty cosmetics
 	unsigned int thread_num = omp_get_thread_num();
 	if( flagger & VERBOSE && !thread_num ) printf( "Event: 0000000000" );
 	
 	switch( mode ){
-		case RELAXED : //process them all if we aren't fastidious
-		
+		case RELAXED : case FASTIDIOUS : case VERY_FASTIDIOUS :
 			//loop on all of them (cleverly and in parallel)
 			#pragma omp for schedule( static, 10 ) 
 			for( int i=0; i < xb_book.size(); ++i ){
-				
 				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				
+				//find the track info
+				is_evnt = xb_book.at(i); //set up the functional
+				track_iter_bak = track_iter; //save the last valid track iter
+				//find it. Note that both arrays are sorted, so we can start looking
+				//from the last track_iter and reduce the field search as we progress.
+				if( xb_book.at(i).evnt < track_iter->evnt ||
+				    xb_book.at(i).evnt > (xbtb_end-1)->evnt ) track_iter = xbtb_end;
+				else track_iter = std::find_if( track_iter, xbtb_end, is_evnt );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-					
-					//find the track info
-					is_evnt = xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//and correct it
-					XB::doppler_correct( xb_book.at(i),
-					                     track_iter->beta_0,
-					                     default_beam_out );
-				
-				//else, use the default beam out direction (given as a crystal)
-				//and interpolate the beta
-				} else XB::doppler_correct( xb_book.at(i),
-				                            interp_beta_0( xb_book.at(i).in_beta ),
-				                            default_beam_out );
-			}
-			break;
-		case FASTIDIOUS : //just those in the track book
-		
-			#pragma omp for schedule( static, 10 )
-			for( int i=0; i < xb_book.size(); ++i ){
-				
-				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-				    					
-					//find the track info
-					is_evnt = xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//and correct it
-					XB::doppler_correct( xb_book.at(i),
-					                     track_iter->beta_0,
-					                     default_beam_out );
-				
-				//if the datum doesn't have tracking information
-				//mark it for deletion
-				} else xb_book.at(i).evnt = 0;
-			}
-			break;
-		case VERY_FASTIDIOUS : //just those in the track book AND with a single fragment
-			#pragma omp for schedule( static, 10 )
-			for( int i=0; i < xb_book.size(); ++i ){
-			
-				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-									
-					//find the track info
-					is_evnt = xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//since we are very fastidious, check the number fo fragments
-					//if it's more than one, makr for deletion and continue
-					if( track_iter->n != 1 ){
+				if( track_iter != xbtb_end ){
+					//if we are very fastidious, check if we need to jump
+					if( mode == VERY_FASTIDIOUS && track_iter->n != 1 ){
 						xb_book.at(i).evnt = 0;
 						continue;
 					}
@@ -116,9 +73,20 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 					//and correct it
 					XB::doppler_correct( xb_book.at(i),
 					                     track_iter->beta_0,
-					                     track_iter->outgoing[0] );
-				//else mark it for deletion
-				} else xb_book.at(i).evnt = 0;
+					                     default_beam_out );
+					
+				//else, use the default beam out direction (given as a crystal)
+				//and interpolate the beta
+				} else {
+					if( mode == RELAXED ){
+						XB::doppler_correct( xb_book.at(i),
+						                     interp_beta_0( xb_book.at(i).in_beta ),
+						                     default_beam_out );
+					} else {
+						xb_book.at(i).evnt = 0;
+					}
+					track_iter = track_iter_bak;
+				}
 			}
 			break;
 		case SIMULATION : //process them all if we aren't fastidious
@@ -170,8 +138,6 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 		//finally, chop off those elements.
 		xb_book.erase( xb_book.begin(), xb_book.begin()+n_zeroed );
 	}
-		
-	
 }
 
 //------------------------------------------------------------------------------------
@@ -190,7 +156,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 	//ok, now do some actual work:
 	//prepare the thing by ordering the vectors according to the event number
 	std::sort( xb_track_book.begin(), xb_track_book.end(), evnt_id_comparison );
-	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison ); //TODO: make this parallel!
+	std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
 
 	//prepare the beta interpolator
 	XB::b_interp interp_beta_0( xb_track_book );
@@ -198,93 +164,48 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 	//some useful iterators
 	XB::track_info *xbtb_begin = &xb_track_book.front();
 	XB::track_info *xbtb_end = &xb_track_book.back()+1;
-	XB::track_info *track_iter;
+	XB::track_info *track_iter = xbtb_begin, *track_iter_bak;
 	
 	//the comparison functional
 	is_event_id is_evnt;
 	
 	//this is a perfect candidate to do in parallel
-	#pragma omp parallel shared( xb_book, xb_track_book, xbtb_begin, xbtb_end )\
-	 private( track_iter, is_evnt )
+	#pragma omp parallel
 	{
+	
+	//some useful iterators
+	XB::track_info *xbtb_begin = &xb_track_book.front();
+	XB::track_info *xbtb_end = &xb_track_book.back()+1;
+	XB::track_info *track_iter = xbtb_begin, *track_iter_bak;
+	
+	//the comparison functional
+	is_event_id is_evnt;
 	
 	//some verbosty cosmetics
 	unsigned int thread_num = omp_get_thread_num();
 	if( flagger & VERBOSE && !thread_num ) printf( "Event: 0000000000" );
 	
 	switch( mode ){
-		case RELAXED : //process them all if we aren't fastidious
-		
+		case RELAXED : case FASTIDIOUS : case VERY_FASTIDIOUS :
 			//loop on all of them (cleverly and in parallel)
 			#pragma omp for schedule( static, 10 ) 
 			for( int i=0; i < xb_book.size(); ++i ){
-				
 				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
+				
+				//find the track info
+				is_evnt = xb_book.at(i); //set up the functional
+				track_iter_bak = track_iter; //save the last valid track iter
+				//find it. Note that both arrays are sorted, so we can start looking
+				//from the last track_iter and reduce the field search as we progress.
+				if( xb_book.at(i).evnt < track_iter->evnt ||
+				    xb_book.at(i).evnt > (xbtb_end-1)->evnt ) track_iter = xbtb_end;
+				else track_iter = std::find_if( track_iter, xbtb_end, is_evnt );
 				
 				//if the event is in the track bunch (and we didn't reach
 				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-					
-					//find the track info
-					is_evnt = xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//and correct it
-					XB::doppler_correct( xb_book.at(i),
-					                     track_iter->beta_0,
-					                     default_beam_out );
-				
-				//else, use the default beam out direction (given as a crystal)
-				//and interpolate the beta
-				} else {
-					XB::doppler_correct( xb_book.at(i),
-				                            interp_beta_0( xb_book.at(i).in_beta ),
-				                            default_beam_out );
-				}
-			}
-			break;
-		case FASTIDIOUS : //just those in the track book
-		
-			#pragma omp for schedule( static, 10 )
-			for( int i=0; i < xb_book.size(); ++i ){
-				
-				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-				    					
-					//find the track info
-					is_evnt = xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//and correct it
-					XB::doppler_correct( xb_book.at(i),
-					                     track_iter->beta_0,
-					                     default_beam_out );
-				
-				//if the datum doesn't have tracking information
-				//mark it for deletion
-				} else xb_book.at(i).evnt = 0;
-			}
-			break;
-		case VERY_FASTIDIOUS : //just those in the track book AND with a single fragment
-			#pragma omp for schedule( static, 10 )
-			for( int i=0; i < xb_book.size(); ++i ){
-			
-				if( flagger & VERBOSE && !thread_num ) printf( "\b\b\b\b\b\b\b\b\b\b%010d", i );
-				
-				//if the event is in the track bunch (and we didn't reach
-				//the end of that vector) use the track data to correct
-				if( std::binary_search( xbtb_begin, xbtb_end, xb_book.at(i), evnt_id_comparison ) ){
-									
-					//find the track info
-					is_evnt = xb_book.at(i); //set up the functional
-					track_iter = std::find_if( xbtb_begin, xbtb_end, is_evnt ); //find it: we
-					                                                            //know it's here
-					//since we are very fastidious, check the number fo fragments
-					//if it's more than one, makr for deletion and continue
-					if( track_iter->n != 1 ){
+				if( track_iter != xbtb_end ){
+					//if we are very fastidious, check if we need to jump
+					if( mode == VERY_FASTIDIOUS && track_iter->n != 1 ){
 						xb_book.at(i).evnt = 0;
 						continue;
 					}
@@ -292,9 +213,20 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 					//and correct it
 					XB::doppler_correct( xb_book.at(i),
 					                     track_iter->beta_0,
-					                     track_iter->outgoing[0] );
-				//else mark it for deletion
-				} else xb_book.at(i).evnt = 0;
+					                     default_beam_out );
+					
+				//else, use the default beam out direction (given as a crystal)
+				//and interpolate the beta
+				} else {
+					if( mode == RELAXED ){
+						XB::doppler_correct( xb_book.at(i),
+						                     interp_beta_0( xb_book.at(i).in_beta ),
+						                     default_beam_out );
+					} else {
+						xb_book.at(i).evnt = 0;
+					}
+					track_iter = track_iter_bak;
+				}
 			}
 			break;
 		case SIMULATION : //process them all if we aren't fastidious
