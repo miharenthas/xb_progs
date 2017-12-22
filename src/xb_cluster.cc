@@ -61,7 +61,6 @@ namespace XB{
 			//this might be refined later, in dependence of what actually
 			//you can find in the data of your experiment
 			if( !evnt.empty_e ) ordered_energy_list[i].e = evnt.e[i];
-			else if( !evnt.empty_he ) ordered_energy_list[i].e = evnt.he[i];
 		
 			//get the crystal index
 			ordered_energy_list[i].i = evnt.i[i];
@@ -133,7 +132,7 @@ namespace XB{
 		for( int i=0; i < evnt.n; ++i ){
 			if( std::binary_search( neighbours, neighbours+n_neighs, evnt.i[i] ) ){ //we have a match
 				kl.crys.push_back( evnt.i[i] ); //add the crystal to the cluster
-				kl.crys_e.push_back( evnt.e[i] ? evnt.e[i] : evnt.he[i] ); //add the single energy deposit
+				kl.crys_e.push_back( evnt.e[i] ? evnt.e[i] : 0 ); //add the single energy deposit
 				++kl.n; //increment the number of crystals in the cluster
 			}
 		}
