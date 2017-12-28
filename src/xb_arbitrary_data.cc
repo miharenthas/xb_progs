@@ -3,8 +3,6 @@
 #include "xb_arbitrary_data.h"
 #include <stdio.h>
 namespace XB{
-	const unsigned char adata::_pT[256];
-
 	//----------------------------------------------------------------------------
 	//constructors:
 	adata::_xb_arbitrary_data():
@@ -80,7 +78,7 @@ namespace XB{
 		int len = strlen( name );
 		unsigned short h = 0;
 		
-		for( int i=0; i < len; ++i ) h = adata::_pT[ h ^ name[i] ];
+		for( int i=0; i < len; ++i ) h = adata_pT[ h ^ name[i] ];
 		
 		return h;
 	}

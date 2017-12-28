@@ -27,7 +27,7 @@ CXXFLAGS = -I$(INCLUDE) -L$(LIB) -fopenmp -Wno-write-strings -lgsl -lgslcblas -l
 ROOT_CXXFLAGS = `root-config --cflags | sed 's/-stdlib=libc++//g'`
 ROOT_CXXFLAGS += -I $(FAIRROOTPATH)/include
 FAIR_LIBS = -lFairTools -lParBase -lBase
-R3B_LIBS = -lELILuMon -lField -lR3Bbase -lR3BCalifa -lR3BData -lR3BDch -lR3BdTof -lR3BEvtVis -lR3BFi4 -lR3BGen -lR3BGfi -lR3BLand -lR3BLos -lR3BMfi -lR3BmTof -lR3BNeuland -lR3BPassive -lR3BPlist -lR3BPsp -lR3BStartrack -lR3BTCal -lR3BTof -lR3BTra -lR3BXBall -ltimestitcher
+R3B_LIBS = -lELILuMon -lField -lR3Bbase -lR3BCalifa -lR3BData -lR3BDch -lR3BdTof -lR3BEvtVis -lR3BFi4 -lR3BGen -lR3BGfi -lR3BLand -lR3BLos -lR3BMfi -lR3BmTof -lR3BNeuland -lR3BPassive -lR3BPsp -lR3BStartrack -lR3BTCal -lR3BTof -lR3BTra -lR3BXBall -ltimestitcher
 ROOT_LDFLAGS = `root-config --glibs | sed 's/-stdlib=libc++//g'` -L $(FAIRROOTPATH)/lib
 ROOT_FLAGS = $(ROOT_LDFLAGS) $(ROOT_CXXFLAGS) $(FAIR_LIBS) $(R3B_LIBS)
 GNUPLOT_FLAGS = -I$(GNUPLOT_I_HOME)/src
