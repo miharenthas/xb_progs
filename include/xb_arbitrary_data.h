@@ -26,6 +26,10 @@
 #define nf2hdr_size( nf ) sizeof(event_holder) + ((nf)+2)*sizeof(int) + (nf)*sizeof(adata_field)
 
 namespace XB{
+    //----------------------------------------------------------------------------
+    //an ugly constant to hold the hash table
+    const unsigned char adata_pT[256] = XB_PAERSON_HASH_TABLE;
+    
 	//----------------------------------------------------------------------------
 	//a data structure representing the field,
 	typedef struct _xb_arb_data_field {
@@ -108,8 +112,6 @@ namespace XB{
 			//an utility to has a field name
 			//pearson's has, 8 bits.
 			unsigned char phash8( const char *name ) const;
-			//LUT for the pearson's hash
-			constexpr static const unsigned char _pT[256] = XB_PAERSON_HASH_TABLE;
 			
 			//an utility to realloc the buffer, safely
 			void safe_buf_realloc( size_t size );

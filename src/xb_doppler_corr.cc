@@ -139,7 +139,7 @@ namespace XB{
 			
 			//do the correction
 			if( evnt.e[i] ) evnt.e[i] *= gamma*(1. - beta*cos( inclination ) );
-			else evnt.he[i] *= gamma*(1. - beta*cos( inclination ) );
+			if( evnt.he[i] ) evnt.he[i] *= gamma*(1. - beta*cos( inclination ) );
 		}
 	}
 
