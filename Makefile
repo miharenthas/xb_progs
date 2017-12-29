@@ -7,7 +7,8 @@ INCLUDE = $(PROGS_HOME)/include
 BIN = $(PROGS_HOME)/bin
 LIB = $(PROGS_HOME)/lib
 TEST = $(PROGS_HOME)/test
-GNUPLOT_I_HOME = /usr/local/gnuplot_i
+GNUPLOT_I_HOME = /home/ahorvat/R3B/gnuplot_i
+CGAL_HOME = /home/ahorvat/ext/cgal
 
 #define the targets
 PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_trigger_siv xb_getarb xb_match
@@ -23,7 +24,7 @@ GNUPLOT_I = $(GNUPLOT_I_HOME)/gnuplot_i.o
 
 #compiler and flags
 CXX = g++
-CXXFLAGS = -I$(INCLUDE) -L$(LIB) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11 -ggdb -frounding-math
+CXXFLAGS = -I$(INCLUDE) -I$(CGAL_HOME)/include -L$(LIB) -L$(CGAL_HOME)/lib64 -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11 -ggdb -frounding-math
 ROOT_CXXFLAGS = `root-config --cflags | sed 's/-stdlib=libc++//g'`
 ROOT_CXXFLAGS += -I $(FAIRROOTPATH)/include
 FAIR_LIBS = -lFairTools -lParBase -lBase
