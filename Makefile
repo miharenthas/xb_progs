@@ -24,7 +24,7 @@ GNUPLOT_I = $(GNUPLOT_I_HOME)/gnuplot_i.o
 
 #compiler and flags
 CXX = g++
-CXXFLAGS = -I$(INCLUDE) -I$(CGAL_HOME)/include -L$(LIB) -L$(CGAL_HOME)/lib64 -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11 -ggdb -frounding-math
+CXXFLAGS = -I$(INCLUDE) -I$(CGAL_HOME)/include -I$(VMCWORKDIR)/r3bdata/xballData/ -I$(VMCWORKDIR)/bodgelogger  -L$(LIB) -L$(CGAL_HOME)/lib64 -L$(FAIRLIBDIR) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11 -ggdb -frounding-math
 ROOT_CXXFLAGS = `root-config --cflags | sed 's/-stdlib=libc++//g'`
 ROOT_CXXFLAGS += -I $(FAIRROOTPATH)/include
 FAIR_LIBS = -lFairTools -lParBase -lBase
