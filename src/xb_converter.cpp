@@ -66,6 +66,9 @@ int main( int argc, char **argv ){
 	if( in_flag ) XB::load( in_bin_name, klz );
 	else XB::load( stdin, klz );
 
+	//write a rootfile
+	if( verbose ) printf( "Writing file: %s \n",out_root_name);
+	XB::rwrite( out_root_name, klz );
 
 
 return 0;

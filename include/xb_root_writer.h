@@ -16,7 +16,7 @@
 
 namespace XB{
         //writing rootfile for cluster data
-	void rwrite( TFile* f_root_out, std::vector<XB::clusterZ> &event_klZ);
+	void rwrite( char* f_root_out, std::vector<XB::clusterZ> &event_klZ);
 }
 
 #endif

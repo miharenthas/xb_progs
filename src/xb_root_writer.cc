@@ -22,10 +22,20 @@ void XB::rwrite(char* f_root_out, std::vector<XB::clusterZ> &event_klZ ){
 	
 	//start eventloop
 	for( int i=0; i < event_klZ.size(); ++i ){
-		
-	
-
-
+		Xbevnt=event_klZ[i].evnt;	
+		Xbcmult=event_klZ[i].n;
+		if (Xbcmult>0){ //are there any clusters?
+			for( int k=0; k < event_klZ[i].n; ++k ){//loop over the clusters
+				Xbcn[k]=event_klZ[i].clusters[k].n;
+				Xbci[k]=event_klZ[i].clusters[k].centroid_id;
+				Xbcalt[k]=event_klZ[i].clusters[k].c_altitude;
+				Xbcaz[k]=event_klZ[i].clusters[k].c_azimuth;
+				Xbsume[k]=event_klZ[i].clusters[k].sum_e;
+			}
+		}
+	hxbc->Fill();
 	}//end eventloop
+	hxbc->Write();
+	fout->Close();	
 }
 
