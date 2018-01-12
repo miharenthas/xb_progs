@@ -1,5 +1,7 @@
 Converts binary cluster level XB data into a root file
 
+  $ xb_data_translator[FILES] [OPTIONS]
+
 ===
 COMPILATION:
 ===
@@ -16,6 +18,17 @@ OPTIONS:
 
 	-v verbose
 
-	-s <file_name> stitch against this rootfile by event number  (in development)
+	-s <file_name> stitch against this rootfile by event id
+
+===
+NOTE:
+
+In case of mishaps with the program, report to:
+
+ahorvat@ikp.tu-darmstadt.de 
+AND/OR
+lzanetti@ikp.tu-darmstadt.de
+
+
 
 
