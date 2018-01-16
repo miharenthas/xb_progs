@@ -15,9 +15,9 @@ function field = xb_data_field( evt, field_name )
 		try
 			if evt(ii).n
 				if isfield( evt(ii), field_name )
-					if evt(ii).( field_name )
+					if ~isempty( [evt(ii).( field_name )] )
 						field(idx:idx + evt(ii).n -1) = ...
-							evt(ii).( field_name );
+							[evt(ii).( field_name )];
 					else
 						field(idx:idx + evt(ii).n -1) = ...
 							zeros( evt(ii).n, 1 );
