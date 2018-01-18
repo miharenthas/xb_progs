@@ -18,7 +18,7 @@
 #endif
 
 #include "xb_cluster.h"
-
+#include "xb_doppc.h"
 
 namespace XB{
         //writing rootfile for cluster data
