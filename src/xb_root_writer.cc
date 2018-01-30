@@ -12,8 +12,6 @@ void XB::rwrite(char* f_root_out, std::vector<XB::clusterZ> &event_klZ ){
 	//clusters in event
 	unsigned int Xbcn[162],Xbci[162];
 	float Xbcth[162],Xbcsume[162];
-	//crystals in cluster
-	//unsigned int Xbcii[162][162];
 
 	unsigned int default_beam_out = 81; //the default beam in
 	//sort the xb cluster data by event id before writing
@@ -28,7 +26,6 @@ void XB::rwrite(char* f_root_out, std::vector<XB::clusterZ> &event_klZ ){
 	hxbc->Branch("Xbci",&Xbci,"Xbci[Xbcmult]/i"); //index of the centroid
 	hxbc->Branch("Xbcth",&Xbcth,"Xbcth[Xbcmult]/F"); //centroid theta ( inclination towards beam line )
 	hxbc->Branch("Xbcsume",&Xbcsume,"Xbcsume[Xbcmult]/F"); //gamma sum energy of cluster 
-	//hxbc->Branch("Xbcii",&Xbcii,"Xbcii[Xbcmult][162]/i");//indices of paricipating crystals, organised clusterwise
 
 	//start eventloop
 	for( unsigned int i=0; i < event_klZ.size(); ++i ){
@@ -41,10 +38,7 @@ void XB::rwrite(char* f_root_out, std::vector<XB::clusterZ> &event_klZ ){
 				Xbcth[k]=angular_distance( the_cb.at( default_beam_out ).altitude, the_cb.at( default_beam_out ).azimuth, 
 						event_klZ[i].clusters[k].c_altitude, event_klZ[i].clusters[k].c_azimuth );
 				Xbcsume[k]=event_klZ[i].clusters[k].sum_e;
-/*				for ( unsigned int cr=0; cr < event_klZ[i].clusters[k].n; cr++ ){//loop over crystals in cluster
-					Xbcii[k][cr]=event_klZ[i].clusters[k].crys.at(cr);
-				} 
-*/			}
+			}
 		}
 	hxbc->Fill();
 	}//end eventloop
@@ -59,7 +53,7 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
         unsigned int Xbcn[162],Xbci[162];
         float Xbcth[162],Xbcsume[162];
 	//crystals in cluster
-	//unsigned int Xbcii[162][162]; //not very useful atm, so I leave it out
+	unsigned int Xbii[162]={0}; //not very useful atm, so I leave it out
 
 	unsigned int default_beam_out = 81; //the default beam in
 
@@ -84,9 +78,18 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 
 	//we need the event id from the tree
 	int Evnt;
+	unsigned int Xbn;
+	unsigned int Xbi[162];
+	float Xbe[162];
 	TBranch *b_Evnt;
+	TBranch *b_Xbn;
+	TBranch *b_Xbi;
+	TBranch *b_Xbe;
 
 	data_tree->SetBranchAddress("Evnt",&Evnt, &b_Evnt);	
+	data_tree->SetBranchAddress("Xbn",&Xbn, &b_Xbn);	
+	data_tree->SetBranchAddress("Xbi",&Xbi, &b_Xbi);	
+	data_tree->SetBranchAddress("Xbe",&Xbe, &b_Xbe);	
 
 	//clone the tree into a new root file	
 	TFile* fout = new TFile( f_root_out, "recreate" );
@@ -97,7 +100,7 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
         TBranch *bxbci = newtr->Branch("Xbci",&Xbci,"Xbci[Xbcmult]/i"); //index of the centroid
         TBranch *bxbth = newtr->Branch("Xbcth",&Xbcth,"Xbcth[Xbcmult]/F"); //centroid altitude
         TBranch *bxbcsume = newtr->Branch("Xbcsume",&Xbcsume,"Xbcsume[Xbcmult]/F"); //gamma sum energy of cluster
-	//TBranch *bxbcii = newtr->Branch("Xbcii",&Xbcii,"Xbcii[Xbcmult][162]/i");//indices of paricipating crystals, organised clusterwise
+	TBranch *bxbii = newtr->Branch("Xbii",&Xbii,"Xbii[Xbn]/i");//cluster assignment of crystal
 
 	//number of events
 	int nevents=data_tree->GetEntries();
@@ -127,9 +130,15 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 	unsigned int v_cl_i=cl_i; 
 
 	//loop over events 
+	int debug=0;
+	int debug_total=0;
 	for (int jentry=0;jentry<nevents;jentry++){
 		data_tree->GetEvent(jentry);	
 		if ( v_flag && (float)(jentry/25000.)==(int)(jentry/25000.) ) printf( "%i %% done \n", (int)(100.*jentry/nevents) );  
+		for (unsigned int sx=0;sx<Xbn;sx++) {
+			if (Xbe[sx]>0) debug_total++;
+			Xbii[sx]=0;
+		}
 		bool match = false;
 		//find the match in the cluster data
 		while ( !match && cl_i >= 0 && cl_i < event_klZ.size() ) {
@@ -139,7 +148,7 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 		//reset counter to last entry found
 		if ( match&&abs(ord)==10 ) v_cl_i=cl_i;
 		else if ( abs(ord)==10 ) cl_i=v_cl_i;
-		else cl_i=0; 
+		else cl_i=0;
                 Xbcmult=event_klZ[cl_i].n;
                 if (Xbcmult>0){ //are there any clusters?
                         for( unsigned int k=0; k < event_klZ[cl_i].n; ++k ){//loop over the clusters
@@ -148,14 +157,20 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
                                 Xbcth[k]=angular_distance( the_cb.at( default_beam_out ).altitude, the_cb.at( default_beam_out ).azimuth,
                                                 event_klZ[cl_i].clusters[k].c_altitude, event_klZ[cl_i].clusters[k].c_azimuth );
                                 Xbcsume[k]=event_klZ[cl_i].clusters[k].sum_e;
-/*				for ( unsigned int cr=0; cr < event_klZ[cl_i].clusters[k].n; cr++ ){//loop over all crystals in cluster
-					Xbcii[k][cr]=event_klZ[cl_i].clusters[k].crys.at(cr);
+				for ( unsigned int cr=0; cr < event_klZ[cl_i].clusters[k].n; cr++ ){//loop over all crystals in cluster
+					for ( unsigned int scr=0;scr<Xbn;scr++ ){//loop over all crystals fired
+						if ( Xbi[scr]==event_klZ[cl_i].clusters[k].crys.at(cr) && Xbe[scr]>0 ) {
+							debug++;
+							Xbii[scr]=event_klZ[cl_i].clusters[k].centroid_id;
+						}
+					}
 				} 
-*/			}
+			}
                 }
-		//Fill the new branches
+		//Fill the tree
 		newtr->Fill();
 	}//end of eventloop (stitch file)
+	Printf("Assigned crystals: %f %\n",(100.*debug)/debug_total);
 	newtr->Write();
 	delete newtr;
 	fout->Close();
