@@ -15,7 +15,7 @@ function field = xb_cluster_field( klz, field_name )
 		if klz(ii).n
 			if isfield( klz(ii).clusters, field_name )
 				field(idx:idx + klz(ii).n -1) = ...
-				    klz(ii).clusters.( field_name );
+				    [klz(ii).clusters.( field_name )];
 				idx = idx + klz(ii).n;
 			else
 				warning( ['At index', num2str(ii), ...

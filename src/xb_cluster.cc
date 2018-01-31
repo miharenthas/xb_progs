@@ -50,7 +50,7 @@ namespace XB{
 		if( evnt.n == 0 ) return NULL;
 
 		//allocate the list
-		oed* ordered_energy_list = (oed*)malloc( evnt.n*sizeof(oed) );
+		oed* ordered_energy_list = (oed*)calloc( evnt.n, sizeof(oed) );
 		//check the allocation
 		if( ordered_energy_list == NULL ) throw error( "Memory error!", "make_energy_list" );
 	
@@ -164,9 +164,6 @@ namespace XB{
 				the_clusters.clusters.push_back( kl );
 				++the_clusters.n;
 			}catch( error e ){ return the_clusters; }
-			
-			//checkpoint on the created cluster
-			//if( the_evnt.n-kl.n > the_evnt.n ) break; //immediately, because we have underflow!
 			
 			//empty the event of the associated crystals
 			new_evnt = data( the_evnt.n-kl.n, evnt.evnt ); //redo the event

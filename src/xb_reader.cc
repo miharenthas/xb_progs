@@ -34,7 +34,7 @@ void XB::reader( std::vector<XB::data> &xb_book, const char* f_name ){
 	//let's get ready to read stuff
 	//thats utter braindamage
 	TBranch *evnt = data_tree->GetBranch( "Evnt" ); CK_NULL( evnt, "no Evnt!", "XB::reader" );
-	TBranch *xbtpat = data_tree->GetBranch( "Tpat" ); CK_NULL( evnt, "no Tpat!", "XB::reader" );
+	TBranch *xbtpat = data_tree->GetBranch( "Tpat" ); CK_NULL( xbtpat, "no Tpat!", "XB::reader" );
 	TBranch *xbn = data_tree->GetBranch( "Xbn" ); CK_NULL( xbn, "no Xbn!", "XB::reader" );
 	TBranch *xbi = data_tree->GetBranch( "Xbi" ); CK_NULL( xbi, "no Xbi!", "XB::reader" );
 	TBranch *xbt = data_tree->GetBranch( "Xbt" ); CK_NULL( xbt, "no Xbt!", "XB::reader" );
