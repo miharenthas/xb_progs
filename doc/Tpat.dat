@@ -1,0 +1,111 @@
+ 
+		each control-word consists of two lines (starts with a star sign):
+       			first line matches anticoincidence signal
+       			second line matches coincidence signal
+		each line consists of 16 integers, you have to insert "1" for
+		the required signal, else insert "0"
+	
+		a disabled channel means a double row of zeros
+		and a disable statement in the module control word !!! 
+	
+		make sure that always 16 integers follows on each star sign !         
+		comments must not be placed into the control-word itself
+	
+		if you are happy with your choice you have to run "matr.write" on the
+		lynxOS shell level ( -> matr.write )
+	
+		if you want to know what is downloaded in 2365 matrixes you have to
+		run "matr.read" on the lynxOS shell level ( -> matr.read )
+	
+        		the most right hand integer is input-signal  1
+        		the      left hand integer is input-signal  16
+	
+			then to the left of that are the 4 AUX inputs (TRLO internal)
+	
+        	             	AUX 4 (used by trloctrl tracer - do not use)
+        	             	| AUX 3 Late-trigger kill
+        	             	|   AUX 2 Early pile-up                    
+        	            	|     AUX 1 Spill on       
+        	             	|        
+        	             	|           16 -
+        	             	|             15 -
+        	             	|           |   14 -
+        	             	|           |     13 pile-up
+        	             	|           |
+        	             	|           |        12 POS raw 
+        	             	|           |          11 XB or
+        	             	|           |        |   10 XB sumF
+        	             	|           |        |     9 PIX
+        	             	|           |        |
+        	             	|           |        |        8 XB sumE
+        	             	|           |        |          7 LAND cosm
+        	             	|           |        |        |   6 LAND
+        	             	|           |        |        |     5 TFW cosm
+        	             	|           |        |        |
+        	             	|           |        |        |        4 TFW
+        	             	|           |        |        |          3 NTF cosm
+        	             	|           |        |        |        |   2 NTF
+        	             	|           |        |        |        |     1 POS.!ROLU
+ 	
+        	 	MODULE IN SLOT 20:
+	
+		1 Min Bias         * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+        	          	   * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+	
+		2 Min Bias!PileUp  * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+        	        	   * 0 0 1 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+	
+		3 Fragment	   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+        	           	   * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 1 1
+	
+		4 Neutron 	   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+        	           	   * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 1 0  0 0 1 1
+	
+		5 Fragment+XBsumF  * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+ 		                   * 0 0 0 1     0 0 0 0  0 0 1 0  0 0 0 0  0 0 1 1
+	
+		6 Fragment+XBsum   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+		                   * 0 0 0 1     0 0 0 0  0 0 0 0  1 0 0 0  0 0 1 1
+	
+		7 Fragment+XBor    * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0 
+        		           * 0 0 0 1     0 0 0 0  0 1 0 0  0 0 0 0  0 0 1 1 
+	
+		8 PIX	           * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+        		           * 0 0 0 1     0 0 0 0  0 0 0 1  0 0 0 0  0 0 0 1
+   	
+		module-control-word: don't change  
+		disable channel:                                   8 7 6 5  4 3 2 1
+        		           * 0 0 0 0     1 1 1 1  1 1 1 1  1 1 1 1  1 1 1 1
+        		           * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+	
+        		 MODULE IN SLOT 21:
+	
+		9 LAND Cosm        * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+		                   * 0 0 0 0     0 0 0 0  0 0 0 0  0 1 0 0  0 0 0 0
+	
+		10 TFW Cosm        * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+		                   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 1  0 0 0 0
+	
+		11 NTF Cosm        * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1 
+		                   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 1 0 0 
+	
+		12 XB Cosm         * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+		                   * 0 0 0 0     0 0 0 0  0 1 0 0  0 0 0 0  0 0 0 0
+	
+		13 XB Sum          * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+		                   * 0 0 0 0     0 0 0 0  0 0 0 0  1 0 0 0  0 0 0 0
+		
+		14 Pixel           * 0 0 0 1     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 1
+		                   * 0 0 0 0     0 0 0 0  0 0 0 1  0 0 0 0  0 0 0 0
+		
+		15 Not-in-use      * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+		                   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+		
+		16 Not-in-use      * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+		                   * 0 0 0 0     0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0
+		
+		module-control-word: don't change. 
+		disable channel:                                  8 7 6 5  4 3 2 1
+		                   * 0 0 0 0    1 1 1 1  1 1 1 1  0 0 1 1  1 1 1 1
+		                   * 0 0 0 0    0 0 0 0  0 0 0 0  0 0 0 0  0 0 0 0 
+			
