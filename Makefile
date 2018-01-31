@@ -32,6 +32,10 @@ ROOT_LDFLAGS = `root-config --glibs | sed 's/-stdlib=libc++//g'` -L $(FAIRROOTPA
 ROOT_FLAGS = $(ROOT_LDFLAGS) $(ROOT_CXXFLAGS) $(FAIR_LIBS) $(R3B_LIBS)
 GNUPLOT_FLAGS = -I$(GNUPLOT_I_HOME)/src
 
+ifneq "$(R3BROOTPATH)" ""
+	ROOT_CXXFLAGS += -I $(R3BROOTPATH)/include -L $(R3BROOTPATH)/lib
+endif
+
 #-----------------------------------------------------------------------
 #collective operations
 .PHONY: all
