@@ -15,7 +15,7 @@ using namespace std;
 
 int main( int argc, char **argv ){
 	char in_bin_name[256], out_root_name[256], stitch_f_name[256];
-	bool in_flag = false, out_flag = false, verbose = false, stitch=false;	
+	bool in_flag = false, out_flag = false, verbose = false, stitch=false, debug=false;	
 
 	//get ONE filename from the command line.
 	if (argc<2) {
@@ -29,7 +29,7 @@ int main( int argc, char **argv ){
         }
 	//input parsing
 	char iota = 0;
-        while( (iota = getopt( argc, argv, "i:o:s:v") ) != -1 )
+        while( (iota = getopt( argc, argv, "i:o:s:dv") ) != -1 )
                 switch( iota ){
                         case 'i' : //set an input file
                                 if( strlen( optarg ) < 256 ){
@@ -49,13 +49,15 @@ int main( int argc, char **argv ){
                                         stitch = true;
                                 }
                                 break;
-
+                        case 'd' : //debug mode
+                                debug = true;
+                                break;
                         case 'v' : //be verbose
                                 verbose = true;
                                 break;
 	                default:
                                 printf( "-%c is not a valid option.\n", optopt );
-                                printf( "usage: xb_converter [-i[FILE]|-o[FILE]|-s[FILE]|-v]\n" );
+                                printf( "usage: xb_converter [-i[FILE]|-o[FILE]|-s[FILE]|-d|-v]\n" );
                                 printf( "if -i isn't specified, stdin is used\n" );
                                 exit( 1 );
                 }
@@ -64,16 +66,28 @@ int main( int argc, char **argv ){
 		exit( 1 );
 	}
 
+	if ( debug && !stitch ){
+		printf( "Invalid option combo. Can't run debug mode without a file to stitch to \n" );
+		exit( 1 );
+	}
+
 	//hello
 	if( verbose ) printf( "*** I will try to make you a rootfile ***\n" );
 	if( verbose && in_flag ) printf( "Reading from: %s...\n", in_bin_name );
 	else if( verbose && !in_flag ) printf( "Reading from STDIN...\n" );
 
-	//read in cluster data
+	//read in data
+	std::vector<XB::data> xb_book;
 	std::vector<XB::clusterZ> klz;
-	if( in_flag ) XB::load( in_bin_name, klz );
-	else XB::load( stdin, klz );
 
+	if ( debug ){
+		if( in_flag ) XB::load( in_bin_name, xb_book );
+		else XB::load( stdin, xb_book );	
+	}
+	else {	
+		if( in_flag ) XB::load( in_bin_name, klz );
+		else XB::load( stdin, klz );
+	}
 	if ( verbose ) printf( "Writing file: %s \n",out_root_name);
 	//write a rootfile, no stitching
 	if ( !stitch ) {		
@@ -81,7 +95,8 @@ int main( int argc, char **argv ){
 	}
 	else {
 		if ( verbose ) printf( "Stitching to root file: %s \n",stitch_f_name );
-		XB::rwrite( out_root_name, stitch_f_name, klz, verbose );
+		if ( debug ) XB::rwrite( out_root_name, stitch_f_name, xb_book );
+		else XB::rwrite( out_root_name, stitch_f_name, klz, verbose );
 	}
 return 0;
 }

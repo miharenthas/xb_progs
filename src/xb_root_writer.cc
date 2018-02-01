@@ -170,10 +170,116 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 		//Fill the tree
 		newtr->Fill();
 	}//end of eventloop (stitch file)
-	Printf("Assigned crystals: %f %\n",(100.*debug)/debug_total);
+	if ( v_flag ) Printf("Assigned crystals: %f %\n",(100.*debug)/debug_total);
 	newtr->Write();
 	delete newtr;
 	fout->Close();
+}
+//debugging purposes, just write out what was read in from the original rootfile
+
+void XB::rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::data> &xb_book ){
+	
+	unsigned int Xbn_debug;
+	unsigned int Xbi_debug[162];
+	float Xbe_debug[162];
+	float Xbt_debug[162];
+
+        TFile stitch_file( stch_r_file );
+        if( stitch_file.IsZombie() ){
+                throw XB::error( "File error!", "XB::rwrite" );
+        }
+        //relating to the root file we stitch the XB data to
+        //get the name of the TTree
+        TIter nextkey( stitch_file.GetListOfKeys() );
+        TKey *key;
+        TObject *obj;
+        TTree *data_tree;
+        while( (key = (TKey*)nextkey()) ){
+                obj = key->ReadObj();
+                if( obj->IsA()->InheritsFrom( TTree::Class() ) ){
+                        data_tree = (TTree*)obj;
+                        break;
+                }
+        }
+        //we need the event id from the tree
+        int Evnt;
+        unsigned int Xbn;
+        TBranch *b_Evnt;
+        TBranch *b_Xbn;
+
+        data_tree->SetBranchAddress("Evnt",&Evnt, &b_Evnt);
+        data_tree->SetBranchAddress("Xbn",&Xbn, &b_Xbn);
+
+        //clone the tree into a new root file   
+        TFile* fout = new TFile( f_root_out, "recreate" );
+        TTree *newtr = data_tree->CloneTree(0);
+        //add new branches
+	TBranch *bxbn_debug = newtr->Branch("Xbn_debug",&Xbn_debug);
+	TBranch *bxbi_debug = newtr->Branch("Xbi_debug",&Xbi_debug,"Xbi_debug[Xbn_debug]/i");
+	TBranch *bxbe_debug = newtr->Branch("Xbe_debug",&Xbe_debug,"Xbe_debug[Xbn_debug]/F");
+	TBranch *bxbt_debug = newtr->Branch("Xbt_debug",&Xbt_debug,"Xbt_debug[Xbn_debug]/F");
+
+        //number of events
+        int nevents=data_tree->GetEntries();
+
+        //guess the ordering
+        int ord=0;
+        srand(nevents);
+        for ( int chk=0;chk<10;chk++){
+                int ri=rand()%(nevents-1);
+                data_tree->GetEvent( ri );unsigned int ev1=Evnt;
+                data_tree->GetEvent( ri+1 );unsigned int ev2=Evnt;
+                if ( ev1 > ev2 ) ord--;
+                else ord++;
+        }
+
+        if ( ord==-10 ) puts( "Rootfile has reverse ordering by event id " );
+        else if ( ord==10 ) puts( "Rootfile is sorted by event id " );
+        else  puts ( "Rootfile is not ordered, this will be slow ");
+
+        //sort the xb data by event id (it's probably sorted already) 
+        std::sort( xb_book.begin(), xb_book.end(), evnt_id_comparison );
+        //reverse if root file is sorted oppositely (shouldn't be the case, but anyway...)
+        if ( ord==-10 ) std::reverse( xb_book.begin(), xb_book.end() );
+
+        //iterator
+        unsigned int ci = 0;
+        unsigned int v_ci=ci;
+	//declare the energy list
+        XB::oed *energy_list;
+
+	unsigned int debug=0;
+
+        //loop over events 
+        for (int jentry=0;jentry<nevents;jentry++){
+                data_tree->GetEvent(jentry);
+		Xbn_debug=0;
+		for (int rst=0;rst<162;rst++) {Xbi_debug[rst]=0,Xbe_debug[rst]=0,Xbt_debug[rst]=0;}
+                if ( (float)(jentry/25000.)==(int)(jentry/25000.) ) printf( "%i %% done \n", (int)(100.*jentry/nevents) );
+                //find the match in the data
+		bool match = false;
+                while ( !match && ci >= 0 && ci < xb_book.size() ) {
+                        if ( xb_book[ci].evnt ==  Evnt  ) match = true;
+                        else ci++;
+                }//end of search over events
+                //reset counter to last entry found
+                if ( match&&abs(ord)==10 ) v_ci=ci;
+                else if ( abs(ord)==10 ) ci=v_ci;
+                else ci=0;
+		Xbn_debug=xb_book[ci].n;
+		if ( Xbn_debug!=Xbn ) debug++;
+		energy_list = XB::make_energy_list( xb_book[ci] );
+		for (unsigned int j=0;j<Xbn_debug;j++){
+			Xbi_debug[j]=energy_list[j].i;
+			Xbe_debug[j]=energy_list[j].e;
+			Xbt_debug[j]=energy_list[j].t;
+		}
+		newtr->Fill();
+	}
+	newtr->Write();
+        delete newtr;
+        fout->Close();
+	Printf( "Couldn't find a match in %i %% of cases\n", (100*debug)/nevents );
 }
 
 //the comparison utility

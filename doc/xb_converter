@@ -20,6 +20,7 @@ OPTIONS:
 
 	-s <file_name> stitch against this rootfile by event id
 
+	-d debug mode (for comparison with the original rootfile)
 ===
 NOTE:
 

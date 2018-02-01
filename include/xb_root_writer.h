@@ -18,6 +18,7 @@
 #endif
 
 #include "xb_cluster.h"
+#include "xb_data.h"
 #include "xb_doppc.h"
 
 namespace XB{
@@ -25,6 +26,8 @@ namespace XB{
 	void rwrite( char* f_root_out, std::vector<XB::clusterZ> &event_klZ);
 	//write and stitch 
 	void rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &event_klZ, bool v_flag=false);
+	//debugging purposes, write out the original xb data for comparison
+	void rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::data> &xb_book );
 }
 
 #endif
