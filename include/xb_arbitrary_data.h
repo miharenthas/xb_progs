@@ -26,11 +26,15 @@
 #define nf2hdr_size( nf ) sizeof(event_holder) + ((nf)+2)*sizeof(int) + (nf)*sizeof(adata_field)
 
 namespace XB{
+    //----------------------------------------------------------------------------
+    //an ugly constant to hold the hash table
+    const unsigned char adata_pT[256] = XB_PAERSON_HASH_TABLE;
+    
 	//----------------------------------------------------------------------------
 	//a data structure representing the field,
 	typedef struct _xb_arb_data_field {
 		char name[16];
-		size_t size;
+		short size;
 	} adata_field;
 
 	//----------------------------------------------------------------------------
@@ -54,7 +58,7 @@ namespace XB{
 			//accessing methods:
 			//create/write field
 			//if *buf is NULL, the field is just created
-			void dofield( const char *name, size_t size, void *buf );
+			void dofield( const char *name, short size, void *buf );
 			void dofield( const adata_field &fld, void *buf );
 			//get the size of a field
 			//remove a field
@@ -100,13 +104,14 @@ namespace XB{
 			//can contain any type.
 			int _buf_sz;
 			void *_buf;
+			//TODO: it turns out that this is gigantic
+			//      it might be worth it to change it to short deltas
 			void *_fld_ptr[XB_ADATA_NB_FIELDS]; //support 256 fields (more than enough)
 			std::vector< adata_field > _fields; //keep track of the fields.
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
 			unsigned char phash8( const char *name ) const;
-			const unsigned char _pT[256]; //LUT for the pearson's hash
 			
 			//an utility to realloc the buffer, safely
 			void safe_buf_realloc( size_t size );

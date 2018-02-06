@@ -109,7 +109,6 @@ int main( int argc, char **argv ){
 	if( flagger & VERBOSE ) puts( "Putting data..." );
 	if( flagger & OUT_FLAG ) XB::write( out_fname, book );
 	else XB::write( stdout, book );
-	XB::load( out_fname, buf );
 	
 	if( flagger & VERBOSE ) puts( "Done. Goodbye." );
 	return 0;
@@ -126,6 +125,11 @@ int parse_fld( XB::adata_field *farr, const char *str ){
 	while( head ){
 		strcpy( farr[i].name, head ); //copy name
 		head = strtok( NULL, ":," ); //field size
+		if( !strcmp( farr[i].name, "__scalar" ) ){
+			farr[i].size = 4;
+			++i;
+			continue; //continue on scalar TODO: make it safer
+		}
 		farr[i].size = atoi( head ); //save size
 		head = strtok( NULL, ":," ); //next field name or NULL
 		++i;

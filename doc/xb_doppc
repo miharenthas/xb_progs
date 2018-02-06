@@ -1,32 +1,59 @@
-xb_doppc:
+Welcome in the Doppler corrector program! This program reads single crystal data or clusters and doppler correct them according to a track ot what's in the data themselves.
 
-./xb_doppc [TRACK_INFORMATION_FILES] [OPTIONS]
+  $ xb_doppc [TRACK_INFORMATION_FILES] [OPTIONS]
 
-This program performs the doppler correction on a bunch of loaded data.
-
+===
 COMPILATION:
+===
 
 $ make xb_doppc
-	NOTE: as it is a tedious task, the program uses OpenMP to parallelize the task.
+	NOTE: as it is a tedious task, the program uses OpenMP to parallelize the task. This means that it will misbehave with clang. Don't use it.
 
+===
 USAGE:
+===
 
-The program can read and write from/to stdi/o, BUT either the track information or the data can be read from a pipe, **NOT** both at the same time. Probably, what you want to do is read **the data** from the pipe and read **the tracking information** from HDD. In any case, the program is thought to be easy to use in this way.
+The program can read and write from/to stdi/o, BUT either the track information or the data can be read from a pipe, **NOT** both at the same time. Probably, what you want to do is read **the data** from the pipe and read **the tracking information** from disk. In any case, the program is thought to be easy to use in this way.
 
 OPTIONS:
 
--i <file_name> : read track information from ONE file. If you want to read more then one file, use the default arguments.
+	-i <file_name>
+		read track information from ONE file. If you want to read more then one file, use the default arguments.
 
--o <file_name> : output file. As usual, it is compressed with bzip2 and, as usual, there aren't any mandatory naming conventions. You may want to choose a name that reflects what's in the file.
+	-d <file_name>
+		Read the data/clusters from this one file.
 
--R : pass the **tracking information** through xb_data_translator --this way, they can be read fresh out of the tracker.
+	-o <file_name>
+		output file. As usual, it is compressed with bzip2 and, as usual, there aren't any mandatory naming conventions. You may want to choose a name that reflects what's in the file.
+		
+	-k
+		What's being corrected is clusters (auto detection might follow, but it's not supported yet).
 
--f : fastidious mode: only process the data for which there is track information (saves time).
+	-R
+		pass the **tracking information** through xb_data_translator --this way, they can be read fresh out of the tracker.
+
+	-f
+		fastidious mode: only process the data for which there is track information (saves time).
 	NOTE: the default is "try to guess the incoming beta" from the track information for those
 	      events that do not have direct track info.
 
--F : very fastidious mode: only process the data for which there is track information **AND** only one fragment is identified by the tracker. And use the tracked direction of the fragment to perform the doppler correction,
+	-F
+		very fastidious mode: only process the data for which there is track information **AND** only one fragment is identified by the tracker. And use the tracked direction of the fragment to perform the doppler correction.
 
--v : verbose, the program prints statements about itself. Obviously, don't use if you're piping into another program.
+	-v
+		Verbose, the program prints statements about itself.
+		Obviously, don't use if you're piping into another program.
 
--b : specify the beam direction --by giving the BEAM OUT crystal's index.
+	-b
+		specify the beam direction --by giving the BEAM OUT crystal's index.
+	
+	-u
+		Don't use any track and rely upon what's in the data (the in_beta field).
+		This is supposed to be used for simulations, where this information is at hand and a track might not exist. Use on real data at your own risk.
+	
+	NOTE: long options are also used, but they are currently slightly broken. Use the short ones.
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas

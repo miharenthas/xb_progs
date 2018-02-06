@@ -1,40 +1,78 @@
-xb_make_spc:
+Welcome in xb_make_spc, the spectrum-hacking program of this bunch.
 
-./xb_make_spc [FILES] [OPTIONS]
+
+  $ xb_make_spc [FILES] [OPTIONS]
 
 This program makes a spectrum out of clustered data coming from xb_run_cluster, and allows to manipulate it to some extent.
 
+===
 COMPILATION:
+===
 
-$ make xb_make_spc
+  $ make xb_make_spc
 
-This program uses the library "gnuplot_i", written by N. Devillard, which should be reachable by your system.
+This program uses the library (object) "gnuplot_i", written by N. Devillard, which should be reachable by your system.
 Also, you should edit the Makefile in order to let the program know where the library is.
 The library itself can be retrieved from "http://ndevilla.free.fr/gnuplot/":
 
-$ wget ndevilla.free.fr/gnuplot/gnuplot_i-2.11.tar.gz
-$ tar -xzvf gnuplot_i-2.11.tar.gz
+  $ wget ndevilla.free.fr/gnuplot/gnuplot_i-2.11.tar.gz
+  $ tar -xzvf gnuplot_i-2.11.tar.gz
+  
+  NOTE: modify the Makefile of the thing, adding -fPIC option-. Otherwise, your libxb_viz won't compile.
 
+===
 USAGE:
--i <file_name> : **DEPRECATED use thedefault arguments instead!** specifies the file name where the clustered data are stored. This argument is optional, if it's not specified the program reads form the standard input.
+===
 
--o <file_name> : the name of the file where the histogram will be saved. If it's not specified, the standard output is used (and the histogram is not drawn) ***NOT IMPLEMENTED YET***: the program just ignores the option and draws the histogram, without saving it (as a data file).
+	--input | -i <file_name> 
+		Specifies the file name where the clustered data are stored. This argument is optional, if it's not specified the program reads form the standard input.
 
--b <num_bins> : specifies the number of bins for the histogram. If not specified, the default is 500 channels.
+	--output | -o <file_name>
+		the name of the file where the histogram will be saved. If it's not specified, the standard output is used (and the histogram is not drawn).
+	
+	--save-data-instead | -S
+		When set, in the file you'll find the (probably: cut) data instead of the histogram.
 
--R <start_from:end_at> : sets the range for the histogram. If no range is specified, the full 0:8000 KeV banana is used.
+	--nb-bins | -b <num_bins>
+		Specifies the number of bins for the histogram. If not specified, the default is 500 channels.
 
--v : verbose output, the program prints statements about itself. *DO NOT USE* when writing the histogram to the standard output!
+	--range | -R <start_from:end_at>
+		Sets the range for the histogram. If no range is specified, the full 0:8000 KeV banana is used.
 
--I : sets the interactive mode: the program displays a prompt that accepts more or less the same options as the launch, albeit without the "-" preceding. I option is not available and E -- exit the program and G -- redo the histogram are added.
+	--verbose | -v
+		Verbose output, the program prints statements about itself. *DO NOT USE* when writing the histogram to the standard output!
+
+	--interactive | -I
+		sets the interactive mode: the program displays a prompt that accepts more or less the same options as the launch, albeit without the "-" preceding. I option is not available and E -- exit the program and G -- redo the histogram are added.
 It cannot be used with pipes, as it read from standard input.
 
--s : sets the gnuplot terminal: qt for the screen (the default) and png for an image file.
+	--gnuplot-stream | -s
+		sets the gnuplot terminal: qt for the screen (the default) and png for an image file.
 
--l : sets the log scale on the y axis. Default is yes, can be passed no for linear.
+	--y-scale | -l [yes|no]
+		sets the log scale on the y axis. Default is yes, can be passed no for linear.
 
--t : sets the title/file name for saving to PNG.
+	--title | -t <string>
+		sets the title/file name for saving to PNG.
 
--m : selects event with a specific multiplicity. The default is 0, which means that there is no selection on multiplicity. If a number (unsigned integer) is given, then *ONLY* that multiplicity is selected.
+	--select-multiplicity | -m <number>
+		selects event with a specific multiplicity. The default is 0, which means that there is no selection on multiplicity. If a number (unsigned integer) is given, then *ONLY* that multiplicity is selected.
+	
+	--centroid | -c <number>
+		Target this centroid (kinda single crystal spectrum, but with clusters).
 
--H <join|compare|subtract> : if more than one input file is specified, do the selected operation with them while hisrogramming.
+	--histogram-mode | -H <join|compare|subtract>
+		if more than one input file is specified, do the selected operation with them while hisrogramming.
+	
+	--drone | -D drone_in:drone_out 
+		Dronize: read the commands from a pipe and put your stuff into another pipe, while existing somewhere. It's kind of the interactive mode, except you're not (necessarely) using the standard input and output. This also allows for scripting, up to a point, if the drone input is a file with valid commands.
+	
+	--draw | -d
+		Draw the histogram.
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas
+	
+	

@@ -1,21 +1,43 @@
-xb_data_translator: [FILES] [OPTIONS]
+Welcome in the data translator program: this tool gets you out of ROOT and into a more sane world.
 
-Reads a list of root TTrees from the land02 unpacker or the tracker and saves/pipes it into a custom (much more humane) format, to be used in other programs.
+  $ xb_data_translator[FILES] [OPTIONS]
 
+===
 COMPILATION:
-$ make xb_data_translator
-NOTE: this programs requires ROOT libraries, so make sure you have ROOT configured and reachable before compiling/running it.
+===
+  $ make xb_data_translator
+  
+  NOTE: this programs requires ROOT and my fork of R3Broot libraries, so make sure you have them configured and reachable before compiling/running it.
 
+===
 OPTIONS:
--i <file_name> : the ROOT file that will serve as an input. This file can be either the output file containing of pwa_ntuple the SYNC level of the crystal ball or the same file, passed through the tracker.
+===
+
+	-i <file_name>
+		The ROOT file that will serve as an input. This file can be either the output file containing of pwa_ntuple the SYNC level of the crystal ball or the same file, passed through the tracker.
 This option forces the program to read from only one file, despite any other input.
 NOTE: ROOT files generated in any other way than the one mentioned above will cause undocumented behavior -very likely, a crash. 
 
--o <file_name> : a place to save the output. For clarity, it should end by .xb, but that is not a requirement if you think you can remember what kind of file it is. It will be a bzip2 compressed file (generally, significantly smaller than the original ROOT file).
+	-o <file_name>
+		A place to save the output. For clarity, it should end by .xb, but that is not a requirement if you think you can remember what kind of file it is. It will be a bzip2 compressed file (generally, significantly smaller than the original ROOT file).
 This option can be omitted, in which case the program will print (uncompressed) data to the standard output.
 
--v : verbose mode, when specified the program will print some statements relative to its status. *DO NOT* use it when printing to the stdout: it will corrupt the extracted data and will cause all sorts of woes in the programs down the pipe.
+	-v
+		Verbose mode, when specified the program will print some statements relative to its status. *DO NOT* use it when printing to the stdout: it will corrupt the extracted data and will cause all sorts of woes in the programs down the pipe.
 
--c : check the written file: performs a check on the written file. Of course, it only works when -o <file_name> is specified.
+	-c
+		check the written file: performs a check on the written file. Of course, it only works when -o <file_name> is specified.
 
--t: understand the tracker output: the program will understand and handle *only* the tracker output. No further data will be extracted.
+	-t
+		understand the tracker output: the program will understand and handle *only* the tracker output. No further data will be extracted.
+	
+	-s
+		The data come from an R3BRoot simulation, which is a very different format than what comes out of the unpacker. If you don't specify it when reading simulations, the program will refuse to collaborate.
+
+	-S
+		The data come from a source run, so some goodies are missing -- this relaxes the checking for NaN/Inf that are performed, so you won't loose most of your statistics.
+
+===
+NOTE: this, as with all the programs in here, it's not rock solid and you will stumble into horrible bugs. Please report them to me and I'll try to fix them!
+
+  lzanetti@ikp.tu-darmstadt.de or https://www.github.com/miharenthas

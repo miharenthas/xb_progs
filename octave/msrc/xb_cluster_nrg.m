@@ -8,7 +8,7 @@ function nrg = xb_cluster_nrg( klz )
 	idx = 1;
 	for ii = 1:length( klz )
 		if klz(ii).n
-			nrg(idx:idx + klz(ii).n -1) = klz(ii).clusters.sum_e;
+			nrg(idx:idx + klz(ii).n -1) = [klz(ii).clusters.sum_e];
 			idx = idx + klz(ii).n;
 		endif
 	endfor

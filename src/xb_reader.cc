@@ -34,7 +34,7 @@ void XB::reader( std::vector<XB::data> &xb_book, const char* f_name ){
 	//let's get ready to read stuff
 	//thats utter braindamage
 	TBranch *evnt = data_tree->GetBranch( "Evnt" ); CK_NULL( evnt, "no Evnt!", "XB::reader" );
-	TBranch *xbtpat = data_tree->GetBranch( "Tpat" ); CK_NULL( evnt, "no Tpat!", "XB::reader" );
+	TBranch *xbtpat = data_tree->GetBranch( "Tpat" ); CK_NULL( xbtpat, "no Tpat!", "XB::reader" );
 	TBranch *xbn = data_tree->GetBranch( "Xbn" ); CK_NULL( xbn, "no Xbn!", "XB::reader" );
 	TBranch *xbi = data_tree->GetBranch( "Xbi" ); CK_NULL( xbi, "no Xbi!", "XB::reader" );
 	TBranch *xbt = data_tree->GetBranch( "Xbt" ); CK_NULL( xbt, "no Xbt!", "XB::reader" );
@@ -272,8 +272,8 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	
 	//dynamic branch retrival
 	int nf = 0; while( fields[nf].size ) ++nf;
-	TBranch **branches = (TBranch**)malloc( nf*sizeof(TBranch**));
-	for( int i=0; i < nf; ++i ){
+	TBranch **branches = (TBranch**)calloc( nf, sizeof(TBranch**) );
+	for( int i=( strcmp( fields[0].name, "__scalar" )? 0 : 1 ); i < nf; ++i ){
 		branches[i] = data_tree->GetBranch( fields[i].name );
 		if( !branches[i] ) throw XB::error( "No field!", "XB::arb_reader" );
 	}
@@ -284,9 +284,12 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	void *field_bf = malloc( 1 );
 	for( int i=0; i < nb_entries; ++i ){
 		//at least, let's check it's not empty
-		branches[0]->SetAddress( &numel );
-		branches[0]->GetEntry( i );
-		if( !numel ) continue;
+		if( !branches[0] ) numel = 1;
+		else{
+			branches[0]->SetAddress( &numel );
+			branches[0]->GetEntry( i );
+			if( !numel ) continue;
+		}
 	
 		xb_book.push_back( XB::adata() );
 		
@@ -366,7 +369,7 @@ void XB::sim_reader( std::vector<XB::data> &xb_book, const char *f_name ){
 	//try to associate the thing to a bodgelogger
 	bool boogie_flag = false;
 	TClonesArray bbuf( "r3b_ascii_blog", 1 ), *p_bbuf; //we know it's only one per event.
-	p_bbuf = &buf;
+	p_bbuf = &bbuf;
 	if( data_tree->SetBranchAddress( "bodgelogger", &p_bbuf ) ) boogie_flag = false;
 	else boogie_flag = true;
 

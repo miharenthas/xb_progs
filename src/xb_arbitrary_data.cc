@@ -7,8 +7,8 @@ namespace XB{
 	//constructors:
 	adata::_xb_arbitrary_data():
 		_buf( NULL ),
-		_pT XB_PAERSON_HASH_TABLE,
-		_buf_sz( 0 )
+		_buf_sz( 0 ),
+		_fields( 0 )
 	{
 		//just banally init the event_holder members
 		n = 0;
@@ -22,8 +22,8 @@ namespace XB{
 	
 	adata::_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld ):
 		_buf( NULL ),
-		_pT XB_PAERSON_HASH_TABLE,
-		_buf_sz( 0 )
+		_buf_sz( 0 ),
+		_fields( 0 )
 	{
 		n = 0;
 		evnt = 0;
@@ -37,7 +37,6 @@ namespace XB{
 	
 	adata::_xb_arbitrary_data( const adata &given ):
 		_buf( NULL ),
-		_pT XB_PAERSON_HASH_TABLE,
 		_buf_sz( given._buf_sz ),
 		_fields( given._fields )
 	{
@@ -79,7 +78,7 @@ namespace XB{
 		int len = strlen( name );
 		unsigned short h = 0;
 		
-		for( int i=0; i < len; ++i ) h = _pT[ h ^ name[i] ];
+		for( int i=0; i < len; ++i ) h = adata_pT[ h ^ name[i] ];
 		
 		return h;
 	}
@@ -223,7 +222,7 @@ namespace XB{
 		}
 	}
 	
-	void adata::dofield( const char *name, size_t size, void *buf ){
+	void adata::dofield( const char *name, short size, void *buf ){
 		adata_field fld = { "", size };
 		strcpy( fld.name, name );
 		dofield( fld, buf );

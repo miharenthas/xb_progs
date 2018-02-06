@@ -35,8 +35,8 @@ function [evt, nb_removed] = xb_data_cut_on_nrg( evt, op_handle )
 		catch
 			%I'm not yet sure this is the most brilliant solution
 			%but it's the best I can think right now.
-			[evt_rest nbr_rest] = xb_data_cut_on_field( evt(idx_part(ii):end), ...
-			                                            op_handle );
+			[evt_rest nbr_rest] = xb_data_cut_on_nrg( evt(idx_part(ii):end), ...
+			                                          op_handle );
 			break;
 		end
 		nb_proc += 1;

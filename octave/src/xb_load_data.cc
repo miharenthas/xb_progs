@@ -189,19 +189,19 @@ DEFUN_DLD( xb_load_data, args, nargout, O_DOC_STRING ){
 			memcpy( f_buf.fortran_vec(), data[i].pt,
 			        current_numel*sizeof(float) );
 			o_field_pt(i) = f_buf;
-		} else o_field_t(off_i) = Array<float>( o_dim_null );
+		} else o_field_pt(off_i) = Array<float>( o_dim_null );
 		
 		if( !data[i].empty_e ){
 			memcpy( f_buf.fortran_vec(), data[i].e,
 			        current_numel*sizeof(float) );
 			o_field_e(i) = f_buf;
-		} else o_field_t(off_i) = Array<float>( o_dim_null );
+		} else o_field_e(off_i) = Array<float>( o_dim_null );
 		
 		if( !data[i].empty_he ){
 			memcpy( f_buf.fortran_vec(), data[i].he,
 			        current_numel*sizeof(float) );
 			o_field_he(i) = f_buf;
-		} else o_field_t(off_i) = Array<float>( o_dim_null );
+		} else o_field_he(off_i) = Array<float>( o_dim_null );
 		
 		//finally, cleanup
 		i_buf.clear();
