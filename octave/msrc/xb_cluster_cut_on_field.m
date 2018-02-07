@@ -57,7 +57,9 @@ function [klz, nb_removed] = xb_cluster_cut_on_field( klz, op_handle, field_name
 		                                          klz_part, 'VerboseLevel', 0 );
 	catch
 		warning( 'Parallel package not available. This will take a while.' );
-		[klz_part, nb_removed_part] = cellfun( proc_handle, klz_part );
+		[klz_part, nb_removed_part] = cellfun( proc_handle, klz_part, 'UniformOutput', false );
+		klz_part = cell2mat( klz_part );
+		nb_removed_part = sum( cell2mat( nb_removed_part ) );
 	end
 	
 	%stitch together the stuff
