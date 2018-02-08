@@ -134,9 +134,9 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 	int debug_total=0;
 	for (int jentry=0;jentry<nevents;jentry++){
 		data_tree->GetEvent(jentry);	
-		if ( v_flag && (float)(jentry/25000.)==(int)(jentry/25000.) ) printf( "%i %% done \n", (int)(100.*jentry/nevents) );  
+		if ( v_flag && (float)(jentry/25000.)==(int)(jentry/25000.) ) printf( "%i %% done, entry %i \n", (int)(100.*jentry/nevents), cl_i );  
 		for (unsigned int sx=0;sx<Xbn;sx++) {
-			if (Xbe[sx]>0) debug_total++;
+			if (!isnan(Xbe[sx])&&!isinf(Xbe[sx])) debug_total++;
 			Xbii[sx]=0;
 		}
 		bool match = false;
@@ -149,24 +149,27 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 		if ( match&&abs(ord)==10 ) v_cl_i=cl_i;
 		else if ( abs(ord)==10 ) cl_i=v_cl_i;
 		else cl_i=0;
-                Xbcmult=event_klZ[cl_i].n;
-                if (Xbcmult>0){ //are there any clusters?
-                        for( unsigned int k=0; k < event_klZ[cl_i].n; ++k ){//loop over the clusters
-                                Xbcn[k]=event_klZ[cl_i].clusters[k].n;
-                                Xbci[k]=event_klZ[cl_i].clusters[k].centroid_id;
-                                Xbcth[k]=angular_distance( the_cb.at( default_beam_out ).altitude, the_cb.at( default_beam_out ).azimuth,
+		if (match){
+                	Xbcmult=event_klZ[cl_i].n;
+                	if (Xbcmult>0){ //are there any clusters?
+                        	for( unsigned int k=0; k < event_klZ[cl_i].n; ++k ){//loop over the clusters
+                                	Xbcn[k]=event_klZ[cl_i].clusters[k].n;
+                                	Xbci[k]=event_klZ[cl_i].clusters[k].centroid_id;
+                                	Xbcth[k]=angular_distance( the_cb.at( default_beam_out ).altitude, the_cb.at( default_beam_out ).azimuth,
                                                 event_klZ[cl_i].clusters[k].c_altitude, event_klZ[cl_i].clusters[k].c_azimuth );
-                                Xbcsume[k]=event_klZ[cl_i].clusters[k].sum_e;
-				for ( unsigned int cr=0; cr < event_klZ[cl_i].clusters[k].n; cr++ ){//loop over all crystals in cluster
-					for ( unsigned int scr=0;scr<Xbn;scr++ ){//loop over all crystals fired
-						if ( Xbi[scr]==event_klZ[cl_i].clusters[k].crys.at(cr) && Xbe[scr]>0 ) {
-							debug++;
-							Xbii[scr]=event_klZ[cl_i].clusters[k].centroid_id;
+                                	Xbcsume[k]=event_klZ[cl_i].clusters[k].sum_e;
+					for ( unsigned int cr=0; cr < event_klZ[cl_i].clusters[k].n; cr++ ){//loop over all crystals in cluster
+						for ( unsigned int scr=0;scr<Xbn;scr++ ){//loop over all crystals fired
+							if ( Xbi[scr]==event_klZ[cl_i].clusters[k].crys.at(cr) && !isnan(Xbe[scr]) && !isinf(Xbe[scr]) ) {
+								debug++;
+								Xbii[scr]=event_klZ[cl_i].clusters[k].centroid_id;
+							}
 						}
-					}
-				} 
-			}
-                }
+					} 
+				}
+                	}
+		}
+		else Xbcmult=0;
 		//Fill the tree
 		newtr->Fill();
 	}//end of eventloop (stitch file)
@@ -180,6 +183,7 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 void XB::rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::data> &xb_book ){
 	
 	unsigned int Xbn_debug;
+	float Inz_debug;
 	unsigned int Xbi_debug[162];
 	float Xbe_debug[162];
 	float Xbt_debug[162];
@@ -204,17 +208,21 @@ void XB::rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::data> &xb_
         //we need the event id from the tree
         int Evnt;
         unsigned int Xbn;
+        float Xbe[162];
         TBranch *b_Evnt;
         TBranch *b_Xbn;
+        TBranch *b_Xbe;
 
         data_tree->SetBranchAddress("Evnt",&Evnt, &b_Evnt);
         data_tree->SetBranchAddress("Xbn",&Xbn, &b_Xbn);
+        data_tree->SetBranchAddress("Xbe",&Xbe, &b_Xbe);
 
         //clone the tree into a new root file   
         TFile* fout = new TFile( f_root_out, "recreate" );
         TTree *newtr = data_tree->CloneTree(0);
         //add new branches
 	TBranch *bxbn_debug = newtr->Branch("Xbn_debug",&Xbn_debug);
+	TBranch *binz_debug = newtr->Branch("Inz_debug",&Inz_debug);
 	TBranch *bxbi_debug = newtr->Branch("Xbi_debug",&Xbi_debug,"Xbi_debug[Xbn_debug]/i");
 	TBranch *bxbe_debug = newtr->Branch("Xbe_debug",&Xbe_debug,"Xbe_debug[Xbn_debug]/F");
 	TBranch *bxbt_debug = newtr->Branch("Xbt_debug",&Xbt_debug,"Xbt_debug[Xbn_debug]/F");
@@ -254,6 +262,7 @@ void XB::rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::data> &xb_
         for (int jentry=0;jentry<nevents;jentry++){
                 data_tree->GetEvent(jentry);
 		Xbn_debug=0;
+		Inz_debug=0;
 		for (int rst=0;rst<162;rst++) {Xbi_debug[rst]=0,Xbe_debug[rst]=0,Xbt_debug[rst]=0;}
                 if ( (float)(jentry/25000.)==(int)(jentry/25000.) ) printf( "%i %% done \n", (int)(100.*jentry/nevents) );
                 //find the match in the data
@@ -266,14 +275,20 @@ void XB::rwrite( char* f_root_out, char* stch_r_file, std::vector<XB::data> &xb_
                 if ( match&&abs(ord)==10 ) v_ci=ci;
                 else if ( abs(ord)==10 ) ci=v_ci;
                 else ci=0;
-		Xbn_debug=xb_book[ci].n;
-		if ( Xbn_debug!=Xbn ) debug++;
-		energy_list = XB::make_energy_list( xb_book[ci] );
-		for (unsigned int j=0;j<Xbn_debug;j++){
-			Xbi_debug[j]=energy_list[j].i;
-			Xbe_debug[j]=energy_list[j].e;
-			Xbt_debug[j]=energy_list[j].t;
+		if ( match ){
+			Inz_debug=xb_book[ci].in_Z;
+			Xbn_debug=xb_book[ci].n;	
+			//energy_list = XB::make_energy_list( xb_book[ci] );
+			for (unsigned int j=0;j<Xbn_debug;j++){
+				Xbi_debug[j]=xb_book[ci].i[j];
+				Xbe_debug[j]=xb_book[ci].e[j];
+				Xbt_debug[j]=xb_book[ci].t[j];
+				//Xbi_debug[j]=energy_list[j].i;
+				//Xbe_debug[j]=energy_list[j].e;
+				//Xbt_debug[j]=energy_list[j].t;
+			}
 		}
+		else if ( !match && Xbn>0) { debug++;}
 		newtr->Fill();
 	}
 	newtr->Write();
