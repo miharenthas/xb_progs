@@ -7,16 +7,21 @@
 #include "xb_io.h"
 #include "xb_tpat.h"
 
-#define VERBOSE 0x10
 #define IN_FLAG 0x01
 #define OUT_FLAG 0x02
+#define OUT_STATS 0x04
+#define PARSE_HEX 0x08
+#define VERBOSE 0x10
 #define TRACK 0x20
 #define DO_OR 0x40
 #define DO_STATS 0x80
 
+void print_help();
+
 int main( int argc, char **argv ){
 	char in_fname[64][256];
 	char out_fname[256];
+	char stats_fname[256];
 	char tpat_str[256]; strcpy( tpat_str, "minb" );
 	int flagger = 0;
 	int in_fcount = 0;
@@ -36,6 +41,9 @@ int main( int argc, char **argv ){
 		{ "input", required_argument, NULL, 'i' },
 		{ "output", required_argument, NULL, 'o' },
 		{ "tpat", required_argument, NULL, 'T' },
+		{ "thex", required_argument, NULL, 'X' },
+		{ "save-stats", required_argument, NULL, 'S' },
+		{ "help", no_argument, NULL, 'h' },
 		{ "track", no_argument, &flagger, flagger | TRACK },
 		{ "do-or", no_argument, &flagger, flagger | DO_OR },
 		{ "stats", no_argument, &flagger, flagger | DO_STATS },
@@ -43,7 +51,7 @@ int main( int argc, char **argv ){
 	};
 	
 	char iota = 0; int idx;
-	while( (iota = getopt_long( argc, argv, "i:o:T:vtOs", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:T:X:S:vtOsh", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'i' :
 				strncpy( in_fname[0], optarg, 256 );
@@ -56,6 +64,14 @@ int main( int argc, char **argv ){
 				break;
 			case 'T' :
 				strncpy( tpat_str, optarg, 256 );
+				break;
+			case 'X' :
+				strncpy( tpat_str, optarg, 256 );
+				flagger |= PARSE_HEX;
+				break;
+			case 'S' :
+				strncpy( stats_fname, optarg, 256 );
+				flagger |= DO_STATS | OUT_STATS;
 				break;
 			case 'v' :
 				flagger |= VERBOSE;
@@ -70,10 +86,9 @@ int main( int argc, char **argv ){
 				flagger |= DO_STATS;
 				//TODO: make the optional argument work
 				break;
-			default :
-				fprintf( stderr,
-				         "usage: [-T tpat|-i FILE|-o FILE|-v|-t|-O|-s[FILE]]\n" );
-				exit( 1 );
+			case 'h' :
+				print_help();
+				exit( 0 );
 		}
 	}
 	
@@ -102,6 +117,13 @@ int main( int argc, char **argv ){
 	}
 	
 	gsl_histogram *stats;
+	if( flagger & OUT_STATS ){
+		stat_stream = fopen( stats_fname, "w" );
+		if( !stat_stream ){
+			fputs( "error: stat file not open.\n", stderr );
+			exit( 1 );
+		}
+	}
 	if( flagger & DO_STATS ){
 		stats = XB::tpat_stats_alloc();
 		if( flagger & VERBOSE ) printf( "Doing stats...\n" );
@@ -116,7 +138,9 @@ int main( int argc, char **argv ){
 	
 	if( flagger & VERBOSE ) printf( "Pruning data...\n" );
 	
-	int mask = XB::str2tpat( tpat_str );
+	int mask;
+	if( flagger & PARSE_HEX ) mask = XB::hex2tpat( tpat_str );
+	else mask = XB::str2tpat( tpat_str );
 	int nb_removed, sz_bf = ( flagger & TRACK )? track.size() : data.size();
 	if( flagger & TRACK ){
 		if( flagger & DO_OR ) nb_removed = select_or_tpat( mask, track );
@@ -143,4 +167,36 @@ int main( int argc, char **argv ){
 	if( flagger & VERBOSE ) puts( "Done. Goodbye." );
 	
 	return 0;
-}	
+}
+
+//------------------------------------------------------------------------------------
+//let's not have to read the source code for the flags name every time
+void print_help(){
+	puts( "xb_trigger_siv: a program to siv on the trigger (Tpat)" );
+	puts( "options:" );
+	puts( "\t-v | --verbose" );
+	puts( "\t-i | --input [FILE]" );
+	puts( "\t-o | --output [FILE]" );
+	puts( "\t-T | --tpat [tpat description, see below]" );
+	puts( "\t-X | --thex [some hexes for the mask]" );
+	puts( "\t-S | --save-stats [FILE]" );
+	puts( "\t-s | --stats" );
+	puts( "\t-t | --track" );
+	puts( "\t-O | --do-or" );
+	puts( "\t-h | --help" );
+	puts( "\ntpat flag names:" );
+	puts( "\tminb     -- minimum bias" );
+	puts( "\tfrag     -- NTF fired" );
+	puts( "\tntr      -- LAND trigger" );
+	puts( "\tcbsumf   -- XB forward" );
+	puts( "\tcbsum    -- Crystal Ball" );
+	puts( "\tcbor     -- Either half of XB" );
+	puts( "\tpix      -- pixel detector" );
+	puts( "\tlandc    -- offspill, LAND cosmic" );
+	puts( "\ttfwc     -- offspill, TFW cosmic" );
+	puts( "\tntfc     -- offspill, NTF cosmic" );
+	puts( "\tcbc      -- offspill, XB cosmic" );
+	puts( "\tcboffsp  -- offspill, XB sum" );
+	puts( "\tpixoffsp -- offspill, pixel" );
+}
+	

@@ -31,19 +31,19 @@ The reaction trigger is a number given by an | on the various reaction triggers
 And it should be checked exactly -- numerically, with the == operator.
 */
 #define POS_NOT_ROLU 0x0001
-#define NTF          0x0002
-#define NTF_COSM     0x0004
-#define TFW          0x0008
-#define TFW_COSM     0x0010
-#define LAND         0x0020
-#define LAND_COSM    0x0040
-#define CB_SUM_E     0x0080
-#define PIX          0x0100
-#define CB_SUM_F     0x0200
-#define CB_OR        0x0400
-#define POS_RAW      0x0800
-#define PILEUP       0x1000
-//not in use #define ---          0x2000
+#define PNR_PUP      0x0003 //0x3 is not a typo, it's the actual flag
+#define FRAG         0x0004
+#define LAND         0x0008
+#define FRAG_XB_SUMF 0x0010
+#define FRAG_XB_SUM  0x0020
+#define FRAG_XB_OR   0x0040
+#define PIX          0x0080
+#define LAND_COSM    0x0100
+#define TFW_COSM     0x0200
+#define NTF_COSM     0x0400
+#define XB_COSM      0x0800
+#define XB_SUM_OFFSP 0x1000
+#define PIX_OFFSP    0x2000
 //not in use #define ---          0x4000
 //not in use #define ---          0x8000
 
@@ -51,6 +51,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//An utility that translates a string into a tpat mask
 	int str2tpat( const char *tpat_str );
+	int hex2tpat( const char *tpat_hexstr );
 	
 	//----------------------------------------------------------------------------
 	//some utilities to do the stats
