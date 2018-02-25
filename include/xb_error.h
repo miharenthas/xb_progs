@@ -12,9 +12,9 @@ namespace XB{
 		public:
 			_xb_error( const char* message, const char* from );
 			_xb_error( const _xb_error &given );
-			~_xb_error() _GLIBCXX_USE_NOEXCEPT { delete _what; };
+			~_xb_error() noexcept { delete _what; };
 
-			virtual const char *what() const _GLIBCXX_USE_NOEXCEPT;
+			virtual const char *what() const noexcept;
 
 			char *_what;
 	} error;
