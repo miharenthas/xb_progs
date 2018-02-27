@@ -4,7 +4,9 @@
 #include <getopt.h> //getopt long
 #include <stdio.h>
 #include <string.h>
-#include <omp.h>
+#if !(defined(__APPLE__) && defined(__clang__))
+	#include <omp.h>
+#endif
 
 #include <vector>
 #include <algorithm>

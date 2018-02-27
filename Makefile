@@ -72,6 +72,7 @@ uninstall :
 .PHONY: clean
 clean:
 	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
+	rm -rf *.dSYM
 
 #recipes
 #----------------------------------------------------------------------

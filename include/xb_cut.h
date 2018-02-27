@@ -11,7 +11,7 @@
 #include <algorithm> //std::remove_if
 
 #include <unistd.h> //sysconf
-#ifndef __clang__
+#if !(defined(__APPLE__) && defined(__clang__))
 	#include <omp.h> //for OpenMP
 #endif
 #include <math.h> //ceil

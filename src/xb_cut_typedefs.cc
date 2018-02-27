@@ -124,25 +124,32 @@ namespace XB{
 	}
 	
 	//make _base_change from the basis vectors
+	//TODO: this is wrong, as it turns out
+	//      need to do it in the affine space.
 	void _xb_2D_cut_primitive::do_change_basis( gsl_matrix *trf ){
-		//transform the basis, disregarding translations, which do
-		//not affect the thing --isolate the "roto-scale-sheer" part
-		//of the affine transformation (it always works)
-		gsl_matrix *trf_core = gsl_matrix_alloc( 2, 2 );
-		for( int i=0; i < 2; ++i )
-			for( int j=0; j < 2; ++j )
-				gsl_matrix_set( trf_core, i, j, gsl_matrix_get( trf, i, j ) );
-		
+		gsl_vector *b_buf = gsl_vector_alloc( 3 );
+		gsl_vector *affine_basis_v = gsl_vector_alloc( 3 );;
+		printf( "\n---\n" );
 		//transform the basis
-		gsl_vector *res = gsl_vector_alloc( 2 );
 		for( int i=0; i < 2; ++i ){
-			gsl_blas_dgemv( CblasNoTrans, 1, trf_core, _basis[i], 0, res );
-			gsl_vector_memcpy( _basis[i], res );
+			memcpy( affine_basis_v->data, _basis[i]->data, 2*sizeof(double) );
+			gsl_vector_set( affine_basis_v, 2, 1 );
+			gsl_blas_dgemv( CblasNoTrans, 1, trf, affine_basis_v, 0, b_buf );
+			memcpy( _basis[i]->data, b_buf->data, 2*sizeof(double) );
+			printf( "%f %f\n", _basis[i]->data[0], _basis[i]->data[1] );
 		}
-		
 		//cleanup
-		gsl_vector_free( res );
-		gsl_matrix_free( trf_core );
+		gsl_vector_free( affine_basis_v );
+		gsl_vector_free( b_buf );
+		
+		//recentre
+		//NOTE: the centroid of the cut
+		//      is supposed to be kept up to date
+		//      if one class plans to use this
+		gsl_vector_view centroid = gsl_vector_view_array( _descriptors, 2 );
+		printf( "\n%f %f\n", centroid.vector.data[0], centroid.vector.data[1] );
+		gsl_vector_sub( _basis[0], &centroid.vector );
+		gsl_vector_sub( _basis[1], &centroid.vector );
 		
 		//do a base change to matrix
 		gsl_matrix_set( _base_change, 0, 0, _basis[1]->data[1] );
@@ -150,10 +157,22 @@ namespace XB{
 		gsl_matrix_set( _base_change, 1, 0, -_basis[0]->data[1] );
 		gsl_matrix_set( _base_change, 1, 1, _basis[0]->data[0] );
 		
+		printf( "\n%f %f\n%f %f\n",
+		        gsl_matrix_get( _base_change, 0, 0 ),
+		        gsl_matrix_get( _base_change, 0, 1 ),
+		        gsl_matrix_get( _base_change, 1, 0 ),
+		        gsl_matrix_get( _base_change, 1, 1 ) );
+		
 		double det = gsl_vector_get( _basis[0], 0 )*gsl_vector_get( _basis[1], 1 )
 		             - gsl_vector_get( _basis[1], 0 )*gsl_vector_get( _basis[0], 1 );
 		
 		gsl_matrix_scale( _base_change, 1./det );
+		printf( "\n%f %f\n%f %f\n",
+		        gsl_matrix_get( _base_change, 0, 0 ),
+		        gsl_matrix_get( _base_change, 0, 1 ),
+		        gsl_matrix_get( _base_change, 1, 0 ),
+		        gsl_matrix_get( _base_change, 1, 1 ) );
+		printf( "\n---\n" );
 	}
 	
 	//change the base to a point
@@ -406,8 +425,8 @@ namespace XB{
 		gsl_matrix_set( native_trans, 1, 2, _descriptors[1] );
 		
 		gsl_matrix_set( native_rot, 0, 0, cos( _descriptors[4] ) );
-		gsl_matrix_set( native_rot, 0, 1, -sin( _descriptors[4] ) );
-		gsl_matrix_set( native_rot, 1, 0, sin( _descriptors[4] ) );
+		gsl_matrix_set( native_rot, 0, 1, sin( _descriptors[4] ) );
+		gsl_matrix_set( native_rot, 1, 0, -1*sin( _descriptors[4] ) );
 		gsl_matrix_set( native_rot, 1, 1, cos( _descriptors[4] ) );
 		
 		//create the native transformation
@@ -442,7 +461,7 @@ namespace XB{
 		_descriptors[3] = gsl_blas_dnrm2( b_guidepoint );
 		
 		//last thing: calculate the new rotation:
-		_descriptors[4] = atan2( a_guidepoint->data[1], a_guidepoint->data[0] );
+		_descriptors[4] = atan2( a_guidepoint->data[0], a_guidepoint->data[1] );
 		
 		//write the new centre coordinates
 		memcpy( _descriptors, centre_vec->data, 2*sizeof(double) );
@@ -743,25 +762,32 @@ namespace XB{
 		//check if the transformation is anti- or symmetric
 		if( gsl_matrix_get( trf, 0, 0 ) != gsl_matrix_get( trf, 1, 1 )
 		    || abs( gsl_matrix_get( trf, 0, 1 ) ) != abs( gsl_matrix_get( trf, 1, 0 ) ) ){
+			fprintf( stderr, "XB::cut_regular_polygon::transform:\n" );
+			fprintf( stderr, "WARNING: the given transformation deforms the polygon.\n" );
+			fprintf( stderr, "This discards some P-i-P speedup.\n" );
 			_deformed = true;
 		}
 		
 		_xb_cut_polygon::transform( trf ); //call the parent's method
-		do_change_basis( trf ); //change the basis
+		
+		//update the radius, if not deformed
+		if( !_deformed ){
+			_descriptors[3] = sqrt( pow( _vertices[0] - _descriptors[0], 2 )
+			                        + pow( _vertices[1] - _descriptors[1], 2 ) );
+		} else {
+			_descriptors[3] = 0;
+		}                    
 	}
 	
 	//pip test
 	bool _xb_cut_regular_polygon::contains( double *pt ){
-		//if this polygon is deformed, change the basis to the given point
-		//and then proceed as usual.
-		double pt_prime[] = { pt[0], pt[1] };
-		pt_prime[0] -= _descriptors[0];
-		pt_prime[1] -= _descriptors[1];
-		do_change_basis_to_point( pt_prime );
+		//if this polygon is deformed, just fall back a generation
+		if( _deformed ) return _xb_cut_polygon::contains( pt );
 		
 		//first: if it's further away than the radius from the
 		//centrioid, it's out (no holes here)
-		double dfc = sqrt( pow( pt_prime[0], 2 ) + pow( pt_prime[1], 2 ) ); //norm of vector distance
+		double d[] = { _descriptors[0] - pt[0], _descriptors[1] - pt[1] }; //vector distance
+		double dfc = sqrt( pow( d[0], 2 ) + pow( d[1], 2 ) ); //norm of vector distance
 		
 		if( dfc > _descriptors[3] ) return false;
 		
@@ -770,7 +796,6 @@ namespace XB{
 		if( dfc <= _descriptors[3]*cos( _XB_PI/_descriptors[2] ) ) return true;
 		
 		//if we didn't get it yet, desperation: ray casting.
-		//NOTE: with the untouched point, since the basis doesn't enter into it
 		return _xb_cut_polygon::contains( pt );
 	}
 	
@@ -875,6 +900,9 @@ namespace XB{
 	void _xb_cut_square::transform( gsl_matrix *trf ){
 		//call the parent's transform method
 		_xb_cut_regular_polygon::transform( trf );
+
+		//do a base change to matrix
+		do_change_basis( trf );
 	}
 	
 	//pip test
@@ -888,6 +916,8 @@ namespace XB{
 		pt_prime[1] -= _descriptors[1];
 		do_change_basis_to_point( pt_prime );
 		
+		//printf( "%f %f ", pt_prime[0], pt_prime[1] );
+
 		double h_side = _descriptors[5]*.5;
 		
 		if( pt_prime[0] > h_side || pt_prime[0] < -h_side
