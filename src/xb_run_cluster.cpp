@@ -114,6 +114,7 @@ int main( int argc, char **argv ){
 		if( verbose )
 			printf( "%010d", i );
 	}
+	if( verbose ) puts( "\nDone." );
 	#endif
 	
 	//draw events,
