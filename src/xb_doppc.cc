@@ -44,7 +44,7 @@ void apply_doppler_correction( std::vector<XB::data> &xb_book,
 	//some verbosty cosmetics
 	unsigned int thread_num = 0;
 	#if !(defined(__APPLE__) && defined(__clang__))
-		therad_num = omp_get_thread_num();
+		thread_num = omp_get_thread_num();
 	#endif
 	if( flagger & VERBOSE && !thread_num ) printf( "Event: 0000000000" );
 	
@@ -187,7 +187,7 @@ void apply_doppler_correction( std::vector<XB::clusterZ> &xb_book,
 	//some verbosty cosmetics
 	unsigned int thread_num = 0;
 	#if !(defined(__APPLE__) && defined(__clang__))
-		therad_num = omp_get_thread_num();
+		thread_num = omp_get_thread_num();
 	#endif
 	if( flagger & VERBOSE && !thread_num ) printf( "Event: 0000000000" );
 	

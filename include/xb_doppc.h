@@ -94,7 +94,7 @@ void apply_doppc_simple( std::vector<T> &xb_book,
 		//init a random sequence
 		unsigned int thread_num = 0;
 		#if !(defined(__APPLE__) && defined(__clang__))
-			therad_num = omp_get_thread_num();
+			thread_num = omp_get_thread_num();
 		#endif
 		srand( time( NULL )+thread_num );
 		
