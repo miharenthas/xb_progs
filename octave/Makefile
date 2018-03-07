@@ -10,7 +10,7 @@ OCT = ./oct
 OBJECTS = xb_load_data.o xb_write_data.o xb_load_track_info.o xb_write_track_info.o xb_load_clusterZ.o xb_load_adata.o xb_write_adata.o xb_load_klz_field.o xb_write_clusterZ.o xb_ball_neigh.o xb_ball_at.o xb_ball_some_crystals.o
 OCTFILES = $(OCT)/xb_load_data.oct $(OCT)/xb_write_data.oct $(OCT)/xb_load_adata.oct $(OCT)/xb_write_adata.oct $(OCT)/xb_load_track_info.oct $(OCT)/xb_write_track_info.oct $(OCT)/xb_load_clusterZ.oct $(OCT)/xb_write_clusterZ.oct $(OCT)/xb_ball_neigh.oct $(OCT)/xb_ball_at.oct
 
-OCTFLAGS = -lxb_core -I"../include/" -I"./include/" -Wno-sign-compare
+OCTFLAGS = -lxb_core -I"../include/" -I"./include/" -Wno-sign-compare -std=c++11
 
 C_OCT = mkoctfile
 

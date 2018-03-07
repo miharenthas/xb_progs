@@ -15,7 +15,7 @@ namespace XB{
 		strcpy( _what, given._what );
 	}
 
-	const char *error::what() const _GLIBCXX_USE_NOEXCEPT{
+	const char *error::what() const noexcept {
 		return _what;
 	}
 }	

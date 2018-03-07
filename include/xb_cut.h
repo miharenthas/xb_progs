@@ -11,7 +11,9 @@
 #include <algorithm> //std::remove_if
 
 #include <unistd.h> //sysconf
-#include <omp.h> //for OpenMP
+#if !(defined(__APPLE__) && defined(__clang__))
+	#include <omp.h> //for OpenMP
+#endif
 #include <math.h> //ceil
 
 #include "xb_data.h"

@@ -119,6 +119,7 @@ namespace XB{
 				kl.centroid_id = list[i].i;
 				kl.c_altitude = cb.at( kl.centroid_id ).altitude;
 				kl.c_azimuth = cb.at( kl.centroid_id ).azimuth;
+				break;
 			}
 		}
 		//check that something has been found

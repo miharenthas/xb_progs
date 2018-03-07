@@ -20,8 +20,8 @@ struct translator_settings{
 	bool out_flag;
 	bool check_flag;
 	bool track_flag;
+	int invalid_level;
 	bool sim_flag;
-	bool source_flag;
 	bool verbose;
 	char in_f_name[64][256];
 	char out_f_name[256];
@@ -84,13 +84,14 @@ int main( int argc, char** argv ){
 		{ "tracking-data", no_argument, NULL, 't' },
 		{ "simulation-data", no_argument, NULL, 's' },
 		{ "source-run", no_argument, NULL, 'S' },
+		{ "no-check-valid", no_argument, NULL, 'R' },
 		{ "help", no_argument, NULL, 'h' },
 		{ 0, 0, 0, 999 }
 	};
 
 	//further input parsing
 	char iota = 0; int opt_idx = 0;
-	while( (iota = getopt_long( argc, argv, "i:o:cvtsS", opts, &opt_idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:cvtsSR", opts, &opt_idx )) != -1 ){
 		switch( iota ){
 			case 'i':
 				if( strlen( optarg ) > 256 ){
@@ -122,7 +123,10 @@ int main( int argc, char** argv ){
 				settings.sim_flag = true;
 				break;
 			case 'S':
-				settings.source_flag = true;
+				settings.invalid_level = 1;
+				break;
+			case 'R':
+				settings.invalid_level = 2;
 				break;
 			case 'h':
 				system( "cat doc/xb_data_translator" );
@@ -193,6 +197,7 @@ xb_data_translator<xb_data_type>::xb_data_translator( struct translator_settings
 	settings.track_flag = given_s.track_flag;
 	settings.verbose = given_s.verbose;
 	settings.sim_flag = given_s.sim_flag;
+	settings.invalid_level = given_s.invalid_level;
 	
 	strcpy( settings.out_f_name, given_s.out_f_name );
 	
@@ -241,7 +246,7 @@ void xb_data_translator<xb_data_type>::data_loader(){
 	}
 	
 	//clean the data: remove things that had nans in them
-	clean_data( xb_book );
+	if( settings.invalid_level != 2 ) clean_data( xb_book );
 }
 
 //------------------------------------------------------------------------------------
@@ -308,7 +313,8 @@ void xb_data_translator< xb_data_type >::clean_data( vector<XB::data> &xb_data )
 	int read_events = xb_data.size();
 
 	vector<XB::data>::iterator new_end;
-	if( settings.source_flag ) new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy_source );
+	if( settings.invalid_level == 1 )
+		new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy_source );
 	else new_end = remove_if( xb_data.begin(), xb_data.end(), is_crappy_beam );
 	xb_data.erase( new_end, xb_data.end() );
 	
