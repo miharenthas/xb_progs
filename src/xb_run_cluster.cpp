@@ -33,7 +33,7 @@ int main( int argc, char **argv ){
 
 	//input parsing
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:vdn::w:c") ) != -1 )
+	while( (iota = getopt( argc, argv, "i:o:vdn:w:c") ) != -1 )
 		switch( iota ){
 			case 'i' : //set an input file
 				if( strlen( optarg ) < 256 ){
@@ -54,7 +54,7 @@ int main( int argc, char **argv ){
 				draw = true;
 				break;
 			case 'n' : //use nearest-neighbour
-				if( optarg != NULL ) neigh_order = atoi( optarg );
+				neigh_order = atoi( optarg );
 				break;
 			case 'w' : //set the waiting period for display
 				wait_for = atoi( optarg );
@@ -95,7 +95,7 @@ int main( int argc, char **argv ){
 	for( int i=0; i < xb_book.size(); ++i ){
 		if( verbose && !omp_get_thread_num() )
 			printf( "\b\b\b\b\b\b\b\b\b\b" );
-		
+
 		event_klZ[i] = XB::make_clusters_NN( xb_book[i], neigh_order );
 		
 		if( verbose && !omp_get_thread_num() )
