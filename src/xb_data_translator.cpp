@@ -16,6 +16,7 @@ using namespace std;
 //------------------------------------------------------------------------------------
 //a handy data structure to hold the program's settings
 struct translator_settings{
+	float energy_thr;
 	bool in_flag;
 	bool out_flag;
 	bool check_flag;
@@ -47,6 +48,8 @@ class xb_data_translator{
 		//cleaner
 		void clean_data( vector<XB::data> &xb_data );
 		void clean_data( vector<XB::track_info> &xb_track ) {};
+		void do_nrg_thr( vector<XB::data> &xb_data );
+		void do_nrg_thr( vector<XB::track_info> &xb_track ) {};
 		
 		vector<xb_data_type> xb_book; //the read data
 		struct translator_settings settings; //the settings
@@ -85,13 +88,14 @@ int main( int argc, char** argv ){
 		{ "simulation-data", no_argument, NULL, 's' },
 		{ "source-run", no_argument, NULL, 'S' },
 		{ "no-check-valid", no_argument, NULL, 'R' },
+		{ "energy-thr", required_argument, NULL, 'e' },
 		{ "help", no_argument, NULL, 'h' },
 		{ 0, 0, 0, 999 }
 	};
 
 	//further input parsing
 	char iota = 0; int opt_idx = 0;
-	while( (iota = getopt_long( argc, argv, "i:o:cvtsSR", opts, &opt_idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "i:o:cvtsSRe:", opts, &opt_idx )) != -1 ){
 		switch( iota ){
 			case 'i':
 				if( strlen( optarg ) > 256 ){
@@ -127,6 +131,9 @@ int main( int argc, char** argv ){
 				break;
 			case 'R':
 				settings.invalid_level = 2;
+				break;
+			case 'e' :
+				settings.energy_thr = atof( optarg );
 				break;
 			case 'h':
 				system( "cat doc/xb_data_translator" );
@@ -198,6 +205,7 @@ xb_data_translator<xb_data_type>::xb_data_translator( struct translator_settings
 	settings.verbose = given_s.verbose;
 	settings.sim_flag = given_s.sim_flag;
 	settings.invalid_level = given_s.invalid_level;
+	settings.energy_thr = given_s.energy_thr;
 	
 	strcpy( settings.out_f_name, given_s.out_f_name );
 	
@@ -247,6 +255,8 @@ void xb_data_translator<xb_data_type>::data_loader(){
 	
 	//clean the data: remove things that had nans in them
 	if( settings.invalid_level != 2 ) clean_data( xb_book );
+	
+	if( settings.energy_thr ) do_nrg_thr( xb_book );
 }
 
 //------------------------------------------------------------------------------------
@@ -320,4 +330,18 @@ void xb_data_translator< xb_data_type >::clean_data( vector<XB::data> &xb_data )
 	
 	if( settings.verbose )
 		printf( "Read events: %d\nValid events: %d\n", read_events, xb_data.size() );
+}
+
+//------------------------------------------------------------------------------------
+//apply an energy threshold
+template< class xb_data_type >
+void xb_data_translator< xb_data_type >::do_nrg_thr( vector<XB::data> &xb_data ){
+	int read_events = xb_data.size();
+	
+	auto thr = [this]( XB::data &d ){
+		for( int i=0; i < d.n; ++i ) if( d.e[i] < settings.energy_thr ) d.e[i] = 0;
+	};
+	
+	for_each( xb_data.begin(), xb_data.end(), thr );
+	
 }
