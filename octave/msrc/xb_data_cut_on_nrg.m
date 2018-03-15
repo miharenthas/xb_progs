@@ -43,15 +43,15 @@ function [evt, nb_removed] = xb_data_cut_on_nrg( evt, op_handle )
 	end
 
 	%do the parallel execution
-	proc_handle = @( p ) _processor( p, op_handle, field_name );
-	try
-		pkg load parallel;
-		[klz_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
-		                                          klz_part, 'VerboseLevel', 0 );
-	catch
+	proc_handle = @( p ) _processor( p, op_handle );
+ 	try
+ 		pkg load parallel;
+ 		[evt_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
+ 		                                          evt_part, 'VerboseLevel', 0 );
+ 	catch
 		warning( 'Parallel package not available. This will take a while.' );
-		[klz_part, nb_removed_part] = cellfun( proc_handle, klz_part );
-	end
+		[evt_part, nb_removed_part] = cellfun( proc_handle, evt_part );
+ 	end
 	
 	%stitch together the stuff
 	evt = reshape( evt_part, [], 1 );
