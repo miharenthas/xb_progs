@@ -1,19 +1,17 @@
-%this function selects cluster based on their total energy.
-%usage: [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
+%this function selects cluster based on the content of a field.
+%usage: [klz, nb_removed] = xb_cluster_map( klz, op_handle )
 %       where "op_handle" is a function handle that
-%           -takes an aray of energies as argument
-%           -returns an array of boolean values (or something that can
-%            go into an if statement)
-%       NOTE: those for which TRUE is returned are KEPT!
+%           -takes an array of clusters --specifically, the .cluster field
+%           -returns an array of clusters, those tha will be kept
 
-function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
+function [klz, nb_removed] = xb_cluster_map( klz, op_handle )
 	%klz is a tructure representing the event
 	%this will be maintained
-	
-
+	%checkin the input
 	if ~is_function_handle( op_handle )
 		error( "Second argument **MUST** be a function handle!" );
 	end
+	
 	if isempty( klz )
 		nb_removed = 0;
 		return;
@@ -39,15 +37,15 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 		catch
 			%I'm not yet sure this is the most brilliant solution
 			%but it's the best I can think right now.
-			[klz_rest nbr_rest] = xb_cluster_cut_on_field( klz(idx_part(ii):end), ...
-			                                               op_handle );
+			[klz_rest nbr_rest] = xb_cluster_map( klz(idx_part(ii):end), ...
+			                                      op_handle );
 			break;
 		end
 		nb_proc += 1;
 	end
 
 	%do the parallel execution
-	proc_handle = @( p ) _processor( p, op_handle, field_name );
+	proc_handle = @( p ) _processor( p, op_handle );
 	try
 		pkg load parallel;
 		[klz_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
@@ -59,26 +57,22 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 		nb_removed_part = sum( cell2mat( nb_removed_part ) );
 	end
 	
-	
 	%stitch together the stuff
 	klz = reshape( klz_part, 1, [] );
 	if ~isempty( klz_rest ) klz = [klz(:); klz_rest(:)]; end
-	nb_removed = sum( nb_removed_part ) + nbr_rest;	
-
+	nb_removed = sum( nb_removed_part ) + nbr_rest;
+	
 	%remove empty events.
-	evt = evt( find( [evt.n] ) );
+	klz = klz( find( [klz.n] ) );
+	
 end
 
 %the processor function
 function [klz, nb_removed] = _processor( klz, op_handle )
-	%loop clear the uninsteresting stuff.
 	nb_removed = sum( [klz.n] );
 	for ii=1:length( klz )
-		keep_idx = find( op_handle( [klz(ii).clusters.sum_e](:) ) );
-		klz(ii).clusters = klz(ii).clusters( keep_idx );
-		
-		%at the end of things, multiplicity update
+		klz(ii).clusters = op_handle( klz(ii).clusters );
 		klz(ii).n = length( klz(ii).clusters );
 	end
-	nb_removed = nb_removed - sum( [klz.n] );
+	nb_removed = sum( [klz.n] );
 end

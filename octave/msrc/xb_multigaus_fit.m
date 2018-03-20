@@ -29,11 +29,12 @@ function [parameters, J_val] = xb_multigaus_fit( data_set, parameters, varargin 
 	
 	%make the cost function
 	J_fun = @( p ) sum( ( xb_multigaus_stack_exec( p, gaus_stack ) ...
-	                      + exp_bkg( p ) - data_set(2,:) ).^2 )/ ...
-	                      (length( data_set ) - length( parameters ))^2;
-	
+	                      + exp_bkg( p ) - data_set(2,:) ).^2 );
+
 	%do the minimization
 	for ii=1:30
 		[parameters, J_val] = fminsearch( J_fun, parameters );
 	end
+
+	%TODO: do an estimate on the errors on the parameters.
 end
