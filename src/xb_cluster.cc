@@ -45,6 +45,7 @@ namespace XB{
 	//-------------------------------------------------------------------
 	//the function that makes the ordered energy list starting from an event
 	//the length of the list is guaranteed to be the same as the length of the event.
+	//NOTE: this thing *allocates* on the heap, use free to clean up after use!
 	oed* make_energy_list( const data &evnt ){
 		//if the event is empty, return NULL
 		if( evnt.n == 0 ) return NULL;
@@ -114,7 +115,7 @@ namespace XB{
 		//make the cluster
 		//loop on the list until you find an entry that makes sense
 		for( int i=0; i < evnt.n; ++i ){
-			if( IS_LIST_VALID( list[i] ) ){ continue; }
+			if( IS_LIST_INVALID( list[i] ) ){ continue; }
 			else{
 				kl.centroid_id = list[i].i;
 				kl.c_altitude = cb.at( kl.centroid_id ).altitude;
@@ -141,13 +142,81 @@ namespace XB{
 		//calculate the energy sum
 		for( int i=0; i < kl.crys_e.size(); ++i ) kl.sum_e += kl.crys_e[i];
 		
+		//a cleanup that went missing
+		free( list );
+		free( neigbours );
+		
 		return kl;
 	}
 
 	//------------------------------------------------------------------------
+	//make one cluster by "beading" the energy deposits together instead of just summing
+	//the ring of neighbours
+	cluster make_one_cluster_bead( const data &evnt, unsigned int order ){
+		oed *list = make_energy_list( evnt ); //an ordered energy list
+		unsigned int lile = evnt.n; //length of the list
+		xb_ball cb; //the crystal ball
+		
+		//init the cluster
+		cluster kl; //initiate the cluster
+		kl.centroid_id = 0; //set the cluster's centroid
+		kl.sum_e = 0; //init the sum energy to 0
+		kl.n = 0; //init the number of crystals in the cluster to 0
+		
+		if( list == NULL ) throw error( "Empty event!", "make_one_cluster_bead" ); //check that it's not empty
+
+		//make the cluster
+		//loop on the list until you find an entry that makes sense
+		for( int i=0; i < evnt.n; ++i ){
+			if( IS_LIST_INVALID( list[i] ) ){ continue; }
+			else{
+				kl.centroid_id = list[i].i;
+				kl.c_altitude = cb.at( kl.centroid_id ).altitude;
+				kl.c_azimuth = cb.at( kl.centroid_id ).azimuth;
+				break;
+			}
+		}
+		//check that something has been found
+		if( kl.centroid_id == 0 ) throw error( "Empty event!", "make_one_cluster_bead" );
+		
+		unsigned int n_neigh;
+		oed current_k = {0, 1, 1};
+		unsigned int neighbours = neigh( cb.at( kl.centroid_id ), 1, n_neigh );
+		while( kl.n <= order && current_k.i && current_k.e ){
+			current_k.i = 0;
+			current_k.e = 0;
+			for( int i=0; i < lile; ++i ){
+				//NOTE: the first crystal added will always be the centroid
+				//      typically at list[0].
+				if( std::binary_search( neighbours, neighbours+n_neigh, list[i].i &&
+				    list[i].i != current_k.i && list[i].e > current_k.e ){
+					current_k.i = list[i].i;
+					current_k.e = list[i].e;
+				}
+			}
+			
+			//if no crystal was found, get out of the while loop
+			free( neighbours ); neighbours = NULL;
+			if( current_k.i && current_k.e ){
+				kl.crys.push_back( current_k.i );
+				kl.crys_e.push_back( current_k.e );
+				neighbours = neigh( cb.at( current_k.i ), 1, neigh_n );
+				std::remove( list, list+lile, current_k );
+				lile--;
+			}
+		}
+		//calculate the energy sum
+		for( int i=0; i < kl.crys_e.size(); ++i ) kl.sum_e += kl.crys_e[i];
+		
+		free( list );
+		return kl;
+	}
+	
+	//------------------------------------------------------------------------
 	//the function that does clustering on a near-neighbours base.
 	//it basically runs make_one_cluster_NN() until the event is empty.
-	clusterZ make_clusters_NN( const data &evnt, unsigned int order=1 ){
+	clusterZ make_clusters( const data &evnt, unsigned int order=1,
+	                        cluster (*k_alg)( data&, unsigned int ) ){
 		data new_evnt, the_evnt( evnt );
 		clusterZ the_clusters; //alloc the clustes
 		cluster kl; //a cluster
@@ -161,7 +230,7 @@ namespace XB{
 		the_clusters.in_A_on_Z = the_evnt.in_A_on_Z;
 		while( the_evnt.n ){
 			try{
-				kl = make_one_cluster_NN( the_evnt, order );
+				kl = k_alg( the_evnt, order );
 				the_clusters.clusters.push_back( kl );
 				++the_clusters.n;
 			}catch( error e ){ return the_clusters; }
@@ -198,5 +267,4 @@ namespace XB{
 		
 		return the_clusters;
 	}
-		
 } //namespace
