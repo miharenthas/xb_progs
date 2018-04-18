@@ -21,7 +21,7 @@ int main( int argc, char **argv ){
 	//input variables
 	char in_fname[256], out_fname[256];
 	bool in_flag = false, out_flag = false, verbose = false,
-	     draw = false, check_flag = false;
+	     draw = false, check_flag = false, use_bead = false;
 	int neigh_order = 1, wait_for = 10; //order of neighbourhood for the NN algorithm
 	gnuplot_ctrl *gp_h; //the handle to the gnuplot session, in case we draw
 	
@@ -33,7 +33,7 @@ int main( int argc, char **argv ){
 
 	//input parsing
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:vdn:w:c") ) != -1 )
+	while( (iota = getopt( argc, argv, "i:o:vdn:w:cB::") ) != -1 )
 		switch( iota ){
 			case 'i' : //set an input file
 				if( strlen( optarg ) < 256 ){
@@ -62,6 +62,10 @@ int main( int argc, char **argv ){
 			case 'c' : //check the output file
 				check_flag = true;
 				fprintf( stderr, "%s: warning: the check is mostly bogus.\n", argv[0] );
+				break;
+			case 'B' : //use the bead algorithm
+				use_bead = true;
+				if( optarg ) neigh_order = atoi( optarg );
 				break;
 			default:
 				printf( "-%c is not a valid option.\n", optopt );
@@ -95,8 +99,11 @@ int main( int argc, char **argv ){
 	for( int i=0; i < xb_book.size(); ++i ){
 		if( verbose && !omp_get_thread_num() )
 			printf( "\b\b\b\b\b\b\b\b\b\b" );
-
-		event_klZ[i] = XB::make_clusters_NN( xb_book[i], neigh_order );
+		
+		if( use_bead ) event_klZ[i] = XB::make_clusters( xb_book[i], neigh_order,
+			                                             XB::make_one_cluster_bead );
+		else event_klZ[i] = XB::make_clusters( xb_book[i], neigh_order,
+			                                   XB::make_one_cluster_NN );
 		
 		if( verbose && !omp_get_thread_num() )
 			printf( "%010d", i );
@@ -109,7 +116,10 @@ int main( int argc, char **argv ){
 		if( verbose )
 			printf( "\b\b\b\b\b\b\b\b\b\b" );
 		
-		event_klZ[i] = XB::make_clusters_NN( xb_book[i], neigh_order );
+		if( use_bead ) event_klZ[i] = XB::make_clusters( xb_book[i], neigh_order,
+			                                             XB::make_one_cluster_bead );
+		else event_klZ[i] = XB::make_clusters( xb_book[i], neigh_order,
+			                                   XB::make_one_cluster_NN );
 		
 		if( verbose )
 			printf( "%010d", i );

@@ -144,7 +144,7 @@ namespace XB{
 		
 		//a cleanup that went missing
 		free( list );
-		free( neigbours );
+		free( neighbours );
 		
 		return kl;
 	}
@@ -153,7 +153,7 @@ namespace XB{
 	//make one cluster by "beading" the energy deposits together instead of just summing
 	//the ring of neighbours
 	cluster make_one_cluster_bead( const data &evnt, unsigned int order ){
-		oed *list = make_energy_list( evnt ); //an ordered energy list
+		oed *list = make_energy_list( evnt ), *listend = list + evnt.n; //an ordered energy list
 		unsigned int lile = evnt.n; //length of the list
 		xb_ball cb; //the crystal ball
 		
@@ -181,15 +181,17 @@ namespace XB{
 		
 		unsigned int n_neigh;
 		oed current_k = {0, 1, 1};
-		unsigned int neighbours = neigh( cb.at( kl.centroid_id ), 1, n_neigh );
+		unsigned int *neighbours = neigh( cb.at( kl.centroid_id ), 1, n_neigh );
 		while( kl.n <= order && current_k.i && current_k.e ){
 			current_k.i = 0;
 			current_k.e = 0;
+			current_k.t = 0;
 			for( int i=0; i < lile; ++i ){
 				//NOTE: the first crystal added will always be the centroid
 				//      typically at list[0].
-				if( std::binary_search( neighbours, neighbours+n_neigh, list[i].i &&
+				if( std::count( neighbours, neighbours+n_neigh, list[i].i ) &&
 				    list[i].i != current_k.i && list[i].e > current_k.e ){
+					current_k.t = list[i].t;
 					current_k.i = list[i].i;
 					current_k.e = list[i].e;
 				}
@@ -200,11 +202,13 @@ namespace XB{
 			if( current_k.i && current_k.e ){
 				kl.crys.push_back( current_k.i );
 				kl.crys_e.push_back( current_k.e );
-				neighbours = neigh( cb.at( current_k.i ), 1, neigh_n );
-				std::remove( list, list+lile, current_k );
-				lile--;
+				kl.n++;
+				neighbours = neigh( cb.at( current_k.i ), 1, n_neigh );
+				listend = std::remove( list, list+lile, current_k );
+				lile = listend-list;
 			}
 		}
+
 		//calculate the energy sum
 		for( int i=0; i < kl.crys_e.size(); ++i ) kl.sum_e += kl.crys_e[i];
 		
@@ -215,8 +219,8 @@ namespace XB{
 	//------------------------------------------------------------------------
 	//the function that does clustering on a near-neighbours base.
 	//it basically runs make_one_cluster_NN() until the event is empty.
-	clusterZ make_clusters( const data &evnt, unsigned int order=1,
-	                        cluster (*k_alg)( data&, unsigned int ) ){
+	clusterZ make_clusters( const data &evnt, unsigned int order,
+	                        cluster (*k_alg)( const data&, unsigned int ) ){
 		data new_evnt, the_evnt( evnt );
 		clusterZ the_clusters; //alloc the clustes
 		cluster kl; //a cluster
@@ -251,7 +255,7 @@ namespace XB{
 
 			int cc=0; //loop index for "new_evnt"
 			for( int c=0; c < the_evnt.n && cc < new_evnt.n; ++c ){
-				if( !std::binary_search( kl.crys.begin(), kl.crys.end(), the_evnt.i[c] ) ){
+				if( !std::count( kl.crys.begin(), kl.crys.end(), the_evnt.i[c] ) ){
 					new_evnt.i[cc] = the_evnt.i[c];
 					new_evnt.t[cc] = the_evnt.t[c];
 					new_evnt.pt[cc] = the_evnt.pt[c];

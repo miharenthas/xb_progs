@@ -79,7 +79,7 @@ namespace XB{
 	//calls the algorithm pointed at by function (k_alg), which should take in
 	//a data structure (an event), an integer (order) and must return a cluster
 	clusterZ make_clusters( const data &evnt, unsigned int order,
-	                        cluster (*k_alg)( data&, unsigned int ) );
+	                        cluster (*k_alg)( const data&, unsigned int ) );
 	
 	//this function uses a neares-neighbour clustering
 	//kicks in when there are less hits (<5).
