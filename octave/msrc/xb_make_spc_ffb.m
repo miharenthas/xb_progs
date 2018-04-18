@@ -2,7 +2,7 @@
 %of some data set ({a,}data or cluster) for the various interesting section of
 %the CB
 %
-% [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, [figure] )
+% [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, [figure] )
 %
 
 function [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, varargin )
