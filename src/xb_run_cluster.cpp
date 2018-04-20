@@ -33,7 +33,7 @@ int main( int argc, char **argv ){
 
 	//input parsing
 	char iota = 0;
-	while( (iota = getopt( argc, argv, "i:o:vdn:w:cB::") ) != -1 )
+	while( (iota = getopt( argc, argv, "i:o:vdn:w:cB:") ) != -1 )
 		switch( iota ){
 			case 'i' : //set an input file
 				if( strlen( optarg ) < 256 ){
@@ -65,7 +65,7 @@ int main( int argc, char **argv ){
 				break;
 			case 'B' : //use the bead algorithm
 				use_bead = true;
-				if( optarg ) neigh_order = atoi( optarg );
+				neigh_order = atoi( optarg );
 				break;
 			default:
 				printf( "-%c is not a valid option.\n", optopt );
