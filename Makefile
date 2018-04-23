@@ -37,7 +37,7 @@ ifneq "$(R3BROOTPATH)" ""
 endif
 
 #gcc/clang tuning
-compiler = $(shell expr `$(CXX) --version 2>/dev/null | grep -o LLVM`)
+compiler = $(shell $(CXX) --version 2>/dev/null | grep -o LLVM)
 ifneq "$(compiler)" "LLVM"
 	CXXFLAGS += -fopenmp -frounding-math
 endif

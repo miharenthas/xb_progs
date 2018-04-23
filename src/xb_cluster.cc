@@ -179,6 +179,9 @@ namespace XB{
 		//check that something has been found
 		if( kl.centroid_id == 0 ) throw error( "Empty event!", "make_one_cluster_bead" );
 		
+		//refine the beading order according to the LUT
+		order = beading_order( list[0].e );
+		
 		unsigned int n_neigh;
 		oed current_k = {0, 1, 1};
 		unsigned int *neighbours = neigh( cb.at( kl.centroid_id ), 1, n_neigh );
@@ -214,6 +217,16 @@ namespace XB{
 		
 		free( list );
 		return kl;
+	}
+	
+	//------------------------------------------------------------------------
+	//do the beading order
+	//NOTE: very preliminary this thingie here
+	//      Also, I'm considering having another function
+	//      for a self limiting bead cluster...
+	unsigned int beading_order( float e ){
+		unsigned o = (unsigned int)round( LUT_INTERCEPT + LUT_FACTOR*pow( e, 1/3 ) );
+		return (o<1)?1:o;
 	}
 	
 	//------------------------------------------------------------------------

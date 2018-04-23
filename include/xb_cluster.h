@@ -1,10 +1,6 @@
 /*this is the interface for a clustering algorithm for the crystall ball */
 /*it has been develoed for use with DATA and SIMULATIONS relative to     */
 /*EXPERIMENT s412. For other purposes, please ask.                       */
-/*                                                                       */
-/*The algorithm itself works (sort of) like K-means, although, due to    */
-/*the not huge number of crystals, it will usually behave in a simpler   */
-/*way.                                                                   */
 
 #ifndef XB_CLUSTER__H
 #define XB_CLUSTER__H
@@ -88,6 +84,10 @@ namespace XB{
 	//this function are a more refined nearest neighbour algorithm
 	//they essentially follow the energy deposits up to "order" many
 	cluster make_one_cluster_bead( const data &evnt, unsigned int order );
+	//the two fitted parameters I'm using here
+#define LUT_INTERCEPT -0.10937
+#define LUT_FACTOR     1.90571
+	unsigned int beading_order( float e ); //self limiting tool
 	
 	//aux functions
 	oed* make_energy_list( const data &evnt ); //get a sorted list, by energy, of the event
