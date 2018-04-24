@@ -52,8 +52,9 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
         unsigned int Xbcmult=0;
         unsigned int Xbcn[162],Xbci[162];
         float Xbcth[162],Xbcsume[162];
+	float Xbct[162];
 	//crystals in cluster
-	unsigned int Xbii[162]={0}; //not very useful atm, so I leave it out
+	unsigned int Xbii[162]={0}; 
 
 	unsigned int default_beam_out = 81; //the default beam in
 
@@ -81,15 +82,18 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 	unsigned int Xbn;
 	unsigned int Xbi[162];
 	float Xbe[162];
+	float Xbt[162];
 	TBranch *b_Evnt;
 	TBranch *b_Xbn;
 	TBranch *b_Xbi;
 	TBranch *b_Xbe;
+	TBranch *b_Xbt;
 
 	data_tree->SetBranchAddress("Evnt",&Evnt, &b_Evnt);	
 	data_tree->SetBranchAddress("Xbn",&Xbn, &b_Xbn);	
 	data_tree->SetBranchAddress("Xbi",&Xbi, &b_Xbi);	
 	data_tree->SetBranchAddress("Xbe",&Xbe, &b_Xbe);	
+	data_tree->SetBranchAddress("Xbt",&Xbt, &b_Xbt);	
 
 	//clone the tree into a new root file	
 	TFile* fout = new TFile( f_root_out, "recreate" );
@@ -100,6 +104,7 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
         TBranch *bxbci = newtr->Branch("Xbci",&Xbci,"Xbci[Xbcmult]/i"); //index of the centroid
         TBranch *bxbth = newtr->Branch("Xbcth",&Xbcth,"Xbcth[Xbcmult]/F"); //centroid altitude
         TBranch *bxbcsume = newtr->Branch("Xbcsume",&Xbcsume,"Xbcsume[Xbcmult]/F"); //gamma sum energy of cluster
+        TBranch *bxbct = newtr->Branch("Xbct",&Xbct,"Xbct[Xbcmult]/F"); //time of cluster
 	TBranch *bxbii = newtr->Branch("Xbii",&Xbii,"Xbii[Xbn]/i");//cluster assignment of crystal
 
 	//number of events
@@ -136,7 +141,8 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
 		data_tree->GetEvent(jentry);	
 		if ( v_flag && (float)(jentry/25000.)==(int)(jentry/25000.) ) printf( "%i %% done, entry %i \n", (int)(100.*jentry/nevents), cl_i );  
 		for (unsigned int sx=0;sx<Xbn;sx++) {
-			if (!isnan(Xbe[sx])&&!isinf(Xbe[sx])) debug_total++;
+			//if (!isnan(Xbe[sx])&&!isinf(Xbe[sx])) debug_total++;
+			debug_total++;
 			Xbii[sx]=0;
 		}
 		bool match = false;
@@ -158,11 +164,15 @@ void XB::rwrite(char* f_root_out, char* stch_r_file, std::vector<XB::clusterZ> &
                                 	Xbcth[k]=angular_distance( the_cb.at( default_beam_out ).altitude, the_cb.at( default_beam_out ).azimuth,
                                                 event_klZ[cl_i].clusters[k].c_altitude, event_klZ[cl_i].clusters[k].c_azimuth );
                                 	Xbcsume[k]=event_klZ[cl_i].clusters[k].sum_e;
+					Xbct[k]=0;
 					for ( unsigned int cr=0; cr < event_klZ[cl_i].clusters[k].n; cr++ ){//loop over all crystals in cluster
 						for ( unsigned int scr=0;scr<Xbn;scr++ ){//loop over all crystals fired
-							if ( Xbi[scr]==event_klZ[cl_i].clusters[k].crys.at(cr) && !isnan(Xbe[scr]) && !isinf(Xbe[scr]) ) {
-								debug++;
-								Xbii[scr]=event_klZ[cl_i].clusters[k].centroid_id;
+							if ( Xbi[scr]==event_klZ[cl_i].clusters[k].crys.at(cr) && Xbi[scr]>0 && Xbi[scr]<163 ) {
+							//	if (!isnan(Xbe[scr]) && !isinf(Xbe[scr])) {
+									debug++;
+									Xbii[scr]=event_klZ[cl_i].clusters[k].centroid_id;
+									if (Xbct[k]==0) Xbct[k]=Xbt[scr];
+							//	}
 							}
 						}
 					} 
