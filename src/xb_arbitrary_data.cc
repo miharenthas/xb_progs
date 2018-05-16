@@ -17,7 +17,7 @@ namespace XB{
 		in_Z = 0;
 		in_A_on_Z = 0;
 		
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = 0;
 	}
 	
 	adata::_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld ):
@@ -31,7 +31,7 @@ namespace XB{
 		in_Z = 0;
 		in_A_on_Z = 0;
 		
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = 0;
 		for( int i=0; i < n_fld; ++i ) dofield( fld_array[i], NULL );
 	}
 	
@@ -51,18 +51,8 @@ namespace XB{
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
 		
-		//copy the pointers
-		int dist = 0;
-		char *p_curr = NULL;
-		const char *p_head = (char*)given._buf;
-
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !given._fld_ptr[i] ){ _fld_ptr[i] = NULL; continue; }
-			
-			p_curr = (char*)given._fld_ptr[i];
-			dist = p_curr - p_head;
-			_fld_ptr[i] = (char*)_buf + dist;
-		}
+		//copy the pointer offsets
+		memcpy( _fld_ptr, given._fld_ptr, XB_ADATA_NB_FIELDS );
 	}
 	
 	//dtor:
@@ -81,29 +71,6 @@ namespace XB{
 		for( int i=0; i < len; ++i ) h = adata_pT[ h ^ name[i] ];
 		
 		return h;
-	}
-	
-	//----------------------------------------------------------------------------
-	//safe realloc (with moving around the pointers in _fld_ptr
-	//***works***
-	void adata::safe_buf_realloc( size_t size ){
-
-		if( !_buf ){_buf = malloc( size+sizeof(int) ); return; }
-	
-		void *old_buf = _buf;
-
-		_buf = realloc( _buf, size+sizeof(int) );
-		if( !_buf ) throw error( "Memory error!", "adata::safe_buf_realloc" );
-
-		if( old_buf == _buf ) return; //nothing to do
-
-		int delta;
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !_fld_ptr[i] ) continue;
-
-			delta = (char*)_fld_ptr[i] - (char*)old_buf; //D bytes;
-			_fld_ptr[i] = (char*)_buf + delta;
-		}
 	}
 	
 	//----------------------------------------------------------------------------
@@ -127,18 +94,8 @@ namespace XB{
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
 		
-		//copy the pointers
-		int dist = 0;
-		char *p_curr = NULL;
-		const char *p_head = (char*)given._buf;
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !given._fld_ptr[i] ) continue;
-			
-			p_curr = (char*)given._fld_ptr[i];
-			dist = p_curr - p_head;
-			_fld_ptr[i] = (char*)_buf + dist;
-		}
+		//copy the pointer offsets
+		memcpy( _fld_ptr, given._fld_ptr, XB_ADATA_NB_FIELDS );
 		
 		return *this;
 	}
@@ -175,7 +132,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//parenthesis operator
 	void *adata::operator()( const char *name ) const {
-		void *head = _fld_ptr[phash8( name )];
+		void *head = (char*)_buf + _fld_ptr[phash8( name )];
 		if( !head ) throw error( "Field is empty!", "XB::adata::()" );
 		
 		int fsize = *(int*)head; //in bytes!
@@ -195,11 +152,11 @@ namespace XB{
 		void *head = _fld_ptr[i_fld];
 		
 		if( !head ){ //the field is empty, let's do it
-			safe_buf_realloc( _buf_sz+fld.size );
+			_buf = realloc( _buf, _buf_sz+fld.size );
 			
 			//save the new field poiner
-			_fld_ptr[i_fld] = (char*)_buf + _buf_sz;
-			head = _fld_ptr[i_fld]; //and put it in the head
+			_fld_ptr[i_fld] = _buf_sz;
+			head = (char*)_buf + _fld_ptr[i_fld]; //and put it in the head
 			*(int*)head = fld.size; //write the size
 			head = (int*)head + 1; //move the head
 			
@@ -240,7 +197,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//remove a field (another interesting method)
 	void adata::rmfield( const char *name ){
-		void *head = _fld_ptr[phash8( name )];
+		void *head = (char*)_buf + _fld_ptr[phash8( name )];
 		if( !head ) return; //nothing to do
 		
 		//work out where head is in the buffer
@@ -253,17 +210,17 @@ namespace XB{
 		memmove( head, rest, to_back );
 		
 		//move the field pointers
-		_fld_ptr[phash8( name )] = NULL; //remove the one
+		_fld_ptr[phash8( name )] = 0; //remove the one
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
 			if( !_fld_ptr[i] || _fld_ptr[i] < rest ) continue;
 			
 			//move them back by fsize (the removed bit)
-			_fld_ptr[i] = (char*)_fld_ptr[i] - fsize;
+			_fld_ptr[i] = _fld_ptr[i] - fsize;
 		}
 		
 		//resize the buffer
 		_buf_sz -= fsize;
-		safe_buf_realloc( _buf_sz );
+		_buf = realloc( _buf, _buf_sz );
 		
 		//drum out the field from the field list
 		from_front = 0; //recycle
@@ -280,7 +237,7 @@ namespace XB{
 		in_A_on_Z = 0;
 		if( _buf ){ free( _buf ); _buf = NULL; }
 		_buf_sz = 0;
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = NULL;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = 0;
 		_fields.clear();
 	}
 	
@@ -293,15 +250,10 @@ namespace XB{
 	int adata_getlbuf( void **linbuf, const adata &given ){
 		int nf = given._fields.size();
 		
-		//calculate the deltas
-		int *deltas = (int*)calloc( nf, sizeof(int) ), *d_indirect;
-		d_indirect = deltas;
-		if( !deltas ) throw error( "Memory error!", "XB::adata_getlbuf" );
-		for( int i=0; i < nf; ++i ){
-			*d_indirect = (char*)given._fld_ptr[given.phash8( given._fields[i].name )] -
-			              (char*)given._buf;
-			++d_indirect;
-		}
+		//reorder the deltas (just handy)
+		int *deltas = (int*)calloc( nf, sizeof(int) );
+        for( int i=0; i < nf; ++i )
+            deltas[i] = given._fld_ptr[given.phash8( given._fields[i].name )];
 		
 		//allocate the linear buffer
 		int bsize = sizeof(event_holder) + (nf+2)*sizeof(int) +
@@ -355,11 +307,10 @@ namespace XB{
 		memcpy( &fields[0], hdr, nf*sizeof(adata_field) );
 		given._fields = fields;
 		
-		//reconstruct the pointer map
+		//reconstruct the pointer offset map
 		hdr = (adata_field*)hdr + nf;
 		for( int i=0; i < fields.size(); ++i ){
-			given._fld_ptr[given.phash8( fields[i].name )] = //...
-				(char*)given._buf + *((int*)hdr+i);
+			given._fld_ptr[given.phash8( fields[i].name )] = *((int*)hdr+i);
 		}
 		
 		return nf; //useless...
