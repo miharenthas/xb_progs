@@ -25,18 +25,29 @@
 //a define to get the header size of the linear buffer
 #define nf2hdr_size( nf ) sizeof(event_holder) + ((nf)+2)*sizeof(int) + (nf)*sizeof(adata_field)
 
+/*TODO LIST:
+0) adapt for pointer ofssets instead of pointers [x]
+1) adapt for pointed indexer                     [ ]
+2) implement un- and subscribe methods of adata  [ ]
+3) implement adata_uniarr                        [ ]
+*/
+
 namespace XB{
     //----------------------------------------------------------------------------
     //an ugly constant to hold the hash table
     const unsigned char adata_pT[256] = XB_PAERSON_HASH_TABLE;
     
 	//----------------------------------------------------------------------------
+	//declare the uniform array
+	class _xb_arbitrary_data_uniform_array;
+	
+	//----------------------------------------------------------------------------
 	//a data structure representing the field,
 	typedef struct _xb_arb_data_field {
 		char name[16];
 		short size;
 	} adata_field;
-
+    
 	//----------------------------------------------------------------------------
 	//the main thing, the class
 	typedef class _xb_arbitrary_data : public event_holder {
@@ -44,6 +55,7 @@ namespace XB{
 			//ctors, dtor
 			_xb_arbitrary_data();
 			_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld );
+			_xb_arbitrary_data( std::vector< adata_field > *indexer );
 			_xb_arbitrary_data( const _xb_arbitrary_data &given );
 			~_xb_arbitrary_data();
 			
@@ -80,9 +92,9 @@ namespace XB{
 			//you'll just loop in the array
 			template< class T >
 			inline T &at( const char *name, int i ){ //note that this is NOT const
-				void *head = _fld_ptr[phash8( name )];
-				int len = *(int*)head;
+				void *head = (char*)_buf + _fld_ptr[phash8( name )];
 				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
+				int len = *(int*)head;
 				head = (int*)head + 1;
 				return ((T*)head)[i%len];
 			}
@@ -97,6 +109,7 @@ namespace XB{
 			//TODO: and one for merge
 			/*friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 			                                       const _xb_arbitrary_data &two );*/
+			friend class _xb_arbitrary_data_uniform_array;
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -106,16 +119,44 @@ namespace XB{
 			void *_buf;
 			//TODO: it turns out that this is gigantic
 			//      it might be worth it to change it to short deltas
-			void *_fld_ptr[XB_ADATA_NB_FIELDS]; //support 256 fields (more than enough)
-			std::vector< adata_field > _fields; //keep track of the fields.
+			unsigned short _fld_ptr[XB_ADATA_NB_FIELDS]; //support 256 fields (more than enough)
+			std::vector< adata_field > *_fields; //keep track of the fields.
+			_xb_arbitrary_data_uniform_array *_parent_array;
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
 			unsigned char phash8( const char *name ) const;
 			
-			//an utility to realloc the buffer, safely
-			void safe_buf_realloc( size_t size );
+			//un- and subscription to an uniform array
+			void subscribe_uniarr( _xb_arbitrary_data_uniform_array *ua );
+			void unsubscribe_uniarr();
 	} adata;
+    
+	//----------------------------------------------------------------------------
+    //an array of UNIFORM adata entries --this should be the way to use this
+    //struct since the indexer has been rendered external
+	//TODO: decide whether it's OK for it to inherit or enclose the std::vector
+    typedef class _xb_arbitrary_data_uniform_array : public std::vector< adata > {
+		public:
+			_xb_arbitrary_data_uniform_array();
+			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements );
+			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements,
+			                                  const std::vector< adata_field> &indexer );
+			
+			//NOTE: invoking set_indexer will reset ALL members!
+			void set_indexer( const std::vector< adata_field > &given );
+			void push_indexer( adata_field &given ); //will add a field to all elements
+			adata_field pop_indexer(); //pops the last element of indexer
+			std::vector< adata_field > get_indexer() { return _indexer; };
+			//NOTE: where are the signle field operations?
+			//      all members of an array SHARE an indexer and can modify it
+			
+			void push_sub( const adata &given ); //push AND SUBSCRIBE
+			adata pop_usub(); //push AND UNSIBSCRIBE (the other pop destroys)
+			void subscribe_all(); //subscribe all members, if you doubt there are some not subscribed.
+		private:
+			std::vector< adata_field > _indexer;
+	} adata_uniarr;
 	
 	//----------------------------------------------------------------------------
 	//Two functions to be used in read/write operations (friended by the class)
