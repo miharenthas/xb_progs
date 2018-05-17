@@ -8,7 +8,8 @@ namespace XB{
 	adata::_xb_arbitrary_data():
 		_buf( NULL ),
 		_buf_sz( 0 ),
-		_fields( 0 )
+		_fields( new adata_indexer ),
+        _is_fields_owned( 1 )
 	{
 		//just banally init the event_holder members
 		n = 0;
@@ -17,13 +18,14 @@ namespace XB{
 		in_Z = 0;
 		in_A_on_Z = 0;
 		
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = 0;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
 	}
 	
 	adata::_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld ):
 		_buf( NULL ),
 		_buf_sz( 0 ),
-		_fields( 0 )
+		_fields( new adata_indexer( n_fld ) ),
+		_is_fields_owned( 1 )
 	{
 		n = 0;
 		evnt = 0;
@@ -31,14 +33,14 @@ namespace XB{
 		in_Z = 0;
 		in_A_on_Z = 0;
 		
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = 0;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
 		for( int i=0; i < n_fld; ++i ) dofield( fld_array[i], NULL );
 	}
 	
 	adata::_xb_arbitrary_data( const adata &given ):
 		_buf( NULL ),
 		_buf_sz( given._buf_sz ),
-		_fields( given._fields )
+		_is_fields_owned( given._is_fields_owned ) //ownership is also copied
 	{
 		n = given.n;
 		evnt = given.evnt;
@@ -46,18 +48,22 @@ namespace XB{
 		in_Z = given.in_Z;
 		in_A_on_Z = given.in_A_on_Z;
 		
+        //copy the indexer
+        if( given._is_fields_owned ) //then we also need it owned, copy it
+            _fields = new adata_indexer( *given._fields );
+        else //if it's not owned, then we just copy the pointer to the external one
+            _fields = given._fields;
+        
 		//copy the buffer
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
-		
-		//copy the pointer offsets
-		memcpy( _fld_ptr, given._fld_ptr, XB_ADATA_NB_FIELDS );
 	}
 	
 	//dtor:
 	adata::~_xb_arbitrary_data(){
 		if( _buf ) free( _buf );
+        if( _is_fields_owned ) delete _fields;
 	}
 	
 	//----------------------------------------------------------------------------
@@ -75,7 +81,6 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//operators:
-	
 	//----------------------------------------------------------------------------
 	//assignment operator
 	adata &adata::operator=( const adata &given ){
@@ -86,16 +91,19 @@ namespace XB{
 		in_A_on_Z = given.in_A_on_Z;
 		
 		_buf_sz = given._buf_sz;
-		_fields = given._fields;
-		
+        
+        //copy the indexer
+        if( given._is_fields_owned ) //then we also need it owned, copy it
+            _fields = new adata_indexer( *given._fields );
+        else //if it's not owned, then we just copy the pointer to the external one
+            _fields = given._fields;
+        _is_fields_owned = given._is_fields_owned;
+        
 		//copy the buffer
 		if( _buf ) free( _buf );
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
-		
-		//copy the pointer offsets
-		memcpy( _fld_ptr, given._fld_ptr, XB_ADATA_NB_FIELDS );
 		
 		return *this;
 	}
@@ -110,11 +118,11 @@ namespace XB{
 		if( in_A_on_Z != right.in_A_on_Z ) return false;
 
 		if( _buf_sz != right._buf_sz ) return false;
-		if( _fields.size() != right._fields.size() ) return false;
+		if( _fields->size() != right._fields->size() ) return false;
 		
-		for( int i=0; i < _fields.size(); ++i ){
-			if( strcmp( _fields[i].name, right._fields[i].name ) ||
-			    _fields[i].size != right._fields[i].size ) return false;
+		for( int i=0; i < _fields->size(); ++i ){
+			if( strcmp( _fields->names[i].name, right._fields->names[i].name ) ||
+			    _fields->names[i].size != right._fields->names[i].size ) return false;
 		}
 		
 		if( memcmp( _buf, right._buf, _buf_sz ) ) return false;
@@ -132,7 +140,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//parenthesis operator
 	void *adata::operator()( const char *name ) const {
-		void *head = (char*)_buf + _fld_ptr[phash8( name )];
+		void *head = (char*)_buf + _fields->diffs[phash8( name )];
 		if( !head ) throw error( "Field is empty!", "XB::adata::()" );
 		
 		int fsize = *(int*)head; //in bytes!
@@ -149,14 +157,14 @@ namespace XB{
 	//access in write a field denoted by adata_field
 	void adata::dofield( const adata_field &fld, void *buf ){
 		unsigned char i_fld = phash8( fld.name );
-		void *head = _fld_ptr[i_fld];
+		void *head = (char*)_buf + _fields->diffs[i_fld];
 		
 		if( !head ){ //the field is empty, let's do it
 			_buf = realloc( _buf, _buf_sz+fld.size );
 			
 			//save the new field poiner
-			_fld_ptr[i_fld] = _buf_sz;
-			head = (char*)_buf + _fld_ptr[i_fld]; //and put it in the head
+			_fields->diffs[i_fld] = _buf_sz;
+			head = (char*)_buf + _fields->diffs[i_fld]; //and put it in the head
 			*(int*)head = fld.size; //write the size
 			head = (int*)head + 1; //move the head
 			
@@ -168,7 +176,7 @@ namespace XB{
 			//finally, update the buffer size
 			//and push the new field in the field list
 			_buf_sz += fld.size + sizeof(int);
-			_fields.push_back( fld );
+			_fields->names.push_back( fld );
 		} else { //the field is populated
 			if( !buf ) return; //do nothing
 			if( fld.size != *(int*)head ) //freak out
@@ -188,7 +196,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//get the size of a field (in bytes)
 	int adata::fsize( const char *name ) const {
-		void *head = _fld_ptr[phash8( name )];
+		void *head = (char*)_buf + _fields->diffs[phash8( name )];
 		if( !head ) return 0;
 		return *(int*)head;
 		return 0;
@@ -197,7 +205,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//remove a field (another interesting method)
 	void adata::rmfield( const char *name ){
-		void *head = (char*)_buf + _fld_ptr[phash8( name )];
+		void *head = (char*)_buf + _fields->diffs[phash8( name )];
 		if( !head ) return; //nothing to do
 		
 		//work out where head is in the buffer
@@ -210,12 +218,12 @@ namespace XB{
 		memmove( head, rest, to_back );
 		
 		//move the field pointers
-		_fld_ptr[phash8( name )] = 0; //remove the one
+		_fields->diffs[phash8( name )] = 0; //remove the one
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !_fld_ptr[i] || _fld_ptr[i] < rest ) continue;
+			if( !_fields->diffs[i] || _fields->diffs[i] < rest ) continue;
 			
 			//move them back by fsize (the removed bit)
-			_fld_ptr[i] = _fld_ptr[i] - fsize;
+			_fields->diffs[i] = _fields->diffs[i] - fsize;
 		}
 		
 		//resize the buffer
@@ -224,12 +232,13 @@ namespace XB{
 		
 		//drum out the field from the field list
 		from_front = 0; //recycle
-		while( strcmp( (_fields.begin()+from_front)->name, name ) ) ++from_front;
-		_fields.erase( _fields.begin() + from_front );
+		while( strcmp( (_fields->names.begin()+from_front)->name, name ) ) ++from_front;
+		_fields->names.erase( _fields->names.begin() + from_front );
 	}
 	
 	//----------------------------------------------------------------------------
 	//clear the structure
+	//NOTE: with the shared indexer, this is DANGER-ous
 	void adata::clear(){
 		n = 0;
 		tpat = 0;
@@ -237,9 +246,13 @@ namespace XB{
 		in_A_on_Z = 0;
 		if( _buf ){ free( _buf ); _buf = NULL; }
 		_buf_sz = 0;
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fld_ptr[i] = 0;
-		_fields.clear();
+        //fat fingered safety measure...
+        if( _is_fields_owned ){
+            for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
+            _fields->names.clear();
+        }
 	}
+	
 	
 	//============================================================================
 	//the two friend functions.
@@ -248,12 +261,12 @@ namespace XB{
 	//make the linearized buffer:
 	//[event_holder| # fields|field list|field pointer deltas|data size|data buffer]
 	int adata_getlbuf( void **linbuf, const adata &given ){
-		int nf = given._fields.size();
+		int nf = given._fields->size();
 		
 		//reorder the deltas (just handy)
 		int *deltas = (int*)calloc( nf, sizeof(int) );
         for( int i=0; i < nf; ++i )
-            deltas[i] = given._fld_ptr[given.phash8( given._fields[i].name )];
+            deltas[i] = given._fields->diffs[given.phash8( given._fields->names[i].name )];
 		
 		//allocate the linear buffer
 		int bsize = sizeof(event_holder) + (nf+2)*sizeof(int) +
@@ -266,7 +279,7 @@ namespace XB{
 		head = (event_holder*)head + 1;
 		*(int*)head = nf; //# fields
 		head = (int*)head + 1;
-		memcpy( head, &given._fields[0], nf*sizeof(adata_field) ); //field list
+		memcpy( head, &given._fields->names[0]), nf*sizeof(adata_field) ); //field list
 		head = (adata_field*)head + nf;
 		memcpy( head, deltas, nf*sizeof(int) ); //deltas
 		head = (int*)head + nf;
@@ -281,7 +294,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//now from the linear buffer to the structure
-	int adata_fromlbuf( adata &given, const void *buffer ){
+	int adata_fromlbuf( adata &given, const void *buffer, adata_indexer *indexer ){
 		void *hdr = (char*)buffer + sizeof(event_holder);
 		int nf = *(int*)hdr;
 		hdr = (int*)hdr + 1;
@@ -303,14 +316,21 @@ namespace XB{
 		memcpy( given._buf, data, data_sz );
 		
 		//copy the field list
-		std::vector<adata_field> fields( nf );
-		memcpy( &fields[0], hdr, nf*sizeof(adata_field) );
-		given._fields = fields;
+        adata_indexer fields( nf );
+        memcpy( &fields.names[0], hdr, nf*sizeof(adata_field) );
+        if( !indexer ){
+            given._fields = new adata_indexer( fields );
+            given._is_fields_owned = 1;
+        } else {
+            *indexer = fields;
+            given._fields = indexer;
+            given._is_fields_owned = 0;
+        }
 		
 		//reconstruct the pointer offset map
 		hdr = (adata_field*)hdr + nf;
 		for( int i=0; i < fields.size(); ++i ){
-			given._fld_ptr[given.phash8( fields[i].name )] = *((int*)hdr+i);
+			given._fields->diffs[given.phash8( fields[i].name )] = *((int*)hdr+i);
 		}
 		
 		return nf; //useless...

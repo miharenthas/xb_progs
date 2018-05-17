@@ -27,7 +27,7 @@
 
 /*TODO LIST:
 0) adapt for pointer ofssets instead of pointers [x]
-1) adapt for pointed indexer                     [ ]
+1) adapt for pointed indexer                     [x]
 2) implement un- and subscribe methods of adata  [ ]
 3) implement adata_uniarr                        [ ]
 */
@@ -48,6 +48,24 @@ namespace XB{
 		short size;
 	} adata_field;
     
+    //a data structure to do indexing (also the offset table can be shared!)
+    typedef class _xb_arb_data_indexer {
+        public:
+            _xb_arb_data_indexer(): names( 0 ) {};
+            _xb_arb_data_indexer( const unsigned n ): names( n ) {};
+            _xb_arb_data_indexer( const _xb_arb_data_indexer &given ): names( given.names ) {
+                memcpy( diffs, given.diffs, XB_ADATA_NB_FIELDS );
+            };
+            _xb_arb_data_indexer &operator=( const _xb_arb_data_indexer &right ){
+                names = right.names;
+                memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS );
+                return *this;
+            };
+            unsigned size() { return names.size(); };
+            std::vector< adata_field > names;
+            unsigned short diffs[XB_ADATA_NB_FIELDS];
+    } adata_indexer;
+    
 	//----------------------------------------------------------------------------
 	//the main thing, the class
 	typedef class _xb_arbitrary_data : public event_holder {
@@ -55,7 +73,7 @@ namespace XB{
 			//ctors, dtor
 			_xb_arbitrary_data();
 			_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld );
-			_xb_arbitrary_data( std::vector< adata_field > *indexer );
+			_xb_arbitrary_data( adata_indexer *indexer );
 			_xb_arbitrary_data( const _xb_arbitrary_data &given );
 			~_xb_arbitrary_data();
 			
@@ -80,7 +98,7 @@ namespace XB{
 			//you can use this themplate mehtod, too
 			template< class T >
 			T tip( const char *name ) const {
-				void *head = _fld_ptr[phash8( name )];
+				void *head = (*char)_buf + _fields.diffs[phash8( name )];
 				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
 				head = (int*)head + 1;
 				return *(T*)head;
@@ -92,15 +110,17 @@ namespace XB{
 			//you'll just loop in the array
 			template< class T >
 			inline T &at( const char *name, int i ){ //note that this is NOT const
-				void *head = (char*)_buf + _fld_ptr[phash8( name )];
+				void *head = (char*)_buf + _fields->diffs[phash8( name )];
 				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
 				int len = *(int*)head;
 				head = (int*)head + 1;
 				return ((T*)head)[i%len];
 			}
-			//list the fields
-			std::vector< adata_field > lsfields() const { return _fields; };
-			int nf() const { return _fields.size(); }; //count them
+			
+			//Indexer accessing and operations
+			std::vector< adata_field > lsfields() const { return _fields->names(); };
+            std::vector< adata_field > *get_indexer() { return _fields; };
+			int nf() const { return _fields->names.size(); }; //count them
 			int fsize( const char *name ) const; //get the size of one
 			
 			//a couple of friends, for I/O ops
@@ -117,11 +137,9 @@ namespace XB{
 			//can contain any type.
 			int _buf_sz;
 			void *_buf;
-			//TODO: it turns out that this is gigantic
-			//      it might be worth it to change it to short deltas
-			unsigned short _fld_ptr[XB_ADATA_NB_FIELDS]; //support 256 fields (more than enough)
-			std::vector< adata_field > *_fields; //keep track of the fields.
+            adata_indexer *_fields; //it's the indexer!
 			_xb_arbitrary_data_uniform_array *_parent_array;
+            char _is_fields_owned;
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
@@ -141,13 +159,13 @@ namespace XB{
 			_xb_arbitrary_data_uniform_array();
 			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements );
 			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements,
-			                                  const std::vector< adata_field> &indexer );
+			                                  const adata_indexer &indexer );
 			
 			//NOTE: invoking set_indexer will reset ALL members!
-			void set_indexer( const std::vector< adata_field > &given );
+			void set_indexer( const adata_indexer &given );
 			void push_indexer( adata_field &given ); //will add a field to all elements
 			adata_field pop_indexer(); //pops the last element of indexer
-			std::vector< adata_field > get_indexer() { return _indexer; };
+			adata_indexer get_indexer() { return _indexer; };
 			//NOTE: where are the signle field operations?
 			//      all members of an array SHARE an indexer and can modify it
 			
@@ -155,7 +173,7 @@ namespace XB{
 			adata pop_usub(); //push AND UNSIBSCRIBE (the other pop destroys)
 			void subscribe_all(); //subscribe all members, if you doubt there are some not subscribed.
 		private:
-			std::vector< adata_field > _indexer;
+			adata_indexer _indexer;
 	} adata_uniarr;
 	
 	//----------------------------------------------------------------------------
@@ -165,7 +183,8 @@ namespace XB{
 	//               buffer will be allocated. An error is thrown if it's already
 	//               allocated.
 	int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
-	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
+	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf,
+                        adata_indexer *indexer = NULL );
 	/*_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 	                                const _xb_arbitrary_data &two );*/
 		
