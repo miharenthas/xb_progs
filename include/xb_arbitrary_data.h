@@ -30,7 +30,8 @@
 1)   adapt for pointed indexer                     [x]
 1.5) implement convenience into indexer            [/]
 2)   implement un- and subscribe methods of adata  [x]
-3)   implement adata_uniarr                        [ ]
+3)   implement adata_uniarr                        [x]
+4)   implement the merge function                  [ ]
 */
 
 namespace XB{
@@ -50,13 +51,15 @@ namespace XB{
 	} adata_field;
     
     //a data structure to do indexing (also the offset table can be shared!)
+    //NOTE: now and offset of -1 means empty!
     typedef class _xb_arb_data_indexer {
         public:
-            _xb_arb_data_indexer(): names( 0 ) {};
-            _xb_arb_data_indexer( const unsigned n ): names( n ) {};
+            _xb_arb_data_indexer(): names( 0 ) {
+                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diff[i] = -1; };
+            _xb_arb_data_indexer( const unsigned n ): names( n ) {
+                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diff[i] = -1; };
             _xb_arb_data_indexer( const _xb_arb_data_indexer &given ): names( given.names ) {
-                memcpy( diffs, given.diffs, XB_ADATA_NB_FIELDS );
-            };
+                memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS ); };
             _xb_arb_data_indexer &operator=( const _xb_arb_data_indexer &right ){
                 names = right.names;
                 memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS );
@@ -71,7 +74,7 @@ namespace XB{
             
             unsigned size() { return names.size(); };
             std::vector< adata_field > names;
-            unsigned short diffs[XB_ADATA_NB_FIELDS];
+            int diffs[XB_ADATA_NB_FIELDS];
     } adata_indexer;
     
 	//----------------------------------------------------------------------------
@@ -106,8 +109,10 @@ namespace XB{
 			//you can use this themplate mehtod, too
 			template< class T >
 			T tip( const char *name ) const {
-				void *head = (*char)_buf + _fields.diffs[phash8( name )];
-				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
+                unsigned char i_fld = phash8( name );
+				void *head = (*char)_buf + _fields.diffs[i_fld];
+                if( head < _buf || _fields.diffs[i_fld] >= _buf_sz )
+                    return NULL;
 				head = (int*)head + 1;
 				return *(T*)head;
 			};
@@ -166,10 +171,13 @@ namespace XB{
 		public:
             friend class adata;
             
-			_xb_arbitrary_data_uniform_array();
-			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements );
+			_xb_arbitrary_data_uniform_array() {};
+			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements ):
+                std::vector< adata_field >( nb_elements ) {};
 			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements,
-			                                  const adata_indexer &indexer );
+			                                  const adata_indexer &indexer ):
+                std::vector< adata_field >( nb_elements ),
+                adata_indexer( indexer  ) {};
 			
 			//NOTE: invoking set_indexer will reset ALL members!
 			void set_indexer( const adata_indexer &given );

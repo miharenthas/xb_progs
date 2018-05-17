@@ -3,40 +3,40 @@
 #include "xb_arbitrary_data.h"
 
 namespace XB{
-    
-    //============================================================================
-    //adata_indexer operators
-    
-    //----------------------------------------------------------------------------
-    //comparison. See the NOTE on field ordering in the header!
-    bool adata_indexer::operator!=( adata_indexer &right ){
-        if( names.size() != right.names.size() ) return true;
-        if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( unsigned short ) ) )
-            return true;
-        for( int i=0; i < names.size(); ++i )
-            if( strcmp( names[i].name, right.names[i].name ) ) return true;
-        return false;
-    }
-    
-    //----------------------------------------------------------------------------
-    //concatenation. Remember that order matters!
-    adata_indexer &adata_indexer::operator+( adata_indexer &right ){
-        //first merge the diff tables. If there are conflicts, then throw
-        short unsigned candidate = 0;
-        for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-            candidate = diffs[i] + right.diffs[i];
-            if( candidate != diffs[i] && candidate != right.diffs[i] )
-                throw( error( "Colliding fields or integer overflow!", "XB::adata_indexer" ) );
-            diffs[i] = candidate;
-        }
-        names = names + right.names;
-        
-        return *this;
-    }
-    
-    //============================================================================
-    //_xb_arbitrary_data methods
-    
+
+	//============================================================================
+	//adata_indexer operators
+
+	//----------------------------------------------------------------------------
+	//comparison. See the NOTE on field ordering in the header!
+	bool adata_indexer::operator!=( adata_indexer &right ){
+		if( names.size() != right.names.size() ) return true;
+		if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( unsigned short ) ) )
+			return true;
+		for( int i=0; i < names.size(); ++i )
+			if( strcmp( names[i].name, right.names[i].name ) ) return true;
+		return false;
+	}
+
+	//----------------------------------------------------------------------------
+	//concatenation. Remember that order matters!
+	adata_indexer &adata_indexer::operator+( adata_indexer &right ){
+		//first merge the diff tables. If there are conflicts, then throw
+		short unsigned candidate = 0;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
+			candidate = diffs[i] + right.diffs[i];
+			if( candidate != diffs[i] && candidate != right.diffs[i] )
+				throw( error( "Colliding fields or integer overflow!", "XB::adata_indexer" ) );
+			diffs[i] = candidate;
+		}
+		names = names + right.names;
+		
+		return *this;
+	}
+
+	//============================================================================
+	//_xb_arbitrary_data methods
+
 	//----------------------------------------------------------------------------
 	//constructors:
 	adata::_xb_arbitrary_data():
@@ -82,12 +82,12 @@ namespace XB{
 		in_Z = given.in_Z;
 		in_A_on_Z = given.in_A_on_Z;
 		
-        //copy the indexer
-        if( given._is_fields_owned ) //then we also need it owned, copy it
-            _fields = new adata_indexer( *given._fields );
-        else //if it's not owned, then we just copy the pointer to the external one
-            _fields = given._fields;
-        
+		//copy the indexer
+		if( given._is_fields_owned ) //then we also need it owned, copy it
+			_fields = new adata_indexer( *given._fields );
+		else //if it's not owned, then we just copy the pointer to the external one
+			_fields = given._fields;
+	
 		//copy the buffer
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
@@ -125,14 +125,14 @@ namespace XB{
 		in_A_on_Z = given.in_A_on_Z;
 		
 		_buf_sz = given._buf_sz;
-        
-        //copy the indexer
-        if( given._is_fields_owned ) //then we also need it owned, copy it
-            _fields = new adata_indexer( *given._fields );
-        else //if it's not owned, then we just copy the pointer to the external one
-            _fields = given._fields;
-        _is_fields_owned = given._is_fields_owned;
-        
+
+		//copy the indexer
+		if( given._is_fields_owned ) //then we also need it owned, copy it
+			_fields = new adata_indexer( *given._fields );
+		else //if it's not owned, then we just copy the pointer to the external one
+			_fields = given._fields;
+		_is_fields_owned = given._is_fields_owned;
+
 		//copy the buffer
 		if( _buf ) free( _buf );
 		_buf = malloc( given._buf_sz );
@@ -193,7 +193,7 @@ namespace XB{
 		unsigned char i_fld = phash8( fld.name );
 		void *head = (char*)_buf + _fields->diffs[i_fld];
 		
-		if( !head ){ //the field is empty, let's do it
+		if( _fields->diffs[i_fld] || _fields->diffs[i_fld] >= _buf_sz ){
 			_buf = realloc( _buf, _buf_sz+fld.size );
 			
 			//save the new field poiner
@@ -210,7 +210,7 @@ namespace XB{
 			//finally, update the buffer size
 			//and push the new field in the field list
 			_buf_sz += fld.size + sizeof(int);
-			_fields->names.push_back( fld );
+			if( _is_fields_owned ) _fields->names.push_back( fld );
 		} else { //the field is populated
 			if( !buf ) return; //do nothing
 			if( fld.size != *(int*)head ) //freak out
@@ -223,7 +223,7 @@ namespace XB{
 	
 	void adata::dofield( const char *name, short size, void *buf ){
 		adata_field fld = { "", size };
-		strcpy( fld.name, name );
+		strncpy( fld.name, name, 16 );
 		dofield( fld, buf );
 	}
 	
@@ -239,8 +239,8 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//remove a field (another interesting method)
 	void adata::rmfield( const char *name ){
-		void *head = (char*)_buf + _fields->diffs[phash8( name )];
-		if( !head ) return; //nothing to do
+		i_fld = _fields->diffs[phash8( name )];
+		if( _fields->diffs[i_fld] < 0 || _fields->diffs[i_fld] >= _buf_sz ) return;
 		
 		//work out where head is in the buffer
 		int fsize = *(int*)head + sizeof(int);
@@ -265,9 +265,12 @@ namespace XB{
 		_buf = realloc( _buf, _buf_sz );
 		
 		//drum out the field from the field list
-		from_front = 0; //recycle
-		while( strcmp( (_fields->names.begin()+from_front)->name, name ) ) ++from_front;
-		_fields->names.erase( _fields->names.begin() + from_front );
+		//only if you own the thing
+		if( _is_fields_owned ){
+			from_front = 0; //recycle
+			while( strcmp( (_fields->names.begin()+from_front)->name, name ) ) ++from_front;
+			_fields->names.erase( _fields->names.begin() + from_front );
+		}
 	}
 	
 	//----------------------------------------------------------------------------
@@ -280,31 +283,88 @@ namespace XB{
 		in_A_on_Z = 0;
 		if( _buf ){ free( _buf ); _buf = NULL; }
 		_buf_sz = 0;
-        //fat fingered safety measure...
-        if( _is_fields_owned ){
-            for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
-            _fields->names.clear();
-        }
+		//fat fingered safety measure...
+		if( _is_fields_owned ){
+			for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
+			_fields->names.clear();
+		}
 	}
-	
+
 	//----------------------------------------------------------------------------
 	//un- and subscribe methods
 	void adata::subscribe_uniarr( adata_uniarr *ua ){
-        if( !_fields ){
-            _fields = ua->_indexer;
-            _is_fields_owned = 0;
-        } else if( _fields && *_fields == ua->_indexer ){
-            if( _is_fields_owned ) delete _fields;
-            _fields = _indexer;
-            _is_fields_owned = 0;
-        } else throw( error( "Not uniform to uniform array!", "XB::adata" ) );
+		if( !_fields ){
+			_fields = ua->_indexer;
+			_is_fields_owned = 0;
+		} else if( _fields && *_fields == ua->_indexer ){
+			if( _is_fields_owned ) delete _fields;
+			_fields = _indexer;
+			_is_fields_owned = 0;
+		} else throw( error( "Not uniform to uniform array!", "XB::adata" ) );
+	}
+
+	void adata::unsubscribe_uniarr(){
+		adata_indexer *old = _fields;
+		_fields = new adata_indexer( *old );
+		_is_fields_owned = 1;
+	}
+	
+	//============================================================================
+	//implementation of the adata_uniarr class
+	
+	//----------------------------------------------------------------------------
+	//set the indexer to an existing uniform array
+	//note that this will destroy the content if it's different from the
+	//previous one
+	void adata_uniarr::set_indexer( const adata_indexer &given ){
+		if( _indexer != indexer ) clear();
+		_indexer = indexer;
     }
-    
-    void adata::unsubscribe_uniarr(){
-        adata_indexer *old = _fields;
-        _fields = new adata_indexer( *old );
-        _is_fields_owned = 1;
-    }
+	
+	//----------------------------------------------------------------------------
+	//push a field onto the whole array
+	void push_indexer( adata_field &given ){
+		//indexer shared --> control to this class!
+		if( _indexer.diffs[phash8( given.name ) < 0 ) _indexer.names.push_back( given );
+		
+		//do we touch all the events, so that we don't need to discover at the moment's
+		//notice that we need to allocate memory? Yeeah
+		//NOTE: this will also set the correct diff.
+		for( int i=0; i < size(); ++i ) this->at(i).dofield( given, NULL );
+	}
+	
+	//----------------------------------------------------------------------------
+	//remove a field from all entries
+	adata_field pop_indexer(){
+		if( _indexer.diffs[phash8( given.name ) < 0 ) return { "", 0 }; //empty field
+		adata_field fld = _indexer.names.back();
+		for( int i=0; i < size(); ++i ) this->at(i).rmfield( fld );
+		_indexer.names.pop_back();
+		_indexer.diffs[phash8( fld.name )] = -1;
+		return fld;
+	}
+	
+	//----------------------------------------------------------------------------
+	//push and SUBSCRIBE an arbitrary data
+    void push_sub( const adata &given ){
+		this->push_back( given );
+		back().subscribe_uniarr( this );
+	}
+	
+	//----------------------------------------------------------------------------
+	//pop and unsubscribe (pop_back will destroy the element)
+    adata pop_usub(){
+		adata ad = this->back();
+		this->pop_back();
+		ad->unsubscribe_uniarr();
+		return ad;
+	}
+	
+	//----------------------------------------------------------------------------
+	//if you think you need this function, you probably did something wrong
+    void subscribe_all(){
+		for( int i=0; i < size(); ++i ) this->at(i).subscribe_uniarr( this );
+	}
 	
 	//============================================================================
 	//the two friend functions.
@@ -388,5 +448,3 @@ namespace XB{
 		return nf; //useless...
 	}
 } //end of namespace
-		
-		
