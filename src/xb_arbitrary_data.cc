@@ -1,8 +1,42 @@
 //implementation of xb_arbitrary_data.h
 
 #include "xb_arbitrary_data.h"
-#include <stdio.h>
+
 namespace XB{
+    
+    //============================================================================
+    //adata_indexer operators
+    
+    //----------------------------------------------------------------------------
+    //comparison. See the NOTE on field ordering in the header!
+    bool adata_indexer::operator!=( adata_indexer &right ){
+        if( names.size() != right.names.size() ) return true;
+        if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( unsigned short ) ) )
+            return true;
+        for( int i=0; i < names.size(); ++i )
+            if( strcmp( names[i].name, right.names[i].name ) ) return true;
+        return false;
+    }
+    
+    //----------------------------------------------------------------------------
+    //concatenation. Remember that order matters!
+    adata_indexer &adata_indexer::operator+( adata_indexer &right ){
+        //first merge the diff tables. If there are conflicts, then throw
+        short unsigned candidate = 0;
+        for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
+            candidate = diffs[i] + right.diffs[i];
+            if( candidate != diffs[i] && candidate != right.diffs[i] )
+                throw( error( "Colliding fields or integer overflow!", "XB::adata_indexer" ) );
+            diffs[i] = candidate;
+        }
+        names = names + right.names;
+        
+        return *this;
+    }
+    
+    //============================================================================
+    //_xb_arbitrary_data methods
+    
 	//----------------------------------------------------------------------------
 	//constructors:
 	adata::_xb_arbitrary_data():
@@ -253,6 +287,24 @@ namespace XB{
         }
 	}
 	
+	//----------------------------------------------------------------------------
+	//un- and subscribe methods
+	void adata::subscribe_uniarr( adata_uniarr *ua ){
+        if( !_fields ){
+            _fields = ua->_indexer;
+            _is_fields_owned = 0;
+        } else if( _fields && *_fields == ua->_indexer ){
+            if( _is_fields_owned ) delete _fields;
+            _fields = _indexer;
+            _is_fields_owned = 0;
+        } else throw( error( "Not uniform to uniform array!", "XB::adata" ) );
+    }
+    
+    void adata::unsubscribe_uniarr(){
+        adata_indexer *old = _fields;
+        _fields = new adata_indexer( *old );
+        _is_fields_owned = 1;
+    }
 	
 	//============================================================================
 	//the two friend functions.

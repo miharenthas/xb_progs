@@ -26,10 +26,11 @@
 #define nf2hdr_size( nf ) sizeof(event_holder) + ((nf)+2)*sizeof(int) + (nf)*sizeof(adata_field)
 
 /*TODO LIST:
-0) adapt for pointer ofssets instead of pointers [x]
-1) adapt for pointed indexer                     [x]
-2) implement un- and subscribe methods of adata  [ ]
-3) implement adata_uniarr                        [ ]
+0)   adapt for pointer ofssets instead of pointers [x]
+1)   adapt for pointed indexer                     [x]
+1.5) implement convenience into indexer            [/]
+2)   implement un- and subscribe methods of adata  [x]
+3)   implement adata_uniarr                        [ ]
 */
 
 namespace XB{
@@ -61,6 +62,13 @@ namespace XB{
                 memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS );
                 return *this;
             };
+            //NOTE on comparison: to KISS, a difference in the ordering of the
+            //     fields is flagged as a difference in the indexers
+            //     this also means that the concatenation order _matters_
+            bool operator!=( _xb_arb_data_indexer &right );
+            bool operator==( _xb_arb_data_indexer &right ){ return !( *this != right ); };
+            _xb_arb_data_indexer operator+( _xb_arb_data_indexer &right );
+            
             unsigned size() { return names.size(); };
             std::vector< adata_field > names;
             unsigned short diffs[XB_ADATA_NB_FIELDS];
@@ -156,6 +164,8 @@ namespace XB{
 	//TODO: decide whether it's OK for it to inherit or enclose the std::vector
     typedef class _xb_arbitrary_data_uniform_array : public std::vector< adata > {
 		public:
+            friend class adata;
+            
 			_xb_arbitrary_data_uniform_array();
 			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements );
 			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements,
