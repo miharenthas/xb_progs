@@ -1,0 +1,35 @@
+Converts binary cluster level XB data into a root file
+
+  $ xb_data_translator[FILES] [OPTIONS]
+
+===
+COMPILATION:
+===
+
+  $ make xb_data_translator
+
+===
+OPTIONS:
+===
+
+        -i <file_name> binary file containing cluster level xb data (if left out the program expects stdin)  
+
+        -o <file_name> REQUIRED, name of the output rootfile
+
+	-v verbose
+
+	-s <file_name> stitch against this rootfile by event id
+
+	-d debug mode (for comparison with the original rootfile)
+===
+NOTE:
+
+In case of mishaps with the program, report to:
+
+ahorvat@ikp.tu-darmstadt.de 
+AND/OR
+lzanetti@ikp.tu-darmstadt.de
+
+
+
+
